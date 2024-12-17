@@ -1,5 +1,6 @@
 const { ethers, network, getChainId } = require("hardhat");
 const { sleep, writeConfig, readConfig } = require("./helper.js");
+const { upgrades } = require("hardhat");
 
 async function main() {
     try {
@@ -32,22 +33,30 @@ async function main() {
 
         console.log("\nDeploying TransactionManager...");
         const TransactionManager = await ethers.getContractFactory("TransactionManager");
-        const transactionManager = await TransactionManager.deploy(
-            arbitratorManagerAddress,
-            dappRegistryAddress,
-            configManagerAddress,
-            deployer.address,
+        
+        const transactionManager = await upgrades.deployProxy(TransactionManager, 
+            [arbitratorManagerAddress, dappRegistryAddress, configManagerAddress], 
             { 
-                gasLimit: 5000000  // Increased gas limit
+                initializer: "initialize",
+                timeout: 60000,
+                pollingInterval: 5000,
+                txOverrides: {
+                    gasLimit: 5000000, // Increased gas limit
+                    gasPrice: 1000000000 // 1 gwei
+                }
             }
         );
         
         await transactionManager.waitForDeployment();
         const contractAddress = await transactionManager.getAddress();
-        console.log("TransactionManager deployed to:", contractAddress);
+        console.log("TransactionManager deployed as proxy to:", contractAddress);
         
         // Save the contract address
         await writeConfig(network.name, "TRANSACTION_MANAGER", contractAddress);
+        
+        // Verify the implementation address for upgradeable contract
+        const implementationAddress = await upgrades.erc1967.getImplementationAddress(contractAddress);
+        console.log("Implementation address:", implementationAddress);
         
         console.log("\nDeployment completed successfully!");
         

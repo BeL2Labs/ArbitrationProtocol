@@ -10,7 +10,7 @@ function formatArbitratorStatus(status) {
 async function main() {
   const chainID = await getChainId();
   console.log("chain ID:", chainID);
-  const [deployer] = await ethers.getSigners();
+  const [deployer, operator] = await ethers.getSigners();
   
   // Get the contract factory
   const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager");
@@ -20,7 +20,7 @@ async function main() {
   console.log("arbitratorManagerAddress:", arbitratorManagerAddress);
   
   // Get the contract instance
-  const arbitratorManager = await ArbitratorManager.attach(arbitratorManagerAddress);
+  const arbitratorManager = await ArbitratorManager.attach(arbitratorManagerAddress).connect(deployer);
 
   // Get arbitrator info for the deployer address
   const arbitratorAddress = deployer.address;

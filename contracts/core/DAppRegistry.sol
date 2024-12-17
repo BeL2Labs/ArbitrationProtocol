@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../interfaces/IDAppRegistry.sol";
 import "../interfaces/IConfigManager.sol";
 import "../libraries/DataTypes.sol";
@@ -11,7 +11,7 @@ import "../libraries/Errors.sol";
  * @title DAppRegistry
  * @notice Manages DApp registration and authorization in the BeLayer2 arbitration protocol
  */
-contract DAppRegistry is IDAppRegistry, Ownable {
+contract DAppRegistry is IDAppRegistry, OwnableUpgradeable {
     // DApp status mapping
     mapping(address => DataTypes.DAppStatus) private dappStatus;
     
@@ -22,23 +22,23 @@ contract DAppRegistry is IDAppRegistry, Ownable {
     uint256 public constant REGISTRATION_FEE = 10 ether;
 
     // Config manager reference
-    IConfigManager public immutable configManager;
+    IConfigManager public configManager;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+   
     /**
-     * @notice Constructor to set initial owner and config manager
-     * @param _configManager Address of the config manager contract
-     * @param initialOwner Initial owner of the contract
+     * @notice Initialize the contract with default configuration values
      */
-    constructor(
-        address _configManager,
-        address initialOwner
-    ) Ownable(initialOwner) {
-        if (_configManager == address(0)) {
+    function initialize(address _configManager) public initializer {
+         __Ownable_init(msg.sender);
+         if (_configManager == address(0)) {
             revert Errors.ZERO_ADDRESS();
         }
         configManager = IConfigManager(_configManager);
     }
-
     /**
      * @notice Register DApp
      * @param dappContract DApp contract address
@@ -144,4 +144,20 @@ contract DAppRegistry is IDAppRegistry, Ownable {
     function getDAppStatus(address dapp) external view returns (DataTypes.DAppStatus) {
         return dappStatus[dapp];
     }
+
+    /**
+     * @notice Set config manager address
+     * @param _configManager New config manager address
+     */
+    function setConfigManager(address _configManager) external onlyOwner {
+        if (_configManager == address(0)) revert Errors.ZERO_ADDRESS();
+        
+        address oldConfigManager = address(configManager);
+        configManager = IConfigManager(_configManager);
+        
+        emit ConfigManagerUpdated(oldConfigManager, _configManager);
+    }
+
+    // Add a gap for future storage variables
+    uint256[50] private __gap;
 }

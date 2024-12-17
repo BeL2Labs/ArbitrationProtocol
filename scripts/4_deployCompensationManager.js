@@ -1,5 +1,6 @@
 const { ethers, network, getChainId } = require("hardhat");
 const { sleep, writeConfig, readConfig } = require("./helper.js");
+const { upgrades } = require("hardhat");
 
 async function main() {
     try {
@@ -38,17 +39,23 @@ async function main() {
 
         console.log("\nDeploying CompensationManager...");
         const CompensationManager = await ethers.getContractFactory("CompensationManager");
-        const compensationManager = await CompensationManager.deploy(
-            zkServiceAddress,
-            transactionManagerAddress,
-            configManagerAddress,
-            arbitratorManagerAddress,
-            { gasLimit: 5000000 } 
+        
+        const compensationManager = await upgrades.deployProxy(CompensationManager, 
+            [zkServiceAddress, transactionManagerAddress, configManagerAddress, arbitratorManagerAddress], 
+            { 
+                initializer: "initialize",
+                timeout: 60000,
+                pollingInterval: 5000,
+                txOverrides: {
+                    gasLimit: 5000000, // Increased gas limit
+                    gasPrice: 1000000000 // 1 gwei
+                }
+            }
         );
         
         await compensationManager.waitForDeployment();
         const contractAddress = await compensationManager.getAddress();
-        console.log("CompensationManager deployed to:", contractAddress);
+        console.log("CompensationManager deployed as proxy to:", contractAddress);
         
         // Save the contract address
         await writeConfig(network.name, "COMPENSATION_MANAGER", contractAddress);

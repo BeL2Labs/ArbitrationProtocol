@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../interfaces/ICompensationManager.sol";
 import "../interfaces/IZkService.sol";
 import "../interfaces/ITransactionManager.sol";
@@ -9,8 +10,10 @@ import "../interfaces/IArbitratorManager.sol";
 import "../libraries/Errors.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-contract CompensationManager is ICompensationManager {
-
+contract CompensationManager is 
+    ICompensationManager,
+    OwnableUpgradeable 
+{
     IZkService public zkService;
     ITransactionManager public transactionManager;
     IConfigManager public configManager;
@@ -37,12 +40,31 @@ contract CompensationManager is ICompensationManager {
         ArbitratorFee
     }
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @notice Initialize the contract with required addresses
+     * @param _zkService Address of the ZkService contract
+     * @param _transactionManager Address of the transaction manager contract
+     * @param _configManager Address of the config manager contract
+     * @param _arbitratorManager Address of the arbitrator manager contract
+     */
+    function initialize(
         address _zkService,
         address _transactionManager,
         address _configManager,
         address _arbitratorManager
-    ) {
+    ) public initializer {
+        __Ownable_init(msg.sender);
+
+        if (_zkService == address(0)) revert Errors.ZERO_ADDRESS();
+        if (_transactionManager == address(0)) revert Errors.ZERO_ADDRESS();
+        if (_configManager == address(0)) revert Errors.ZERO_ADDRESS();
+        if (_arbitratorManager == address(0)) revert Errors.ZERO_ADDRESS();
+
         zkService = IZkService(_zkService);
         transactionManager = ITransactionManager(_transactionManager);
         configManager = IConfigManager(_configManager);
@@ -255,4 +277,7 @@ contract CompensationManager is ICompensationManager {
 
     receive() external payable {
     }
+
+    // Add a gap for future storage variables
+    uint256[50] private __gap;
 }

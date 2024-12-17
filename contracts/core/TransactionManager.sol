@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../interfaces/ITransactionManager.sol";
 import "../interfaces/IArbitratorManager.sol";
 import "../interfaces/IDAppRegistry.sol";
@@ -16,15 +16,19 @@ import "../libraries/BTCUtils.sol";
  * @title TransactionManager
  * @notice Manages transaction lifecycle in the BeLayer2 arbitration protocol
  */
-contract TransactionManager is ITransactionManager, ReentrancyGuard, Ownable {
+contract TransactionManager is 
+    ITransactionManager, 
+    ReentrancyGuardUpgradeable, 
+    OwnableUpgradeable 
+{
     // Constants
     uint256 private constant SECONDS_PER_YEAR = 365 days;
     uint256 private constant FEE_RATE_MULTIPLIER = 10000;
 
     // Contract references
-    IArbitratorManager public immutable arbitratorManager;
-    IDAppRegistry public immutable dappRegistry;
-    ConfigManager public immutable configManager;
+    IArbitratorManager public arbitratorManager;
+    IDAppRegistry public dappRegistry;
+    ConfigManager public configManager;
 
     // Transaction storage
     mapping(bytes32 => DataTypes.Transaction) public transactions;
@@ -37,26 +41,32 @@ contract TransactionManager is ITransactionManager, ReentrancyGuard, Ownable {
 
     modifier onlyCompensationManager() {
         if (msg.sender != compensationManager) revert Errors.NOT_COMPENSATION_MANAGER();
+        if (!initialized) revert Errors.NOT_INITIALIZED();
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
-     * @notice Constructor to set contract references and initial owner
+     * @notice Initialize the contract with required addresses
      * @param _arbitratorManager Address of the arbitrator manager contract
      * @param _dappRegistry Address of the DApp registry contract
      * @param _configManager Address of the config manager contract
-     * @param initialOwner Initial owner of the contract
      */
-    constructor(
+    function initialize(
         address _arbitratorManager,
         address _dappRegistry,
-        address _configManager,
-        address initialOwner
-    ) Ownable(initialOwner) {
-        if (_arbitratorManager == address(0) || _dappRegistry == address(0) || 
-            _configManager == address(0) || initialOwner == address(0)) {
-            revert Errors.ZERO_ADDRESS();
-        }
+        address _configManager
+    ) public initializer {
+        __ReentrancyGuard_init();
+        __Ownable_init(msg.sender);
+
+        if (_arbitratorManager == address(0)) revert Errors.ZERO_ADDRESS();
+        if (_dappRegistry == address(0)) revert Errors.ZERO_ADDRESS();
+        if (_configManager == address(0)) revert Errors.ZERO_ADDRESS();
 
         arbitratorManager = IArbitratorManager(_arbitratorManager);
         dappRegistry = IDAppRegistry(_dappRegistry);
@@ -64,17 +74,15 @@ contract TransactionManager is ITransactionManager, ReentrancyGuard, Ownable {
     }
 
     /**
-     * @notice Initialize the contract
+     * @notice Initialize the compensation manager address
      * @param _compensationManager Address of the compensation manager contract
+     * @custom:security Address is checked for zero address to prevent invalid initialization
      */
-    function initialize(
-        address _compensationManager
-    ) external onlyOwner {
-        if (initialized) revert Errors.ALREADY_INITIALIZED();
+    function initCompensationManager(address _compensationManager) external onlyOwner {
         if (_compensationManager == address(0)) revert Errors.ZERO_ADDRESS();
-
         compensationManager = _compensationManager;
         initialized = true;
+        emit Initialized(_compensationManager);
     }
 
     /**
@@ -311,4 +319,7 @@ contract TransactionManager is ITransactionManager, ReentrancyGuard, Ownable {
         DataTypes.Transaction storage transaction = transactions[id];
         return _completeTransaction(id, transaction);
     }
+
+    // Add a gap for future storage variables
+    uint256[50] private __gap;
 }

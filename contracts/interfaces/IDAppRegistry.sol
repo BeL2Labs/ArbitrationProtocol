@@ -81,4 +81,11 @@ interface IDAppRegistry {
      * @param dapp DApp address
      */
     event DAppDeregistered(address indexed dapp);
+
+    /**
+     * @notice Config manager updated event
+     * @param oldConfigManager Old config manager address
+     * @param newConfigManager New config manager address
+     */
+    event ConfigManagerUpdated(address indexed oldConfigManager, address indexed newConfigManager);
 }

@@ -30,3 +30,5 @@ coverage.json
 *.log
 package-lock.json
 yarn.lock
+.DS_Store
+contracts/.DS_Store

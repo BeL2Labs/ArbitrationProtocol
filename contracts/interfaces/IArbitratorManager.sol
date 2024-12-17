@@ -84,6 +84,11 @@ interface IArbitratorManager {
      */
     function isPaused(address arbitrator) external view returns (bool);
     
+    // Manager address setters
+    function setTransactionManager(address _transactionManager) external;
+    function setCompensationManager(address _compensationManager) external;
+    function initTransactionAndCompensationManager(address _transactionManager, address _compensationManager) external;
+
     // Events
     event ArbitratorStatusChanged(address indexed arbitrator, DataTypes.ArbitratorStatus status);
     event Initialized(address indexed transactionManager, address indexed compensationManager);
@@ -121,4 +126,6 @@ interface IArbitratorManager {
     
     event ArbitratorPaused(address indexed arbitrator);
     event ArbitratorUnpaused(address indexed arbitrator);
+    event TransactionManagerUpdated(address indexed oldManager, address indexed newManager);
+    event CompensationManagerUpdated(address indexed oldManager, address indexed newManager);
 }

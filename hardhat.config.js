@@ -27,7 +27,7 @@ module.exports = {
     },
     testnet: {
       url: "https://api-testnet.elastos.io/esc",
-      accounts: [...(staging_key ? [staging_key, operator_key] : [])]
+      accounts: [...(staging_key ? [staging_key, operator_key] : [])],
     },
     hardhat: {
       chainId: 100,

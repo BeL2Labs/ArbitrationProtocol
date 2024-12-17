@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../interfaces/IArbitratorManager.sol";
 import "../interfaces/IBNFTInfo.sol";
 import "./ConfigManager.sol";
@@ -26,12 +26,16 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
  * - Minimum stake and fee rate requirements from ConfigManager
  * - Status changes are protected against invalid state transitions
  */
-contract ArbitratorManager is IArbitratorManager, ReentrancyGuard, Ownable {
+contract ArbitratorManager is 
+    IArbitratorManager,
+    ReentrancyGuardUpgradeable, 
+    OwnableUpgradeable 
+{
     // Constants
     address public constant zeroAddress = address(0);
 
     // Config manager reference for system parameters
-    ConfigManager private immutable configManager;
+    ConfigManager public configManager;
     
     // NFT contract reference
     IERC721 public nftContract;
@@ -44,7 +48,7 @@ contract ArbitratorManager is IArbitratorManager, ReentrancyGuard, Ownable {
     address public transactionManager;
     address public compensationManager;
     bool private initialized;
-    
+
     /**
      * @notice Ensures arbitrator is not currently handling any transactions
      * @dev Prevents critical state changes while arbitrator is working
@@ -71,15 +75,25 @@ contract ArbitratorManager is IArbitratorManager, ReentrancyGuard, Ownable {
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
-     * @notice Initializes the contract with config manager
+     * @notice Initialize the contract with required addresses
      * @param _configManager Address of the ConfigManager contract
-     * @param initialOwner Initial owner of the contract
      * @param _nftContract Address of the NFT contract
      * @param _nftInfo Address of the NFT info contract
-     * @dev Config manager provides system-wide parameters like minimum stake
      */
-    constructor(address _configManager, address initialOwner, address _nftContract, address _nftInfo) Ownable(initialOwner) {
+    function initialize(
+        address _configManager,
+        address _nftContract,
+        address _nftInfo
+    ) public initializer {
+        __ReentrancyGuard_init();
+        __Ownable_init(msg.sender);
+
         if (_configManager == address(0)) 
             revert Errors.ZERO_ADDRESS();
         if (_nftContract == address(0))
@@ -89,23 +103,6 @@ contract ArbitratorManager is IArbitratorManager, ReentrancyGuard, Ownable {
         configManager = ConfigManager(_configManager);
         nftContract = IERC721(_nftContract);
         nftInfo = IBNFTInfo(_nftInfo);
-    }
-
-    /**
-     * @notice Initialize the contract with transaction manager address
-     * @param _transactionManager Address of the TransactionManager contract
-     * @param _compensationManager Address of the CompensationManager contract
-     */
-    function initialize(address _transactionManager, address _compensationManager) external onlyOwner {
-        if (initialized) revert Errors.ALREADY_INITIALIZED();
-        if (_transactionManager == address(0)) revert Errors.ZERO_ADDRESS();
-        if (_compensationManager == address(0)) revert Errors.ZERO_ADDRESS();
-        
-        transactionManager = _transactionManager;
-        compensationManager = _compensationManager;
-        initialized = true;
-        
-        emit Initialized(_transactionManager, _compensationManager);
     }
 
     /**
@@ -484,4 +481,47 @@ contract ArbitratorManager is IArbitratorManager, ReentrancyGuard, Ownable {
 
         return totalValue;
     }
+
+    /**
+     * @notice Initialize both transaction and compensation manager addresses
+     * @dev This function can only be called once to set up the initial manager addresses
+     * @param _transactionManager Address of the transaction manager contract
+     * @param _compensationManager Address of the compensation manager contract
+     * @custom:security Both addresses are checked for zero address to prevent invalid initialization
+     * @custom:event Emits an Initialized event with both manager addresses
+     */
+    function initTransactionAndCompensationManager(address _transactionManager, address _compensationManager) external override onlyOwner {
+         if (initialized) revert Errors.ALREADY_INITIALIZED();
+          if (_transactionManager == address(0)) revert Errors.ZERO_ADDRESS();
+          if (_compensationManager == address(0)) revert Errors.ZERO_ADDRESS();
+          transactionManager = _transactionManager;
+          compensationManager = _compensationManager;
+          initialized = true;
+          emit Initialized(transactionManager, compensationManager);
+    }
+
+    /**
+     * @notice Set the transaction manager address
+     * @param _transactionManager New transaction manager address
+     */
+    function setTransactionManager(address _transactionManager) external override onlyOwner {
+        if (_transactionManager == address(0)) revert Errors.ZERO_ADDRESS();
+        address oldManager = transactionManager;
+        transactionManager = _transactionManager;
+        emit TransactionManagerUpdated(oldManager, _transactionManager);
+    }
+
+    /**
+     * @notice Set the compensation manager address
+     * @param _compensationManager New compensation manager address
+     */
+    function setCompensationManager(address _compensationManager) external override onlyOwner {
+        if (_compensationManager == address(0)) revert Errors.ZERO_ADDRESS();
+        address oldManager = compensationManager;
+        compensationManager = _compensationManager;
+        emit CompensationManagerUpdated(oldManager, _compensationManager);
+    }
+
+    // Add a gap for future storage variables
+    uint256[50] private __gap;
 }

@@ -43,6 +43,15 @@ interface ICompensationManager {
         bytes32 claimId
     ) external view returns (uint256);
 
+    // Initialize compensation manager
+    function initialize(
+        address _zkService,
+        address _transactionManager,
+        address _configManager,
+        address _arbitratorManager
+    ) external;
+
+    // Events
     event CompensationClaimed(bytes32 indexed claimId, address indexed claimer, uint8 claimType);
     event CompensationWithdrawn(bytes32 indexed claimId);
 }

@@ -1,5 +1,6 @@
 const { ethers, network, getChainId } = require("hardhat");
 const { sleep, writeConfig, readConfig } = require("./helper.js");
+const { upgrades } = require("hardhat");
 
 async function main() {
     try {
@@ -18,7 +19,6 @@ async function main() {
         }
         console.log("Using ConfigManager at:", configManagerAddress);
 
-
         const nftAddress = await readConfig(network.name, "ERC721_ADDRESS");
         console.log("nftAddress:", nftAddress);
 
@@ -27,20 +27,30 @@ async function main() {
 
         console.log("\nDeploying ArbitratorManager...");
         const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager");
-        const arbitratorManager = await ArbitratorManager.deploy(
-            configManagerAddress,
-            deployer.address,
-            nftAddress,
-            nftInfoAddress,
-            { gasLimit: 3000000 }
+        
+        const arbitratorManager = await upgrades.deployProxy(ArbitratorManager, 
+            [configManagerAddress, nftAddress, nftInfoAddress], 
+            { 
+                initializer: "initialize",
+                timeout: 60000,
+                pollingInterval: 5000,
+                txOverrides: {
+                    gasLimit: 3000000,
+                    gasPrice: 1000000000 // 1 gwei
+                }
+            }
         );
         
         await arbitratorManager.waitForDeployment();
         const contractAddress = await arbitratorManager.getAddress();
-        console.log("ArbitratorManager deployed to:", contractAddress);
+        console.log("ArbitratorManager deployed as proxy to:", contractAddress);
         
-        // Save all contract addresses
+        // Save contract addresses
         await writeConfig(network.name, "ARBITRATOR_MANAGER", contractAddress);
+        
+        // Verify the implementation address for upgradeable contract
+        const implementationAddress = await upgrades.erc1967.getImplementationAddress(contractAddress);
+        console.log("Implementation address:", implementationAddress);
         
         console.log("\nDeployment completed successfully!");
         

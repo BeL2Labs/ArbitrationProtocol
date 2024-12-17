@@ -4,7 +4,7 @@ const { readConfig } = require("./helper.js");
 async function main() {
   const chainID = await getChainId();
   console.log("chain ID:", chainID);
-
+  const [deployer, operator] = await ethers.getSigners();
   // Get the contract factory
   const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager");
   
@@ -13,7 +13,7 @@ async function main() {
   console.log("arbitratorManagerAddress:", arbitratorManagerAddress);
   
   // Get the contract instance
-  const arbitratorManager = await ArbitratorManager.attach(arbitratorManagerAddress);
+  const arbitratorManager = await ArbitratorManager.attach(arbitratorManagerAddress).connect(deployer);
 
   // Amount of ETH to stake (in wei)
   const stakeAmount = ethers.parseEther("1.0"); // Staking 1 ETH, adjust as needed

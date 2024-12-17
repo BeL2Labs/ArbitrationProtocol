@@ -1,5 +1,5 @@
-const { ethers, network, getChainId } = require("hardhat");
-const {sleep, writeConfig } = require("./helper.js");
+const { ethers, network, upgrades, getChainId } = require("hardhat");
+const { sleep, writeConfig } = require("./helper.js");
 
 async function verifyInitialConfig(contract) {
     console.log("Verifying initial configuration...");
@@ -32,19 +32,38 @@ async function main() {
         const [deployer] = await ethers.getSigners();
         console.log("Deploying contracts with account:", deployer.address);
         console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)));
-        console.log("\nDeploying ConfigManager...");
-        const ConfigManager = await ethers.getContractFactory("ConfigManager");
-        const configManager = await ConfigManager.deploy(deployer.address, { 
-            gasLimit: 3000000 
+
+        // Get contract factory
+        const ConfigManager = await ethers.getContractFactory("ConfigManager", deployer);
+
+        // Deploy proxy using upgrades plugin
+        console.log("\nDeploying proxy...");
+        const proxy = await upgrades.deployProxy(ConfigManager, [], {
+            initializer: 'initialize',
+            timeout: 60000,
+            pollingInterval: 5000,
+            txOverrides: {
+                gasLimit: 3000000,
+                gasPrice: 1000000000 // 1 gwei
+            }
         });
-        await configManager.waitForDeployment();
-        let contractAddress = await configManager.getAddress();
-        console.log("ConfigManager deployed to:", contractAddress);
-        // Save the contract address
-        await writeConfig(network.name, "CONFIG_MANAGER", contractAddress);
-        
+
+        await proxy.waitForDeployment();
+        const proxyAddress = await proxy.getAddress();
+        console.log("Proxy deployed to:", proxyAddress);
+
+        // Get implementation address
+        let implAddress = await upgrades.erc1967.getImplementationAddress(proxyAddress);
+        console.log("Implementation deployed to:", implAddress);
+
         // Verify initial configuration
-        await verifyInitialConfig(configManager);
+        console.log("\nVerifying configuration...");
+        await verifyInitialConfig(proxy);
+        
+        // Save deployment info
+        console.log("\nSaving deployment info...");
+
+        await writeConfig(network.name, "CONFIG_MANAGER", proxyAddress);
         
         console.log("\nDeployment completed successfully!");
         

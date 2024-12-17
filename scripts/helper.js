@@ -34,7 +34,6 @@ function getPath(fromFile){
 }
 
 const getConfigPath = () => {
-    //return "scripts/config"
     return path.resolve(__dirname, '.') + "/./config"
 }
 async function sleep(ms) {
