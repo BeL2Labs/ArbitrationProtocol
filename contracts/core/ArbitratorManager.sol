@@ -253,9 +253,9 @@ contract ArbitratorManager is IArbitratorManager, ReentrancyGuard, Ownable {
     ) external override {
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
         if (arbitrator.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
-        
-        arbitrator.operatorBtcPubKey = btcPubKey;
-        arbitrator.operatorBtcAddress = btcAddress;
+        arbitrator.revenueETHAddress = ethAddress;
+        arbitrator.revenueBtcPubKey = btcPubKey;
+        arbitrator.revenueBtcAddress = btcAddress;
         
         emit RevenueAddressesSet(msg.sender, ethAddress, btcPubKey, btcAddress);
     }
