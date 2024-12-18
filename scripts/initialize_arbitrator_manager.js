@@ -20,7 +20,7 @@ async function main() {
   console.log("transactionManagerAddress", transactionManagerAddress);
   console.log("compensationManagerAddress", compensationManagerAddress);
   // Call initialize
-  const tx = await arbitratorManager.initialize(
+  const tx = await arbitratorManager.initTransactionAndCompensationManager(
     transactionManagerAddress,
     compensationManagerAddress,
       { gasLimit: 2000000 }

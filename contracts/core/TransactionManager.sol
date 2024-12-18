@@ -169,8 +169,10 @@ contract TransactionManager is
      */
     function completeTransaction(bytes32 id) external {
         DataTypes.Transaction storage transaction = transactions[id];
-        
-        if (transaction.status != DataTypes.TransactionStatus.Active) {
+
+        if (transaction.status == DataTypes.TransactionStatus.Active && block.timestamp < transaction.deadline) {
+            revert Errors.INVALID_DEADLINE();
+        } else if (transaction.status != DataTypes.TransactionStatus.Submitted) {
             revert Errors.INVALID_TRANSACTION_STATUS();
         }
 
@@ -278,7 +280,7 @@ contract TransactionManager is
             revert Errors.NOT_AUTHORIZED();
         }
 
-        transaction.status = DataTypes.TransactionStatus.Completed;
+        transaction.status = DataTypes.TransactionStatus.Submitted;
         transaction.signature = btcTxSignature;
 
         emit ArbitrationSubmitted(transaction.dapp, id);

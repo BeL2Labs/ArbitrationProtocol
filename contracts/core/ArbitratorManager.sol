@@ -475,7 +475,8 @@ contract ArbitratorManager is
         for (uint256 i = 0; i < arbiInfo.nftTokenIds.length; i++) {
             (,BNFTVoteInfo memory info) = nftInfo.getNftInfo(arbiInfo.nftTokenIds[i]);
             for (uint256 j = 0; j < info.infos.length; j++) {
-                totalValue += info.infos[j].votes;
+                // Convert from 8 decimals to 18 decimals by multiplying by 10^10
+                totalValue += info.infos[j].votes * (10 ** 10);
             }
         }
 

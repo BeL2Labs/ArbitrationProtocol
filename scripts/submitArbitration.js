@@ -2,7 +2,7 @@ const { ethers, network } = require("hardhat");
 const { readConfig } = require("./helper.js");
 
 async function main() {
-    let [deployer] = await ethers.getSigners();
+    let [deployer, operator] = await ethers.getSigners();
     console.log("Deployer address:", deployer.address);
 
     // Get the contract factory for TransactionManager
@@ -13,10 +13,10 @@ async function main() {
     console.log("Transaction Manager Address:", transactionManagerAddress);
     
     // Connect to the deployed contract
-    const transactionManager = TransactionManager.attach(transactionManagerAddress);
+    const transactionManager = TransactionManager.attach(transactionManagerAddress).connect(operator);
 
     // Transaction ID for arbitration submission
-    const transactionId = "0x26cade60725c3bb434232dbc160d130576f82cd63a9ff0cb8ad30c4b13bbb0d0";
+    const transactionId = "0x611651b62dfeae98b360574d74fe1bd8de5b51867eec96b1abb5018461cdd3f6";
 
     // Arbitration signature
     const signature = "0x304402202c731fd1feff32e502ea2364b10556e1d5e1a141a7837b993f84a03d2109a7a802202a05b2328d14287b7f0a2882b3255303671b7b949b065b7c0a8a946048829be4";

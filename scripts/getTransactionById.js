@@ -16,7 +16,7 @@ async function main() {
     const transactionManager = TransactionManager.attach(transactionManagerAddress);
 
     // Transaction ID to query
-    const transactionId = "0x26cade60725c3bb434232dbc160d130576f82cd63a9ff0cb8ad30c4b13bbb0d0";
+    const transactionId = "0x611651b62dfeae98b360574d74fe1bd8de5b51867eec96b1abb5018461cdd3f6";
 
     try {
         // Log transaction details
@@ -62,8 +62,9 @@ function getTransactionStatus(status) {
         0: "Active",
         1: "Completed",
         2: "Arbitration Requested",
-        3: "Arbitration Submitted",
-        4: "Timeout Compensation Claimed"
+        3: "Arbitration Expired",
+        4: "Timeout Compensation Claimed",
+        5: "Submitted",
     };
     return statusMap[status] || `Unknown Status (${status})`;
 }

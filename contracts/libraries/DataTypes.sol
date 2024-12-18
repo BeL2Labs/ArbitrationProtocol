@@ -22,7 +22,8 @@ library DataTypes {
         Completed,
         Arbitrated,
         Expired,
-        Disputed
+        Disputed,
+        Submitted
     }
 
     enum CompensationType {

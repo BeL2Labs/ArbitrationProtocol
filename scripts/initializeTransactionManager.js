@@ -25,7 +25,7 @@ async function main() {
     const transactionManager = TransactionManager.attach(transactionManagerAddress);
 
     // Initialize TransactionManager
-    const tx = await transactionManager.initialize(compensationManagerAddress, {
+    const tx = await transactionManager.initCompensationManager(compensationManagerAddress, {
         gasLimit: 200000
     });
     await tx.wait();

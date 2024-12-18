@@ -16,7 +16,7 @@ async function main() {
     const transactionManager = TransactionManager.attach(transactionManagerAddress);
 
     // Transaction ID for arbitration request
-    const transactionId = "0x26cade60725c3bb434232dbc160d130576f82cd63a9ff0cb8ad30c4b13bbb0d0";
+    const transactionId = "0x611651b62dfeae98b360574d74fe1bd8de5b51867eec96b1abb5018461cdd3f6";
     // Arbitration details
     const btcTx = "0x02000000014c0343a8a6e961895e954de82490bde6d164aef98af73f5c53c58c4aeebe87c8010000006a473044022036a1ec2f5ae4e19bbb24b657b77556436a6d024e0cb0322ad37f150cc6d33e4f02204748730fc789f13fe7c3249b64d5863b1ef92877dc9b8cc4b2937967a0b8c713012103fbcb0e8a52d8b47ea3dd5d7934abd5c7b6ab89d26ceb5abd630d7d7954a3428cffffffff022bf10200000000001976a91467f18321c68a3508233313059809e97ae91c46a388ac62ec0600000000001976a91498b08e7ef20a0563c045902d39145df4ab5a598088ac00000000";
     const timeoutCompensationReceiver = deployer.address;

@@ -18,7 +18,7 @@ async function main() {
         timeout: 60000,
         pollingInterval: 5000,
         txOverrides: {
-            gasLimit: 3000000,
+            gasLimit: 3500000,
             gasPrice: 1000000000 // 1 gwei
         }});
 
