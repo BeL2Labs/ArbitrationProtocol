@@ -6,9 +6,8 @@ async function main() {
     let chainId = await getChainId();
     console.log("chainId is :" + chainId, " network ", network.name);
 
-    const [ deployer ] = await ethers.getSigners();
+    const [deployer] = await ethers.getSigners();
     console.log("Deployer address", deployer.address);
-
     const contractAddress = await readConfig(network.name, "COMPENSATION_MANAGER");
 
     console.log("contractAddress address", contractAddress);

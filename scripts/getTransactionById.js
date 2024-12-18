@@ -30,7 +30,7 @@ async function main() {
         console.log("DApp:", transaction.dapp);
         console.log("Arbitrator:", transaction.arbitrator);
         console.log("Deadline:", new Date(Number(transaction.deadline) * 1000).toUTCString());
-        console.log("Deposited Fee:", ethers.formatEther(transaction.depositedFee), "ETH");
+        console.log("Deposited Fee:", ethers.utils.formatEther(transaction.depositedFee), "ETH");
         console.log("Start Time:", new Date(Number(transaction.startTime) * 1000).toUTCString());
         console.log("Status:", getTransactionStatus(transaction.status));
         console.log("BTC Tx Hash:", transaction.btcTxHash);

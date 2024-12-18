@@ -18,8 +18,7 @@ async function main() {
     // Parameters for registerTransaction
     const arbitratorAddress = deployer.address;
     const compensationReceiverAddress = deployer.address;
-    const deadline = Math.floor(Date.now() / 1000) + 3600 * 24 * 30; // 30 days from now
-
+    const deadline = Math.floor(Date.now() / 1000) + 3600 * 24 + 180; // 1 days from now
     try {
         // Log detailed transaction parameters
         console.log("Transaction Parameters:");
