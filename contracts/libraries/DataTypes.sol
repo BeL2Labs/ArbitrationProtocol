@@ -71,13 +71,4 @@ library DataTypes {
         address timeoutCompensationReceiver;
         bool fulfilled;
     }
-
-    struct CompensationClaim {
-        address arbitrator;
-        address claimer;
-        uint256 amount;
-        CompensationType claimType;
-        bool claimed;
-        bytes evidence;
-    }
 }

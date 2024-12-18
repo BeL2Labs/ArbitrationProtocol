@@ -262,7 +262,7 @@ contract TransactionManager is ITransactionManager, ReentrancyGuard, Ownable {
     ) external {
         DataTypes.Transaction storage transaction = transactions[id];
 
-        if (transaction.status != DataTypes.TransactionStatus.Active) {
+        if (transaction.status != DataTypes.TransactionStatus.Arbitrated) {
             revert Errors.INVALID_TRANSACTION_STATUS();
         }
 
