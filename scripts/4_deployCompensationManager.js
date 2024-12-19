@@ -10,7 +10,7 @@ async function main() {
         
         const [deployer] = await ethers.getSigners();
         console.log("Deploying contracts with account:", deployer.address);
-        console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)));
+        console.log("Account balance:", ethers.utils.formatEther(await ethers.provider.getBalance(deployer.address)));
 
         // Get required contract addresses from previous deployments
         const zkServiceAddress = await readConfig(network.name, "ZK_SERVICE");
@@ -38,7 +38,7 @@ async function main() {
         console.log("Using TransactionManager at:", transactionManagerAddress);
 
         console.log("\nDeploying CompensationManager...");
-        const CompensationManager = await ethers.getContractFactory("CompensationManager");
+        const CompensationManager = await ethers.getContractFactory("CompensationManager", deployer);
         
         const compensationManager = await upgrades.deployProxy(CompensationManager, 
             [zkServiceAddress, transactionManagerAddress, configManagerAddress, arbitratorManagerAddress], 
@@ -53,8 +53,7 @@ async function main() {
             }
         );
         
-        await compensationManager.waitForDeployment();
-        const contractAddress = await compensationManager.getAddress();
+        const contractAddress = await compensationManager.address;
         console.log("CompensationManager deployed as proxy to:", contractAddress);
         
         // Save the contract address

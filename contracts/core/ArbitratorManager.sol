@@ -61,17 +61,17 @@ contract ArbitratorManager is
 
     modifier onlyTransactionManager() {
         if (msg.sender != transactionManager) 
-            revert Errors.NOT_TRANSACTION_MANAGER();
+            revert(Errors.NOT_TRANSACTION_MANAGER);
         if (!initialized)
-            revert Errors.NOT_INITIALIZED();
+            revert(Errors.NOT_INITIALIZED);
         _;
     }
 
     modifier onlyCompensationManager() {
         if (msg.sender != compensationManager) 
-            revert Errors.NOT_COMPENSATION_MANAGER();
+            revert(Errors.NOT_COMPENSATION_MANAGER);
         if (!initialized)
-            revert Errors.NOT_INITIALIZED();
+            revert(Errors.NOT_INITIALIZED);
         _;
     }
 
@@ -95,11 +95,11 @@ contract ArbitratorManager is
         __Ownable_init(msg.sender);
 
         if (_configManager == address(0)) 
-            revert Errors.ZERO_ADDRESS();
+            revert(Errors.ZERO_ADDRESS);
         if (_nftContract == address(0))
-            revert Errors.ZERO_ADDRESS();
+            revert(Errors.ZERO_ADDRESS);
         if (_nftInfo == address(0))
-            revert Errors.ZERO_ADDRESS();
+            revert(Errors.ZERO_ADDRESS);
         configManager = ConfigManager(_configManager);
         nftContract = IERC721(_nftContract);
         nftInfo = IBNFTInfo(_nftInfo);
@@ -128,8 +128,8 @@ contract ArbitratorManager is
         uint256 minStake = configManager.getConfig(configManager.MIN_STAKE());
         uint256 maxStake = configManager.getConfig(configManager.MAX_STAKE());
         
-        if (totalStakeValue < minStake) revert Errors.INSUFFICIENT_STAKE();
-        if (totalStakeValue > maxStake) revert Errors.STAKE_EXCEEDS_MAX();
+        if (totalStakeValue < minStake) revert(Errors.INSUFFICIENT_STAKE);
+        if (totalStakeValue > maxStake) revert(Errors.STAKE_EXCEEDS_MAX);
 
         emit StakeAdded(msg.sender, address(0), msg.value);
     }
@@ -139,7 +139,7 @@ contract ArbitratorManager is
      * @param tokenIds Array of NFT token IDs to stake
      */
     function stakeNFT(uint256[] calldata tokenIds) external override {
-        if (tokenIds.length == 0) revert Errors.EMPTY_TOKEN_IDS();
+        if (tokenIds.length == 0) revert(Errors.EMPTY_TOKEN_IDS);
 
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
         
@@ -168,14 +168,14 @@ contract ArbitratorManager is
         uint256 minStake = configManager.getConfig(configManager.MIN_STAKE());
         uint256 maxStake = configManager.getConfig(configManager.MAX_STAKE());
         
-        if (totalStakeValue < minStake) revert Errors.INSUFFICIENT_STAKE();
-        if (totalStakeValue > maxStake) revert Errors.STAKE_EXCEEDS_MAX();
+        if (totalStakeValue < minStake) revert(Errors.INSUFFICIENT_STAKE);
+        if (totalStakeValue > maxStake) revert(Errors.STAKE_EXCEEDS_MAX);
 
         // Set NFT contract address if not set
         if (arbitrator.nftContract == address(0)) {
             arbitrator.nftContract = address(nftContract);
         } else if (arbitrator.nftContract != address(nftContract)) {
-            revert Errors.INVALID_NFT_CONTRACT();
+            revert(Errors.INVALID_NFT_CONTRACT);
         }
 
         emit StakeAdded(msg.sender, address(nftContract), totalNftValue);
@@ -229,7 +229,7 @@ contract ArbitratorManager is
         require(operator != address(0), "InvalidOperator");
         
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
+        if (arbitrator.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
         
         arbitrator.operator = operator;
         arbitrator.operatorBtcPubKey = btcPubKey;
@@ -249,7 +249,7 @@ contract ArbitratorManager is
         string calldata btcAddress
     ) external override {
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
+        if (arbitrator.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
         arbitrator.revenueETHAddress = ethAddress;
         arbitrator.revenueBtcPubKey = btcPubKey;
         arbitrator.revenueBtcAddress = btcAddress;
@@ -269,10 +269,10 @@ contract ArbitratorManager is
         uint256 deadline
     ) external override notWorking {
         require(feeRate >= configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE()), "FeeTooLow");
-        require(deadline == 0 || deadline > block.timestamp, "InvalidDeadline");
+        require(deadline == 0 || deadline > block.timestamp, Errors.INVALID_DEADLINE);
         
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
+        if (arbitrator.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
         arbitrator.currentFeeRate = feeRate;
         arbitrator.lastArbitrationTime = deadline;
         
@@ -285,7 +285,7 @@ contract ArbitratorManager is
      */
     function pause() external override notWorking {
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
+        if (arbitrator.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
         require(arbitrator.status == DataTypes.ArbitratorStatus.Active, "Not active");
         arbitrator.status = DataTypes.ArbitratorStatus.Paused;
         
@@ -298,7 +298,7 @@ contract ArbitratorManager is
      */
     function unpause() external override notWorking {
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
+        if (arbitrator.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
         require(arbitrator.status == DataTypes.ArbitratorStatus.Paused, "not paused");
         arbitrator.status = DataTypes.ArbitratorStatus.Active;
         
@@ -392,9 +392,9 @@ contract ArbitratorManager is
         
         // Validate arbitrator state
         if (arbitratorInfo.status != DataTypes.ArbitratorStatus.Active)
-            revert Errors.ARBITRATOR_NOT_ACTIVE();
+            revert(Errors.ARBITRATOR_NOT_ACTIVE);
         if (arbitratorInfo.activeTransactionId != bytes32(0))
-            revert Errors.ARBITRATOR_ALREADY_WORKING();
+            revert(Errors.ARBITRATOR_ALREADY_WORKING);
             
         // Update arbitrator state
         arbitratorInfo.status = DataTypes.ArbitratorStatus.Working;
@@ -416,9 +416,9 @@ contract ArbitratorManager is
         
         // Validate arbitrator state
         if (arbitratorInfo.status != DataTypes.ArbitratorStatus.Working)
-            revert Errors.ARBITRATOR_NOT_WORKING();
+            revert(Errors.ARBITRATOR_NOT_WORKING);
         if (arbitratorInfo.activeTransactionId != transactionId)
-            revert Errors.INVALID_TRANSACTION_ID();
+            revert(Errors.INVALID_TRANSACTION_ID);
             
         // Update arbitrator state
         arbitratorInfo.status = DataTypes.ArbitratorStatus.Active;
@@ -434,7 +434,7 @@ contract ArbitratorManager is
      */
     function terminateArbitratorWithSlash(address arbitrator) external override onlyCompensationManager {
         DataTypes.ArbitratorInfo storage info = arbitrators[arbitrator];
-        if (info.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
+        if (info.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
 
         // Set status to terminated
         info.status = DataTypes.ArbitratorStatus.Terminated;
@@ -444,7 +444,7 @@ contract ArbitratorManager is
         if (ethAmount > 0) {
             info.ethAmount = 0;
             (bool success, ) = compensationManager.call{value: ethAmount}("");
-            if (!success) revert Errors.TRANSFER_FAILED();
+            if (!success) revert(Errors.TRANSFER_FAILED);
         }
 
         // Transfer NFTs to compensation manager if any
@@ -492,13 +492,13 @@ contract ArbitratorManager is
      * @custom:event Emits an Initialized event with both manager addresses
      */
     function initTransactionAndCompensationManager(address _transactionManager, address _compensationManager) external override onlyOwner {
-         if (initialized) revert Errors.ALREADY_INITIALIZED();
-          if (_transactionManager == address(0)) revert Errors.ZERO_ADDRESS();
-          if (_compensationManager == address(0)) revert Errors.ZERO_ADDRESS();
+         if (initialized) revert(Errors.ALREADY_INITIALIZED);
+          if (_transactionManager == address(0)) revert(Errors.ZERO_ADDRESS);
+          if (_compensationManager == address(0)) revert(Errors.ZERO_ADDRESS);
           transactionManager = _transactionManager;
           compensationManager = _compensationManager;
           initialized = true;
-          emit Initialized(transactionManager, compensationManager);
+          emit InitializedManager(transactionManager, compensationManager);
     }
 
     /**
@@ -506,7 +506,7 @@ contract ArbitratorManager is
      * @param _transactionManager New transaction manager address
      */
     function setTransactionManager(address _transactionManager) external override onlyOwner {
-        if (_transactionManager == address(0)) revert Errors.ZERO_ADDRESS();
+        if (_transactionManager == address(0)) revert(Errors.ZERO_ADDRESS);
         address oldManager = transactionManager;
         transactionManager = _transactionManager;
         emit TransactionManagerUpdated(oldManager, _transactionManager);
@@ -517,7 +517,7 @@ contract ArbitratorManager is
      * @param _compensationManager New compensation manager address
      */
     function setCompensationManager(address _compensationManager) external override onlyOwner {
-        if (_compensationManager == address(0)) revert Errors.ZERO_ADDRESS();
+        if (_compensationManager == address(0)) revert(Errors.ZERO_ADDRESS);
         address oldManager = compensationManager;
         compensationManager = _compensationManager;
         emit CompensationManagerUpdated(oldManager, _compensationManager);

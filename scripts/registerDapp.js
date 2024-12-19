@@ -6,20 +6,23 @@ async function main() {
   console.log("chain ID:", chainID);
   const [deployer] = await ethers.getSigners();
   console.log("Deployer address:", deployer.address);
-
+  console.log("Account balance:", ethers.utils.formatEther(await deployer.provider.getBalance(deployer.address)).toString());
   // Get the contract factory
   const DAppRegistry = await ethers.getContractFactory("DAppRegistry");
-  
+  return;
   // Get the deployed contract address from config
   const dappRegistryAddress = await readConfig(network.name, "DAPP_REGISTRY");
   console.log("dappRegistryAddress:", dappRegistryAddress);
   
   // Get the contract instance
-  const contract = await DAppRegistry.attach(dappRegistryAddress);
+  const contract = await DAppRegistry.attach(dappRegistryAddress).connect(deployer);
 
-  const payAmount = ethers.parseEther("10.0"); // Staking 1 ETH, adjust as needed
-  console.log("payAmount:", ethers.formatEther(payAmount), "ETH");
-  const tx = await contract.registerDApp(deployer.address, {gasLimit: 2000000, value:payAmount});
+  const payAmount = ethers.utils.parseEther("10.0"); // Staking 10 ETH, adjust as needed
+  console.log("payAmount:", ethers.utils.formatEther(payAmount), "ETH");
+  let gasLimit = await contract.estimateGas.registerDApp(deployer.address, {value:payAmount});
+  console.log("gasLimit:", gasLimit);
+
+  const tx = await contract.registerDApp(deployer.address, {gasLimit: gasLimit, value:payAmount});
   await tx.wait();
   console.log("registerDapp dapp tx ", tx.hash);
 }

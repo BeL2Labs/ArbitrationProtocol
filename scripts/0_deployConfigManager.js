@@ -3,18 +3,17 @@ const { sleep, writeConfig } = require("./helper.js");
 
 async function verifyInitialConfig(contract) {
     console.log("Verifying initial configuration...");
-    
     // Use ethers.keccak256 to compute the same constant values as in the contract
-    const MIN_STAKE = ethers.keccak256(ethers.toUtf8Bytes("MIN_STAKE"));
-    const MAX_STAKE = ethers.keccak256(ethers.toUtf8Bytes("MAX_STAKE"));
-    const MIN_STAKE_LOCKED_TIME = ethers.keccak256(ethers.toUtf8Bytes("MIN_STAKE_LOCKED_TIME"));
-    const SYSTEM_FEE_RATE = ethers.keccak256(ethers.toUtf8Bytes("systemFeeRate"));
+    const MIN_STAKE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MIN_STAKE"));
+    const MAX_STAKE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MAX_STAKE"));
+    const MIN_STAKE_LOCKED_TIME = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MIN_STAKE_LOCKED_TIME"));
+    const SYSTEM_FEE_RATE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("systemFeeRate"));
     
     const minStake = await contract.getConfig(MIN_STAKE);
-    console.log("MIN_STAKE:", ethers.formatEther(minStake), "ETH");
+    console.log("MIN_STAKE:", ethers.utils.formatEther(minStake), "ETH");
     
     const maxStake = await contract.getConfig(MAX_STAKE);
-    console.log("MAX_STAKE:", ethers.formatEther(maxStake), "ETH");
+    console.log("MAX_STAKE:", ethers.utils.formatEther(maxStake), "ETH");
     
     const minStakeLockedTime = await contract.getConfig(MIN_STAKE_LOCKED_TIME);
     console.log("MIN_STAKE_LOCKED_TIME:", minStakeLockedTime.toString(), "seconds");
@@ -31,7 +30,7 @@ async function main() {
         
         const [deployer] = await ethers.getSigners();
         console.log("Deploying contracts with account:", deployer.address);
-        console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)));
+        console.log("Account balance:", ethers.utils.formatEther(await ethers.provider.getBalance(deployer.address)));
 
         // Get contract factory
         const ConfigManager = await ethers.getContractFactory("ConfigManager", deployer);
@@ -48,14 +47,8 @@ async function main() {
             }
         });
 
-        await proxy.waitForDeployment();
-        const proxyAddress = await proxy.getAddress();
+        const proxyAddress = await proxy.address;
         console.log("Proxy deployed to:", proxyAddress);
-
-        // Get implementation address
-        let implAddress = await upgrades.erc1967.getImplementationAddress(proxyAddress);
-        console.log("Implementation deployed to:", implAddress);
-
         // Verify initial configuration
         console.log("\nVerifying configuration...");
         await verifyInitialConfig(proxy);

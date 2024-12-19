@@ -10,7 +10,7 @@ async function main() {
         
         const [deployer] = await ethers.getSigners();
         console.log("Deploying contracts with account:", deployer.address);
-        console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)));
+        console.log("Account balance:", ethers.utils.formatEther(await ethers.provider.getBalance(deployer.address)));
 
         // Get required contract addresses from previous deployments
         const configManagerAddress = await readConfig(network.name, "CONFIG_MANAGER");
@@ -32,7 +32,7 @@ async function main() {
         console.log("Using ArbitratorManager at:", arbitratorManagerAddress);
 
         console.log("\nDeploying TransactionManager...");
-        const TransactionManager = await ethers.getContractFactory("TransactionManager");
+        const TransactionManager = await ethers.getContractFactory("TransactionManager", deployer);
         
         const transactionManager = await upgrades.deployProxy(TransactionManager, 
             [arbitratorManagerAddress, dappRegistryAddress, configManagerAddress], 
@@ -47,17 +47,13 @@ async function main() {
             }
         );
         
-        await transactionManager.waitForDeployment();
-        const contractAddress = await transactionManager.getAddress();
+        const contractAddress = await transactionManager.address;
         console.log("TransactionManager deployed as proxy to:", contractAddress);
         
         // Save the contract address
         await writeConfig(network.name, "TRANSACTION_MANAGER", contractAddress);
         
-        // Verify the implementation address for upgradeable contract
-        const implementationAddress = await upgrades.erc1967.getImplementationAddress(contractAddress);
-        console.log("Implementation address:", implementationAddress);
-        
+
         console.log("\nDeployment completed successfully!");
         
     } catch (error) {

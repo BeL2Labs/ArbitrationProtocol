@@ -40,8 +40,8 @@ contract TransactionManager is
     bool private initialized;
 
     modifier onlyCompensationManager() {
-        if (msg.sender != compensationManager) revert Errors.NOT_COMPENSATION_MANAGER();
-        if (!initialized) revert Errors.NOT_INITIALIZED();
+        if (msg.sender != compensationManager) revert(Errors.NOT_COMPENSATION_MANAGER);
+        if (!initialized) revert(Errors.NOT_INITIALIZED);
         _;
     }
 
@@ -64,9 +64,9 @@ contract TransactionManager is
         __ReentrancyGuard_init();
         __Ownable_init(msg.sender);
 
-        if (_arbitratorManager == address(0)) revert Errors.ZERO_ADDRESS();
-        if (_dappRegistry == address(0)) revert Errors.ZERO_ADDRESS();
-        if (_configManager == address(0)) revert Errors.ZERO_ADDRESS();
+        if (_arbitratorManager == address(0)) revert(Errors.ZERO_ADDRESS);
+        if (_dappRegistry == address(0)) revert(Errors.ZERO_ADDRESS);
+        if (_configManager == address(0)) revert(Errors.ZERO_ADDRESS);
 
         arbitratorManager = IArbitratorManager(_arbitratorManager);
         dappRegistry = IDAppRegistry(_dappRegistry);
@@ -79,10 +79,10 @@ contract TransactionManager is
      * @custom:security Address is checked for zero address to prevent invalid initialization
      */
     function initCompensationManager(address _compensationManager) external onlyOwner {
-        if (_compensationManager == address(0)) revert Errors.ZERO_ADDRESS();
+        if (_compensationManager == address(0)) revert(Errors.ZERO_ADDRESS);
         compensationManager = _compensationManager;
         initialized = true;
-        emit Initialized(_compensationManager);
+        emit CompensationManagerInitialized(_compensationManager);
     }
 
     /**
@@ -98,27 +98,27 @@ contract TransactionManager is
         address compensationReceiver
     ) external payable nonReentrant returns (uint256) {
         if (arbitrator == address(0) || compensationReceiver == address(0)) {
-            revert Errors.ZERO_ADDRESS();
+            revert(Errors.ZERO_ADDRESS);
         }
 
         // Check DApp status
         if (!dappRegistry.isActiveDApp(msg.sender)) {
-            revert Errors.DAPP_NOT_ACTIVE();
+            revert(Errors.DAPP_NOT_ACTIVE);
         }
 
         // Validate arbitrator and get info
         DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(arbitrator);
         if (!arbitratorManager.isActiveArbitrator(arbitrator))
-            revert Errors.ARBITRATOR_NOT_ACTIVE();
+            revert(Errors.ARBITRATOR_NOT_ACTIVE);
 
         // Validate deadline
         if (deadline <= block.timestamp) 
-            revert Errors.INVALID_DEADLINE();
+            revert(Errors.INVALID_DEADLINE);
 
         uint256 duration = deadline - block.timestamp;
         if (duration < configManager.getConfig(configManager.MIN_TRANSACTION_DURATION()) ||
             duration > configManager.getConfig(configManager.MAX_TRANSACTION_DURATION())) {
-            revert Errors.INVALID_DURATION();
+            revert(Errors.INVALID_DURATION);
         }
 
         // Calculate and validate fee
@@ -126,10 +126,10 @@ contract TransactionManager is
         uint256 fee = (arbitratorInfo.ethAmount * duration * arbitratorInfo.currentFeeRate) / (SECONDS_PER_YEAR * FEE_RATE_MULTIPLIER);
         uint256 minFeeRate = configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE());
         if (arbitratorInfo.currentFeeRate < minFeeRate || arbitratorInfo.currentFeeRate > 10000) {
-            revert Errors.INVALID_FEE_RATE();
+            revert(Errors.INVALID_FEE_RATE);
         }
-        if (fee == 0) revert Errors.INVALID_FEE();
-        if (msg.value < fee) revert Errors.INSUFFICIENT_FEE();
+        if (fee == 0) revert(Errors.INVALID_FEE);
+        if (msg.value < fee) revert(Errors.INSUFFICIENT_FEE);
 
         // Generate transaction ID
         bytes32 id = keccak256(
@@ -171,13 +171,13 @@ contract TransactionManager is
         DataTypes.Transaction storage transaction = transactions[id];
 
         if (transaction.status == DataTypes.TransactionStatus.Active && block.timestamp < transaction.deadline) {
-            revert Errors.INVALID_DEADLINE();
+            revert(Errors.INVALID_DEADLINE);
         } else if (transaction.status != DataTypes.TransactionStatus.Submitted) {
-            revert Errors.INVALID_TRANSACTION_STATUS();
+            revert(Errors.INVALID_TRANSACTION_STATUS);
         }
 
         if (msg.sender != transaction.dapp) {
-            revert Errors.NOT_AUTHORIZED();
+            revert(Errors.NOT_AUTHORIZED);
         }
 
         _completeTransaction(id, transaction);
@@ -196,17 +196,17 @@ contract TransactionManager is
 
         // Pay system fee to collector
         (bool success1, ) = feeCollector.call{value: systemFee}("");
-        if (!success1) revert Errors.TRANSFER_FAILED();
+        if (!success1) revert(Errors.TRANSFER_FAILED);
 
         // Pay arbitrator
         (bool success2, ) = transaction.arbitrator.call{value: finalArbitratorFee}("");
-        if (!success2) revert Errors.TRANSFER_FAILED();
+        if (!success2) revert(Errors.TRANSFER_FAILED);
 
         // Refund remaining balance to DApp
         uint256 remainingBalance = address(this).balance;
         if (remainingBalance > 0) {
             (bool success3, ) = transaction.dapp.call{value: remainingBalance}("");
-            if (!success3) revert Errors.TRANSFER_FAILED();
+            if (!success3) revert(Errors.TRANSFER_FAILED);
         }
 
         // Release arbitrator from working status
@@ -230,17 +230,17 @@ contract TransactionManager is
         address timeoutCompensationReceiver
     ) external override nonReentrant {
         if (timeoutCompensationReceiver == address(0)) {
-            revert Errors.ZERO_ADDRESS();
+            revert(Errors.ZERO_ADDRESS);
         }
 
         DataTypes.Transaction storage transaction = transactions[id];
 
         if (transaction.status != DataTypes.TransactionStatus.Active) {
-            revert Errors.INVALID_TRANSACTION_STATUS();
+            revert(Errors.INVALID_TRANSACTION_STATUS);
         }
 
         if (msg.sender != transaction.dapp) {
-            revert Errors.NOT_AUTHORIZED();
+            revert(Errors.NOT_AUTHORIZED);
         }
 
         // Parse and validate Bitcoin transaction
@@ -273,11 +273,11 @@ contract TransactionManager is
         DataTypes.Transaction storage transaction = transactions[id];
 
         if (transaction.status != DataTypes.TransactionStatus.Arbitrated) {
-            revert Errors.INVALID_TRANSACTION_STATUS();
+            revert(Errors.INVALID_TRANSACTION_STATUS);
         }
 
         if (!arbitratorManager.isOperatorOf(transaction.arbitrator, msg.sender)) {
-            revert Errors.NOT_AUTHORIZED();
+            revert(Errors.NOT_AUTHORIZED);
         }
 
         transaction.status = DataTypes.TransactionStatus.Submitted;
@@ -303,7 +303,7 @@ contract TransactionManager is
     function getTransaction(bytes32 txHash) external view override returns (DataTypes.Transaction memory) {
         bytes32 id = txHashToId[txHash];
         if (id == bytes32(0)) {
-            revert Errors.TRANSACTION_NOT_FOUND();
+            revert(Errors.TRANSACTION_NOT_FOUND);
         }
         return transactions[id];
     }

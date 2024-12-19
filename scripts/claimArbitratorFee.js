@@ -14,7 +14,6 @@ async function main() {
     const contract = contractFactory.attach(compensationManagerAddress).connect(signer);
 
     try {
-
         // Attempt to call the function and log result
         const result = await contract.claimArbitratorFee(txId, {gasLimit: 3000000});
         let receipt = await result.wait();

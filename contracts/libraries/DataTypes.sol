@@ -26,11 +26,6 @@ library DataTypes {
         Submitted
     }
 
-    enum CompensationType {
-        IllegalSignature,
-        TimeoutPenalty
-    }
-
     struct ArbitratorInfo {
         address arbitrator;        // Arbitrator Ethereum address
         uint256 currentFeeRate;    // Current fee rate
@@ -64,12 +59,4 @@ library DataTypes {
         address timeoutCompensationReceiver;    // Timeout compensation receiver address
     }
 
-    struct ArbitrationRequest {
-        uint256 txId;
-        address requester;
-        uint256 requestTime;
-        uint256 deadline;
-        address timeoutCompensationReceiver;
-        bool fulfilled;
-    }
 }

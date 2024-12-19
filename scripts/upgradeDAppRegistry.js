@@ -22,8 +22,6 @@ async function main() {
             gasPrice: 1000000000 // 1 gwei
         }});
 
-    const contract = await newContract.waitForDeployment();
-    console.log("upgrade address ", await contract.getAddress());
 
     console.log('completed.');
 

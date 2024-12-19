@@ -10,7 +10,7 @@ async function main() {
         
         const [deployer] = await ethers.getSigners();
         console.log("Deploying contracts with account:", deployer.address);
-        console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)));
+        console.log("Account balance:", ethers.utils.formatEther(await ethers.provider.getBalance(deployer.address)));
 
         // Get ConfigManager address from previous deployment
         const configManagerAddress = await readConfig(network.name, "CONFIG_MANAGER");
@@ -26,7 +26,7 @@ async function main() {
         console.log("nftInfoAddress:", nftInfoAddress);
 
         console.log("\nDeploying ArbitratorManager...");
-        const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager");
+        const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager", deployer);
         
         const arbitratorManager = await upgrades.deployProxy(ArbitratorManager, 
             [configManagerAddress, nftAddress, nftInfoAddress], 
@@ -41,16 +41,11 @@ async function main() {
             }
         );
         
-        await arbitratorManager.waitForDeployment();
-        const contractAddress = await arbitratorManager.getAddress();
+        const contractAddress = await arbitratorManager.address;
         console.log("ArbitratorManager deployed as proxy to:", contractAddress);
         
         // Save contract addresses
         await writeConfig(network.name, "ARBITRATOR_MANAGER", contractAddress);
-        
-        // Verify the implementation address for upgradeable contract
-        const implementationAddress = await upgrades.erc1967.getImplementationAddress(contractAddress);
-        console.log("Implementation address:", implementationAddress);
         
         console.log("\nDeployment completed successfully!");
         

@@ -5,7 +5,7 @@ async function main() {
     // Get the deployer account
     const [deployer] = await ethers.getSigners();
     console.log("Initializing with account:", deployer.address);
-    console.log("Account balance:", (await deployer.provider.getBalance(deployer.address)).toString());
+    console.log("Account balance:", ethers.utils.formatEther(await deployer.provider.getBalance(deployer.address)).toString());
 
     // Read contract addresses from config
 

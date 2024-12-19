@@ -91,7 +91,7 @@ interface IArbitratorManager {
 
     // Events
     event ArbitratorStatusChanged(address indexed arbitrator, DataTypes.ArbitratorStatus status);
-    event Initialized(address indexed transactionManager, address indexed compensationManager);
+    event InitializedManager(address indexed transactionManager, address indexed compensationManager);
     event StakeAdded(
         address indexed arbitrator, 
         address indexed assetAddress,  // 0x0 for ETH

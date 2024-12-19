@@ -16,8 +16,9 @@ async function main() {
   
   // Get the contract instance
   const contract = await DAppRegistry.attach(dappRegistryAddress);
-
-  const tx = await contract.authorizeDApp(deployer.address, {gasLimit: 2000000});
+  let gasLimit = await contract.estimateGas.authorizeDApp(deployer.address);
+  console.log("gasLimit:", gasLimit);
+  const tx = await contract.authorizeDApp(deployer.address, {gasLimit: gasLimit});
   await tx.wait();
   console.log("authorizeDApp dapp tx ", tx.hash);
 }

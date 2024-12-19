@@ -10,7 +10,7 @@ async function main() {
         
         const [deployer] = await ethers.getSigners();
         console.log("Deploying contracts with account:", deployer.address);
-        console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)));
+        console.log("Account balance:", ethers.utils.formatEther(await ethers.provider.getBalance(deployer.address)));
 
         // Get ConfigManager address from previous deployment
         const configManagerAddress = await readConfig(network.name, "CONFIG_MANAGER");
@@ -21,7 +21,7 @@ async function main() {
 
         // Check if a previous deployment exists
         
-        const DAppRegistry = await ethers.getContractFactory("DAppRegistry");
+        const DAppRegistry = await ethers.getContractFactory("DAppRegistry", deployer);
         
         console.log("Deploying new DAppRegistry");
         let dappRegistry = await upgrades.deployProxy(DAppRegistry, 
@@ -36,19 +36,15 @@ async function main() {
                 }
             }
         );
-        await dappRegistry.waitForDeployment();
         console.log("DAppRegistry deployed as proxy");
         
-        const contractAddress = await dappRegistry.getAddress();
+        const contractAddress = await dappRegistry.address;
         console.log("DAppRegistry address:", contractAddress);
         
         // Save the contract address
         await writeConfig(network.name, "DAPP_REGISTRY", contractAddress);
         
-        // Verify the implementation address for upgradeable contract
-        const implementationAddress = await upgrades.erc1967.getImplementationAddress(contractAddress);
-        console.log("Implementation address:", implementationAddress);
-        
+
         console.log("\nDeployment/Upgrade completed successfully!");
         
     } catch (error) {
