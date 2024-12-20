@@ -31,6 +31,7 @@ contract CompensationManager is
         uint256 totalAmount;
         bool withdrawn;
         CompensationType claimType;
+        address receivedCompensationAddress;
     }
 
     enum CompensationType {
@@ -93,6 +94,15 @@ contract CompensationManager is
         if (arbitratorInfo.operatorBtcPubKey.length == 0) revert(Errors.EMPTY_OPERATOR_PUBLIC_KEY);
         if (keccak256(pubKey) != keccak256(arbitratorInfo.operatorBtcPubKey)) revert(Errors.PUBLIC_KEY_MISMATCH);
         if (keccak256(btcTx) != keccak256(rawData)) revert(Errors.BTC_TRANSACTION_MISMATCH);
+        // Get transaction details
+        address receivedCompensationAddress = address(0);
+        if (arbitratorInfo.activeTransactionId != 0) {
+            DataTypes.Transaction memory transaction = transactionManager.getTransactionById(arbitratorInfo.activeTransactionId);
+            receivedCompensationAddress = transaction.compensationReceiver;
+            if (transaction.dapp != msg.sender) revert(Errors.NOT_TRANSACTION_OWNER);
+        } else {
+            revert(Errors.NO_ACTIVE_TRANSACTION);
+        }
 
         // Get arbitrator's stake amount
         uint256 stakeAmount = arbitratorInfo.ethAmount;
@@ -110,7 +120,8 @@ contract CompensationManager is
             nftTokenIds: arbitratorInfo.nftTokenIds,
             totalAmount: arbitratorManager.getAvailableStake(arbitrator),
             withdrawn: false,
-            claimType: CompensationType.IllegalSignature
+            claimType: CompensationType.IllegalSignature,
+            receivedCompensationAddress: receivedCompensationAddress
         });
 
         // Update arbitrator status
@@ -144,7 +155,8 @@ contract CompensationManager is
             nftTokenIds: arbitratorInfo.nftTokenIds,
             totalAmount: arbitratorManager.getAvailableStake(transaction.arbitrator),
             withdrawn: false,
-            claimType: CompensationType.Timeout
+            claimType: CompensationType.Timeout,
+            receivedCompensationAddress: transaction.timeoutCompensationReceiver
         });
 
         // Update arbitrator status
@@ -192,7 +204,8 @@ contract CompensationManager is
             nftTokenIds: arbitratorInfo.nftTokenIds,
             totalAmount: arbitratorManager.getAvailableStake(transaction.arbitrator),
             withdrawn: false,
-            claimType: CompensationType.FailedArbitration
+            claimType: CompensationType.FailedArbitration,
+            receivedCompensationAddress: transaction.compensationReceiver
         });
 
         // Update arbitrator status
@@ -213,7 +226,7 @@ contract CompensationManager is
 
         // Generate claim ID
         bytes32 claimId = keccak256(abi.encodePacked(block.timestamp, transaction.arbitrator, msg.sender, "ArbitratorFee"));
-
+        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.arbitrator);
         // Create compensation claim
         claims[claimId] = CompensationClaim({
             dapp: transaction.dapp,
@@ -223,7 +236,8 @@ contract CompensationManager is
             nftTokenIds: new uint256[](0),
             totalAmount: arbitratorFee,
             withdrawn: true,
-            claimType: CompensationType.ArbitratorFee
+            claimType: CompensationType.ArbitratorFee,
+            receivedCompensationAddress: arbitratorInfo.revenueETHAddress
         });
 
         emit CompensationClaimed(claimId, msg.sender, uint8(CompensationType.ArbitratorFee));
@@ -238,23 +252,25 @@ contract CompensationManager is
         uint256 systemFeeRate = configManager.getSystemCompensationFeeRate();
         uint256 systemFee = claim.totalAmount * systemFeeRate / 10000;
         if (msg.value < systemFee) revert(Errors.INSUFFICIENT_SYSTEM_FEE);
-
+        if (claim.receivedCompensationAddress == address(0)) revert(Errors.NO_COMPENSATION_AVAILABLE);
         uint256 ethAmount = claim.ethAmount;
         // Mark as withdrawn
         claim.withdrawn = true;
-        if (claim.ethAmount > 0) {
+        if (claim.ethAmount > 0 && claim.receivedCompensationAddress != address(0)) {
             claim.ethAmount = 0;
-            (bool success, ) = claim.dapp.call{value: ethAmount}("");
+            (bool success, ) = claim.receivedCompensationAddress.call{value: ethAmount}("");
             require(success, "TransferFailed");
         }
 
         // Transfer NFT compensation
-        for (uint256 i = 0; i < claim.nftTokenIds.length; i++) {
-            IERC721(claim.nftContract).transferFrom(address(this), msg.sender, claim.nftTokenIds[i]);
+        if (claim.receivedCompensationAddress != address(0)) {
+            for (uint256 i = 0; i < claim.nftTokenIds.length; i++) {
+                IERC721(claim.nftContract).transferFrom(address(this), claim.receivedCompensationAddress, claim.nftTokenIds[i]);
+            }
         }
 
         // Transfer system fee to fee collector
-        address payable feeCollector = payable(address(uint160(configManager.getSystemFeeCollector())));
+        address payable feeCollector = payable(configManager.getSystemFeeCollector());
         feeCollector.transfer(systemFee);
 
         // Refund excess payment

@@ -91,4 +91,5 @@ library Errors {
     string constant EMPTY_TOKEN_IDS = "Empty token IDs";
     string constant INVALID_NFT_CONTRACT = "Invalid NFT contract";
     string constant CANNOT_CLAIM_ARBITRATOR_FEE = "cannot claim arbitrator fee";
+    string constant NO_ACTIVE_TRANSACTION = "No active transaction";
 }
