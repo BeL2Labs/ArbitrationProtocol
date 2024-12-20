@@ -72,13 +72,46 @@ contract CompensationManager is
         arbitratorManager = IArbitratorManager(_arbitratorManager);
     }
 
+    function _validateUTXOConsistency(
+        DataTypes.UTXO[] memory zkServiceUtxos, 
+        DataTypes.UTXO[] memory transactionUtxos
+    ) internal pure {
+        // Check if UTXO arrays have the same length
+        if (zkServiceUtxos.length != transactionUtxos.length) {
+            revert(Errors.INVALID_UTXO);
+        }
+
+        // Compare each UTXO
+        for (uint256 i = 0; i < zkServiceUtxos.length; i++) {
+            // Compare txHash
+            if (zkServiceUtxos[i].txHash != transactionUtxos[i].txHash) {
+                revert(Errors.INVALID_UTXO);
+            }
+
+            // Compare index
+            if (zkServiceUtxos[i].index != transactionUtxos[i].index) {
+                revert(Errors.INVALID_UTXO);
+            }
+
+            // Compare script
+            if (keccak256(zkServiceUtxos[i].script) != keccak256(transactionUtxos[i].script)) {
+                revert(Errors.INVALID_UTXO);
+            }
+
+            // Compare amount
+            if (zkServiceUtxos[i].amount != transactionUtxos[i].amount) {
+                revert(Errors.INVALID_UTXO);
+            }
+        }
+    }
+
     function claimIllegalSignatureCompensation(
         address arbitrator,
         bytes calldata btcTx,
         bytes32 evidence
     ) external override returns (bytes32 claimId) {
         // Get ZK verification details
-        (bytes memory rawData, bytes memory pubKey, bytes32 txHash, , bool verified) = zkService.getZkVerification(evidence);
+        (bytes memory rawData, , bytes memory pubKey, bytes32 txHash, , bool verified) = zkService.getZkVerification(evidence);
         
         if (rawData.length == 0) revert(Errors.EMPTY_RAW_DATA);
         if (pubKey.length == 0) revert(Errors.EMPTY_PUBLIC_KEY);
@@ -177,7 +210,7 @@ contract CompensationManager is
         bytes32 evidence
     ) external override returns (bytes32 claimId) {
         // Get ZK verification details
-        (bytes memory rawData, bytes memory pubKey, bytes32 txHash, bytes memory signature, bool verified) = zkService.getZkVerification(evidence);
+        (bytes memory rawData, DataTypes.UTXO[] memory utxos, bytes memory pubKey, bytes32 txHash, bytes memory signature, bool verified) = zkService.getZkVerification(evidence);
         
         if (rawData.length == 0) revert(Errors.EMPTY_RAW_DATA);
         if (pubKey.length == 0) revert(Errors.EMPTY_PUBLIC_KEY);
@@ -188,6 +221,10 @@ contract CompensationManager is
 
         // Get transaction details
         DataTypes.Transaction memory transaction = transactionManager.getTransaction(txHash);
+
+        // Validate UTXO consistency
+        _validateUTXOConsistency(utxos, transaction.utxos);
+
         if (transaction.dapp != msg.sender) revert(Errors.NOT_TRANSACTION_OWNER);
         if (transaction.signature.length == 0) revert(Errors.SIGNATURE_NOT_SUBMITTED);
 

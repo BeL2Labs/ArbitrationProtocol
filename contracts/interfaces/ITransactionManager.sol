@@ -6,6 +6,7 @@ import "../libraries/DataTypes.sol";
 interface ITransactionManager {   
     // Register transaction
     function registerTransaction(
+        DataTypes.UTXO[] calldata utxos,
         address arbitrator,
         uint256 deadline,
         address compensationReceiver
@@ -18,6 +19,7 @@ interface ITransactionManager {
     function requestArbitration(
         bytes32 id,
         bytes calldata btcTx,
+        DataTypes.UTXO[] calldata utxos,
         address timeoutCompensationReceiver
     ) external;
     

@@ -26,6 +26,21 @@ library DataTypes {
         Submitted
     }
 
+    /**
+     * @notice Unspent Transaction Output (UTXO) structure
+     * @dev Represents a Bitcoin UTXO with its key identifying information
+     * @param txHash Transaction hash where the UTXO was used
+     * @param index Output index within the transaction
+     * @param script Locking Script the UTXO
+     * @param amount Amount of BTC in the UTXO (in satoshis)
+     */
+    struct UTXO {
+        bytes32 txHash;   // Transaction hash
+        uint32 index;     // Output index
+        bytes script;     // Locking Script
+        uint256 amount;   // Amount in satoshis
+    }
+
     struct ArbitratorInfo {
         address arbitrator;        // Arbitrator Ethereum address
         uint256 currentFeeRate;    // Current fee rate
@@ -58,6 +73,7 @@ library DataTypes {
         bytes signature;           // Arbitrator's signature
         address compensationReceiver;           // Compensation receiver address
         address timeoutCompensationReceiver;    // Timeout compensation receiver address
+        UTXO[] utxos;                         // Array of UTXOs associated with the transaction
     }
 
 }
