@@ -105,15 +105,149 @@ contract ArbitratorManager is
         nftInfo = IBNFTInfo(_nftInfo);
     }
 
+    function registerArbitratorByStakeETH(
+        address operator,
+        address revenueAddress,
+        string calldata btcAddress,
+        bytes calldata btcPubKey,
+        uint256 feeRate,
+        uint256 deadline
+    ) external payable override {
+        // Check if the operator is not zero address
+        require(operator != address(0), Errors.INVALID_OPERATOR);
+
+        // Check if the revenue address is not zero address
+        require(revenueAddress != address(0), Errors.INVALID_REVENUE_ADDRESS);
+
+        // Check if the fee rate is within the allowed range
+        require(feeRate >= configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE()), Errors.INVALID_FEE_RATE);
+
+        // Check if the deadline is in the future
+        require(deadline == 0 || deadline > block.timestamp, Errors.INVALID_DEADLINE);
+
+        // Check total stake is within limits
+        uint256 minStake = configManager.getConfig(configManager.MIN_STAKE());
+        uint256 maxStake = configManager.getConfig(configManager.MAX_STAKE());
+
+        if (msg.value < minStake) revert(Errors.INSUFFICIENT_STAKE);
+        if (msg.value > maxStake) revert(Errors.STAKE_EXCEEDS_MAX);
+
+        // Create a new arbitrator info struct
+        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
+        require(arbitrator.arbitrator == address(0), Errors.ARBITRATOR_ALREADY_REGISTERED);
+        arbitrator.arbitrator = msg.sender;
+        // Set the arbitrator's operator
+        arbitrator.operator = operator;
+
+        // Set the arbitrator's revenue address
+        arbitrator.revenueETHAddress = revenueAddress;
+        // Set the arbitrator's Bitcoin address and public key
+        arbitrator.operatorBtcAddress = btcAddress;
+        arbitrator.operatorBtcPubKey = btcPubKey;
+
+        // Set the arbitrator's fee rate
+        arbitrator.currentFeeRate = feeRate;
+
+        // Set the arbitrator's deadline
+        arbitrator.lastArbitrationTime = deadline;
+
+        // Update the arbitrator's ETH amount
+        arbitrator.ethAmount += msg.value;
+
+        // Emit an event to notify the registration
+        emit StakeAdded(arbitrator.arbitrator, address(0), msg.value);
+        emit ArbitratorRegistered(
+            msg.sender,
+            operator,
+            revenueAddress,
+            btcAddress,
+            btcPubKey,
+            feeRate,
+            deadline
+        );
+    }
+
+    /**
+     * @notice Register an arbitrator by staking NFTs
+     * @param tokenIds Array of NFT token IDs to stake
+     * @param operator Address of the arbitrator's operator
+     * @param revenueAddress Address to receive revenue
+     * @param btcAddress Bitcoin address of the arbitrator
+     * @param btcPubKey Bitcoin public key of the arbitrator
+     * @param feeRate Fee rate for arbitration
+     * @param deadline Optional deadline for arbitration availability
+     */
+    function registerArbitratorByStakeNFT(
+        uint256[] calldata tokenIds,
+        address operator,
+        address revenueAddress,
+        string calldata btcAddress,
+        bytes calldata btcPubKey,
+        uint256 feeRate,
+        uint256 deadline
+    ) external {
+        // Validate operator address
+        if (operator == address(0)) revert(Errors.INVALID_OPERATOR);
+
+        // Validate revenue address
+        if (revenueAddress == address(0)) revert(Errors.INVALID_REVENUE_ADDRESS);
+
+        // Validate fee rate
+        uint256 minFeeRate = configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE());
+        if (feeRate < minFeeRate) revert(Errors.INVALID_FEE_RATE);
+
+        // Validate deadline
+        if (deadline != 0 && deadline <= block.timestamp) revert(Errors.INVALID_DEADLINE);
+
+        // Validate token IDs
+        if (tokenIds.length == 0) revert(Errors.EMPTY_TOKEN_IDS);
+
+        // Check arbitrator is not already registered
+        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
+        if (arbitrator.arbitrator != address(0)) revert(Errors.ARBITRATOR_ALREADY_REGISTERED);
+
+        // Initialize arbitrator information
+        arbitrator.arbitrator = msg.sender;
+        arbitrator.operator = operator;
+        arbitrator.revenueETHAddress = revenueAddress;
+        arbitrator.operatorBtcAddress = btcAddress;
+        arbitrator.operatorBtcPubKey = btcPubKey;
+        arbitrator.currentFeeRate = feeRate;
+        arbitrator.lastArbitrationTime = deadline;
+
+       // Calculate total NFT value
+        uint256 totalNftValue = _calculateNFTValue(tokenIds);
+
+        // Transfer NFTs and update arbitrator's token list
+        _transferAndStoreNFTs(arbitrator, tokenIds);
+
+        // Validate total stake
+        _validateStakeAmount(arbitrator, totalNftValue);
+
+        // Set or validate NFT contract
+        _setOrValidateNFTContract(arbitrator);
+
+        emit StakeAdded(msg.sender, address(nftContract), totalNftValue);
+        // Emit arbitrator registration event
+        emit ArbitratorRegistered(
+            msg.sender,
+            operator,
+            revenueAddress,
+            btcAddress,
+            btcPubKey,
+            feeRate,
+            deadline
+        );
+    }
+
     /**
      * @notice Stake ETH as collateral
      */
     function stakeETH() external payable override {
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
         
-        // If first time staking, set arbitrator address
         if (arbitrator.arbitrator == address(0)) {
-            arbitrator.arbitrator = msg.sender;
+           revert(Errors.ARBITRATOR_NOT_REGISTERED);
         }
 
         // Calculate total NFT value
@@ -131,7 +265,7 @@ contract ArbitratorManager is
         if (totalStakeValue < minStake) revert(Errors.INSUFFICIENT_STAKE);
         if (totalStakeValue > maxStake) revert(Errors.STAKE_EXCEEDS_MAX);
 
-        emit StakeAdded(msg.sender, address(0), msg.value);
+        emit StakeAdded(arbitrator.arbitrator, address(0), msg.value);
     }
 
     /**
@@ -145,40 +279,84 @@ contract ArbitratorManager is
         
         // If first time staking, set arbitrator address
         if (arbitrator.arbitrator == address(0)) {
-            arbitrator.arbitrator = msg.sender;
+            revert(Errors.ARBITRATOR_NOT_REGISTERED);
         }
 
-        // Calculate total ETH value of NFTs
+        // Calculate total NFT value
+        uint256 totalNftValue = _calculateNFTValue(tokenIds);
+
+        // Transfer NFTs and update arbitrator's token list
+        _transferAndStoreNFTs(arbitrator, tokenIds);
+
+        // Validate total stake
+        _validateStakeAmount(arbitrator, totalNftValue);
+
+        // Set or validate NFT contract
+        _setOrValidateNFTContract(arbitrator);
+
+        emit StakeAdded(msg.sender, address(nftContract), totalNftValue);
+    }
+
+    /**
+     * @dev Calculate the total value of NFTs
+     * @param tokenIds Array of token IDs to calculate value for
+     * @return Total NFT value
+     */
+    function _calculateNFTValue(uint256[] calldata tokenIds) internal view returns (uint256) {
         uint256 totalNftValue = 0;
         for (uint256 i = 0; i < tokenIds.length; i++) {
             (,BNFTVoteInfo memory info) = nftInfo.getNftInfo(tokenIds[i]);
             for (uint256 j = 0; j < info.infos.length; j++) {
-                totalNftValue += info.infos[j].votes;
+                totalNftValue += info.infos[j].votes * (10 ** 10);
             }
         }
+        return totalNftValue;
+    }
 
-        // Transfer NFTs to this contract
+    /**
+     * @dev Transfer NFTs to contract and store in arbitrator's token list
+     * @param arbitrator Arbitrator storage reference
+     * @param tokenIds Array of token IDs to transfer
+     */
+    function _transferAndStoreNFTs(
+        DataTypes.ArbitratorInfo storage arbitrator, 
+        uint256[] calldata tokenIds
+    ) internal {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             nftContract.transferFrom(msg.sender, address(this), tokenIds[i]);
             arbitrator.nftTokenIds.push(tokenIds[i]);
         }
+    }
 
-        // Check total stake is within limits
+    /**
+     * @dev Validate total stake amount
+     * @param arbitrator Arbitrator storage reference
+     * @param totalNftValue Total value of NFTs being staked
+     */
+    function _validateStakeAmount(
+        DataTypes.ArbitratorInfo storage arbitrator, 
+        uint256 totalNftValue
+    ) internal view {
         uint256 totalStakeValue = arbitrator.ethAmount + totalNftValue;
         uint256 minStake = configManager.getConfig(configManager.MIN_STAKE());
         uint256 maxStake = configManager.getConfig(configManager.MAX_STAKE());
         
         if (totalStakeValue < minStake) revert(Errors.INSUFFICIENT_STAKE);
         if (totalStakeValue > maxStake) revert(Errors.STAKE_EXCEEDS_MAX);
+    }
 
-        // Set NFT contract address if not set
+    /**
+     * @dev Set or validate NFT contract address
+     * @param arbitrator Arbitrator storage reference
+     */
+    function _setOrValidateNFTContract(
+        DataTypes.ArbitratorInfo storage arbitrator
+    ) internal {
         if (arbitrator.nftContract == address(0)) {
             arbitrator.nftContract = address(nftContract);
         } else if (arbitrator.nftContract != address(nftContract)) {
             revert(Errors.INVALID_NFT_CONTRACT);
         }
-
-        emit StakeAdded(msg.sender, address(nftContract), totalNftValue);
     }
 
     /**

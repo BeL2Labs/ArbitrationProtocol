@@ -240,7 +240,7 @@ contract TransactionManager is
         if (!success1) revert(Errors.TRANSFER_FAILED);
 
         // Pay arbitrator
-        (bool success2, ) = transaction.arbitrator.call{value: finalArbitratorFee}("");
+        (bool success2, ) = arbitratorInfo.revenueETHAddress.call{value: finalArbitratorFee}("");
         if (!success2) revert(Errors.TRANSFER_FAILED);
 
         // Refund remaining balance to DApp

@@ -9,6 +9,43 @@ interface IArbitratorManager {
     function stakeNFT(uint256[] calldata tokenIds) external;
     function unstake() external;  // Withdraw all staked assets
 
+    /**
+     * @notice Registers an arbitrator and stakes ETH
+     * @param operator The address of the arbitrator's operator
+     * @param revenueAddress The address where the arbitrator's revenue will be sent
+     * @param btcAddress The arbitrator's Bitcoin address
+     * @param btcPubKey The arbitrator's Bitcoin public key
+     * @param feeRate The arbitrator's fee rate
+     * @param deadline The deadline for the arbitration (in seconds 0 for no deadline)
+    */
+    function registerArbitratorByStakeETH(
+        address operator,
+        address revenueAddress,
+        string calldata btcAddress,
+        bytes calldata btcPubKey,
+        uint256 feeRate,
+        uint256 deadline) external payable;
+
+    /**
+     * Registers an arbitrator by staking NFTs.
+     *
+     * @param tokenIds An array of NFT token IDs to stake.
+     * @param operator The address of the operator who will manage the arbitrator.
+     * @param revenueAddress The address where revenue will be sent.
+     * @param btcAddress The Bitcoin address associated with the arbitrator.
+     * @param btcPubKey The Bitcoin public key associated with the arbitrator.
+     * @param feeRate The fee rate of the arbitrator.
+     * @param deadline The deadline in seconds for the registration. (in seconds 0 for no deadline)
+    */
+    function registerArbitratorByStakeNFT(
+        uint256[] calldata tokenIds,
+        address operator,
+        address revenueAddress,
+        string calldata btcAddress,
+        bytes calldata btcPubKey,
+        uint256 feeRate,
+        uint256 deadline) external;
+
     // Set operator information
     function setOperator(
         address operator,
@@ -128,4 +165,13 @@ interface IArbitratorManager {
     event ArbitratorUnpaused(address indexed arbitrator);
     event TransactionManagerUpdated(address indexed oldManager, address indexed newManager);
     event CompensationManagerUpdated(address indexed oldManager, address indexed newManager);
+    event ArbitratorRegistered(
+        address indexed arbitrator,
+        address indexed operator,
+        address revenueAddress,
+        string btcAddress,
+        bytes btcPubKey,
+        uint256 feeRate,
+        uint256 deadline
+    );
 }

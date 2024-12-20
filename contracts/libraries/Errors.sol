@@ -50,6 +50,8 @@ library Errors {
     string constant INVALID_TOKEN_ID = "Invalid token ID";
     string constant TRANSFER_FAILED = "Transfer failed";
     string constant IS_FROZEN = "Is frozen";
+    string constant INVALID_OPERATOR = "Invalid operator";
+    string constant INVALID_REVENUE_ADDRESS = "Invalid revenue address";
 
     // Config related errors
     string constant INVALID_CONFIG_KEY = "Invalid config key";
