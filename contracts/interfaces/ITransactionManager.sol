@@ -45,6 +45,8 @@ interface ITransactionManager {
         bytes32 id
     ) external returns (uint256 arbitratorFee, uint256 systemFee);
 
+    function getRegisterTransactionFee(uint256 deadline, address arbitrator) external view returns (uint256 fee);
+
     // Events
     event TransactionRegistered(bytes32 indexed id, address indexed dapp, address indexed arbitrator);
     event TransactionCompleted(address indexed dapp, bytes32 indexed txId);

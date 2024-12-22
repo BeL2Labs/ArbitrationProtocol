@@ -111,8 +111,7 @@ contract TransactionManager is
             revert(Errors.DAPP_NOT_ACTIVE);
         }
 
-        // Validate arbitrator and get info
-        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(arbitrator);
+        // Validate arbitrator
         if (!arbitratorManager.isActiveArbitrator(arbitrator))
             revert(Errors.ARBITRATOR_NOT_ACTIVE);
 
@@ -128,11 +127,8 @@ contract TransactionManager is
 
         // Calculate and validate fee
         // fee = stake * (duration / secondsPerYear) * (feeRate / feeRateMultiplier)
-        uint256 fee = (arbitratorInfo.ethAmount * duration * arbitratorInfo.currentFeeRate) / (SECONDS_PER_YEAR * FEE_RATE_MULTIPLIER);
-        uint256 minFeeRate = configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE());
-        if (arbitratorInfo.currentFeeRate < minFeeRate || arbitratorInfo.currentFeeRate > 10000) {
-            revert(Errors.INVALID_FEE_RATE);
-        }
+        uint256 fee = this.getRegisterTransactionFee(deadline, arbitrator);
+   
         if (fee == 0) revert(Errors.INVALID_FEE);
         if (msg.value < fee) revert(Errors.INSUFFICIENT_FEE);
 
@@ -369,6 +365,37 @@ contract TransactionManager is
     ) external override onlyCompensationManager returns (uint256 arbitratorFee, uint256 systemFee) {
         DataTypes.Transaction storage transaction = transactions[id];
         return _completeTransaction(id, transaction);
+    }
+
+    /**
+     * @notice Get the register transaction fee based on the deadline
+     * @param deadline The deadline for the transaction
+     * @return fee The calculated fee
+     */
+    function getRegisterTransactionFee(uint256 deadline, address arbitrator) external view returns (uint256 fee) {
+        // Calculate the duration from now to the deadline
+        uint256 duration = deadline > block.timestamp ? deadline - block.timestamp : 0;
+        if (duration < configManager.getConfig(configManager.MIN_TRANSACTION_DURATION()) ||
+            duration > configManager.getConfig(configManager.MAX_TRANSACTION_DURATION())) {
+            revert(Errors.INVALID_DURATION);
+        }
+
+        if (arbitrator == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
+        }
+
+        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(arbitrator);
+
+        uint256 minFeeRate = configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE());
+        if (arbitratorInfo.currentFeeRate < minFeeRate || arbitratorInfo.currentFeeRate > 10000) {
+            revert(Errors.INVALID_FEE_RATE);
+        }
+
+        // Calculate and validate fee
+        // fee = stake * (duration / secondsPerYear) * (feeRate / feeRateMultiplier)
+        fee = (arbitratorInfo.ethAmount * duration * arbitratorInfo.currentFeeRate) / (SECONDS_PER_YEAR * FEE_RATE_MULTIPLIER);
+        
+        return fee;
     }
 
     // Add a gap for future storage variables
