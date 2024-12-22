@@ -27,7 +27,7 @@ async function main() {
   console.log("\nGetting arbitrator info for address:", arbitratorAddress);
   console.log("Account balance:", ethers.utils.formatEther(await deployer.provider.getBalance(deployer.address)).toString());
   const info = await arbitratorManager.getArbitratorInfo(arbitratorAddress);
-  
+  console.log("info:", info);
   // Format and display the information
   console.log("\nArbitrator Information:");
   console.log("------------------------");
@@ -39,14 +39,14 @@ async function main() {
   console.log("Operator Address:", info.operator);
   console.log("Operator BTC Public Key:", info.operatorBtcPubKey);
   console.log("Operator BTC Address:", info.operatorBtcAddress);
-  console.log("Last Arbitration Time:", new Date(Number(info.lastArbitrationTime) * 1000).toLocaleString());
+  console.log("Last Arbitration Time:", new Date(Number(info.deadLine) * 1000).toLocaleString());
   console.log("NFT Contract:", info.nftContract);
   console.log("NFT Token IDs:", info.nftTokenIds.map(id => id.toString()));
 
   // Get additional information
   const isActive = await arbitratorManager.isActiveArbitrator(arbitratorAddress);
   const availableStake = await arbitratorManager.getAvailableStake(arbitratorAddress);
-  const canUnstake = await arbitratorManager.canUnstake(arbitratorAddress);
+  const canUnstake = await arbitratorManager.canUnStake(arbitratorAddress);
   const isPaused = await arbitratorManager.isPaused(arbitratorAddress);
 
   console.log("\nAdditional Status:");

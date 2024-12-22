@@ -33,7 +33,7 @@ module.exports = {
       accounts: [
         { privateKey: staging_key, balance: "10000000000000000000000" },
         { privateKey: prod_key, balance: "10000000000000000000000" },
-        { privateKey: operator_key, balance: "10000000000000000000000" },
+        { privateKey: operator_key, balance: "10000000000000000000000" }
       ],
       blockGasLimit: 8000000
     }

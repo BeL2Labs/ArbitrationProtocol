@@ -18,7 +18,7 @@ async function main() {
   const arbitratorManager = await ArbitratorManager.attach(arbitratorManagerAddress);
 
   // First, let's check if we can unstake
-  const canUnstake = await arbitratorManager.canUnstake(deployer.address);
+  const canUnstake = await arbitratorManager.canUnStake(deployer.address);
   if (!canUnstake) {
     console.error("Cannot unstake at this time. The arbitrator might be handling a transaction.");
     return;
@@ -27,7 +27,7 @@ async function main() {
   // Get current stake information before unstaking
   const arbitratorInfo = await arbitratorManager.getArbitratorInfo(deployer.address);
   console.log("\nCurrent stake information:");
-  console.log("ETH Amount:", ethers.formatEther(arbitratorInfo.ethAmount), "ETH");
+  console.log("ETH Amount:", ethers.utils.formatEther(arbitratorInfo.ethAmount), "ETH");
   console.log("NFT Token IDs:", arbitratorInfo.nftTokenIds.map(id => id.toString()));
 
   console.log("\nInitiating unstake...");
@@ -47,7 +47,7 @@ async function main() {
   // Get updated stake information
   const updatedInfo = await arbitratorManager.getArbitratorInfo(deployer.address);
   console.log("\nUpdated stake information:");
-  console.log("ETH Amount:", ethers.formatEther(updatedInfo.ethAmount), "ETH");
+  console.log("ETH Amount:", ethers.utils.formatEther(updatedInfo.ethAmount), "ETH");
   console.log("NFT Token IDs:", updatedInfo.nftTokenIds.map(id => id.toString()));
 }
 

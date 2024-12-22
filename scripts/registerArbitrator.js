@@ -35,7 +35,7 @@ async function getBitcoinCredentials(privateKey) {
   }
 async function main() {
     // Get the signer (first account)
-    const [operator, signer] = await ethers.getSigners();
+    const [signer, operator] = await ethers.getSigners();
     console.log("Registering arbitrator with address:", signer.address);
 
     // Read ArbitratorManager address from config
@@ -98,8 +98,6 @@ async function main() {
         const receipt = await tx.wait();
         console.log("Arbitrator Registration Transaction Hash:", receipt.transactionHash);
 
-        // Optional: Update config with registered arbitrator
-        await writeConfig(network.name, "REGISTERED_ARBITRATOR", signer.address);
 
     } catch (error) {
         console.error("Error registering arbitrator:", error);

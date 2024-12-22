@@ -65,82 +65,119 @@ describe("ArbitratorManager", function () {
     });
 
     it("Should fail to register with insufficient stake", async function () {
-      const smallStake = ethers.utils.parseEther("5"); // Less than minimum stake
-      const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
-      const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
-      const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
+         const smallStake = ethers.utils.parseEther("5"); // Less than minimum stake
+         const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+         const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
+         const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
 
-      await expect(
-        arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
-          operator.address,
-          arbitrator.address,
-          btcAddress,
-          btcPubKey,
-          feeRate,
-          deadline,
-          { value: smallStake }
-        )
-      ).to.be.revertedWith("Insufficient stake");
-    });
+         await expect(
+           arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
+             operator.address,
+             arbitrator.address,
+             btcAddress,
+             btcPubKey,
+             feeRate,
+             deadline,
+             { value: smallStake }
+           )
+         ).to.be.revertedWith("Insufficient stake");
+       });
 
-    it("Should fail to register with invalid fee rate", async function () {
-      const lowFeeRate = 50; // Below minimum fee rate
-      const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
-      const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
-      const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
+       it("Should fail to register with invalid fee rate", async function () {
+         const lowFeeRate = 50; // Below minimum fee rate
+         const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+         const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
+         const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
 
-      await expect(
-        arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
-          operator.address,
-          arbitrator.address,
-          btcAddress,
-          btcPubKey,
-          lowFeeRate,
-          deadline,
-          { value: stakeAmount }
-        )
-      ).to.be.revertedWith("Invalid fee rate");
-    });
+         await expect(
+           arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
+             operator.address,
+             arbitrator.address,
+             btcAddress,
+             btcPubKey,
+             lowFeeRate,
+             deadline,
+             { value: stakeAmount }
+           )
+         ).to.be.revertedWith("Invalid fee rate");
+       });
 
-    it("Should fail to register with invalid deadline", async function () {
-      const pastDeadline = Math.floor(Date.now() / 1000) - 24 * 60 * 60; // 1 day ago
-      const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
-      const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
+       it("Should fail to register with invalid deadline", async function () {
+         const pastDeadline = Math.floor(Date.now() / 1000) - 24 * 60 * 60; // 1 day ago
+         const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+         const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
 
-      await expect(
-        arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
-          operator.address,
-          arbitrator.address,
-          btcAddress,
-          btcPubKey,
-          feeRate,
-          pastDeadline,
-          { value: stakeAmount }
-        )
-      ).to.be.revertedWith("Invalid deadline");
-    });
-  });
+         await expect(
+           arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
+             operator.address,
+             arbitrator.address,
+             btcAddress,
+             btcPubKey,
+             feeRate,
+             pastDeadline,
+             { value: stakeAmount }
+           )
+         ).to.be.revertedWith("Invalid deadline");
+       });
+     });
 
-  describe("Stake Management", function () {
-    beforeEach(async function () {
-      const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
-      const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
-      const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
+     describe("Stake Management", function () {
+       let deadline;
+       const stakeAmount = ethers.utils.parseEther("10");
+       const feeRate = 100; // 1%
+       const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+       const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
 
-      await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
-        operator.address,
-        arbitrator.address,
-        btcAddress,
-        btcPubKey,
-        feeRate,
-        deadline,
-        { value: stakeAmount }
-      );
-    });
+       beforeEach(async function () {
+         // Set a fixed deadline in the future
+         deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
 
-    it("Should get available stake", async function () {
-      const availableStake = await arbitratorManager.getAvailableStake(arbitrator.address);
-      expect(availableStake).to.equal(stakeAmount);
-    });
-  });
+         // Register arbitrator
+         await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
+           operator.address,
+           arbitrator.address,
+           btcAddress,
+           btcPubKey,
+           feeRate,
+           deadline,
+           { value: stakeAmount }
+         );
+       });
+
+       it("Should get available stake", async function () {
+         const availableStake = await arbitratorManager.getAvailableStake(arbitrator.address);
+         expect(availableStake).to.equal(stakeAmount);
+       });
+
+
+       it("arbitrator unstake", async function () {
+        let tx = await arbitratorManager.connect(arbitrator).unstake();
+        tx.wait();
+        console.log("unstake ", tx.hash);
+
+        const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
+
+        // Log the entire arbitrator info for debugging
+        console.log("Arbitrator Info:", arbitratorInfo);
+      });
+
+
+       it("Should get arbitrator info", async function () {
+         const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
+
+         // Validate specific fields
+         expect(arbitratorInfo.ethAmount).to.equal(stakeAmount);
+         expect(arbitratorInfo.operator).to.equal(operator.address);
+         expect(arbitratorInfo.currentFeeRate).to.equal(feeRate);
+         expect(arbitratorInfo.deadLine).to.equal(deadline);
+         expect(arbitratorInfo.operatorBtcAddress).to.equal(btcAddress);
+
+         // Convert both to hex strings for comparison
+         const storedPubKeyHex = ethers.utils.hexlify(arbitratorInfo.operatorBtcPubKey);
+         const inputPubKeyHex = ethers.utils.hexlify(btcPubKey);
+         expect(storedPubKeyHex).to.equal(inputPubKeyHex);
+
+         expect(arbitratorInfo.nftTokenIds).to.be.an('array').that.is.empty;
+       });
+     });
 });

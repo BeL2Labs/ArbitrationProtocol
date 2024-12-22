@@ -371,6 +371,7 @@ contract ArbitratorManager is
         
         uint256 amount = arbitrator.ethAmount;
         arbitrator.ethAmount = 0;
+        arbitrator.status = DataTypes.ArbitratorStatus.Terminated;
         
         // Transfer NFTs back to arbitrator if any
         if (arbitrator.nftContract != address(0) && arbitrator.nftTokenIds.length > 0) {
