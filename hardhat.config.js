@@ -31,7 +31,9 @@ module.exports = {
     hardhat: {
       chainId: 100,
       accounts: [
-        ...(staging_key ? [{ privateKey: staging_key, balance: "10000000000000000000000" }] : []),
+        { privateKey: staging_key, balance: "10000000000000000000000" },
+        { privateKey: prod_key, balance: "10000000000000000000000" },
+        { privateKey: operator_key, balance: "10000000000000000000000" },
       ],
       blockGasLimit: 8000000
     }

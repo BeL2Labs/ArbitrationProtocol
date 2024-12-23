@@ -1,219 +1,146 @@
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, network, upgrades } = require("hardhat");
 
 describe("ArbitratorManager", function () {
   let configManager;
   let arbitratorManager;
-  let transactionManager;
-  let dappRegistry;
-  let mockNFT;
-  let mockNFTInfo;
-  let compensationManager;
   let owner;
   let arbitrator;
   let operator;
   let other;
   
   const feeRate = 1000; // 10% annual rate
-  const stakeAmount = ethers.parseEther("100");
+  const stakeAmount = ethers.utils.parseEther("100");
+  const minFeeRate = 100; // Assuming a minimum fee rate from ConfigManager
 
   beforeEach(async function () {
     [owner, arbitrator, operator, other] = await ethers.getSigners();
 
-    // Deploy mock contracts
-    const MockNFT = await ethers.getContractFactory("MockNFT");
-    mockNFT = await MockNFT.deploy();
-    await mockNFT.waitForDeployment();
-
-    const MockNFTInfo = await ethers.getContractFactory("MockNFTInfo");
-    mockNFTInfo = await MockNFTInfo.deploy();
-    await mockNFTInfo.waitForDeployment();
-
     // Deploy ConfigManager
     const ConfigManager = await ethers.getContractFactory("ConfigManager");
-    configManager = await ConfigManager.deploy(owner.address);
-    await configManager.waitForDeployment();
+    configManager = await upgrades.deployProxy(ConfigManager, [], { initializer: 'initialize' });
 
-    // Deploy DAppRegistry
-    const DAppRegistry = await ethers.getContractFactory("DAppRegistry");
-    dappRegistry = await DAppRegistry.deploy(await configManager.getAddress(), owner.address);
-    await dappRegistry.waitForDeployment();
+    // Set minimum fee rate in ConfigManager
+    const minStakeKey = await configManager.callStatic.MIN_STAKE();
+    const maxStakeKey = await configManager.callStatic.MAX_STAKE();
+    const minFeeRateKey = await configManager.callStatic.TRANSACTION_MIN_FEE_RATE();
+
+    await configManager.connect(owner).setConfigs(
+      [minFeeRateKey, minStakeKey, maxStakeKey],
+      [minFeeRate, ethers.utils.parseEther("10"), ethers.utils.parseEther("1000")]
+    );
 
     // Deploy ArbitratorManager
     const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager");
-    arbitratorManager = await ArbitratorManager.deploy(
-      await configManager.getAddress(),
-      owner.address,
-      await mockNFT.getAddress(),
-      await mockNFTInfo.getAddress()
-    );
-    await arbitratorManager.waitForDeployment();
-
-    // Deploy TransactionManager
-    const TransactionManager = await ethers.getContractFactory("TransactionManager");
-    transactionManager = await TransactionManager.deploy(
-      await arbitratorManager.getAddress(),
-      await dappRegistry.getAddress(),
-      await configManager.getAddress(),
-      owner.address
-    );
-    await transactionManager.waitForDeployment();
-
-    // Deploy CompensationManager
-    const CompensationManager = await ethers.getContractFactory("CompensationManager");
-    compensationManager = await CompensationManager.deploy(
-      ethers.ZeroAddress, // Mock ZkService not needed for this test
-      await transactionManager.getAddress(),
-      await configManager.getAddress(),
-      await arbitratorManager.getAddress()
-    );
-    await compensationManager.waitForDeployment();
-
-    // Initialize contracts
-    await arbitratorManager.initialize(
-      await transactionManager.getAddress(),
-      await compensationManager.getAddress()
-    );
-
-    // Set minimum stake in ConfigManager
-    await configManager.setMinStake(ethers.parseEther("10"));
+    arbitratorManager = await upgrades.deployProxy(ArbitratorManager, [
+      configManager.address,
+      owner.address,  // Temporary NFT contract address
+      owner.address   // Temporary NFT info contract address
+    ], { initializer: 'initialize' });
   });
 
-  describe("Staking", function () {
-    it("Should register new arbitrator with correct stake and fee rate", async function () {
-      await arbitratorManager.connect(arbitrator).stakeETH({ value: stakeAmount });
-      
-      const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
-      expect(arbitratorInfo.ethAmount).to.equal(stakeAmount);
+  describe("Arbitrator Registration", function () {
+    it("Should register new arbitrator with ETH stake", async function () {
+      const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+      const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
+      const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
 
-      await arbitratorManager.connect(arbitrator).setOperator(
+      await expect(
+        arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
+          operator.address,
+          arbitrator.address,
+          btcAddress,
+          btcPubKey,
+          feeRate,
+          deadline,
+          { value: stakeAmount }
+        )
+      ).to.emit(arbitratorManager, "ArbitratorRegistered");
+
+      const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
+      expect(arbitratorInfo.operator).to.equal(operator.address);
+      expect(arbitratorInfo.revenueETHAddress).to.equal(arbitrator.address);
+      expect(arbitratorInfo.operatorBtcAddress).to.equal(btcAddress);
+      expect(arbitratorInfo.currentFeeRate).to.equal(feeRate);
+    });
+
+    it("Should fail to register with insufficient stake", async function () {
+      const smallStake = ethers.utils.parseEther("5"); // Less than minimum stake
+      const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+      const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
+      const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
+
+      await expect(
+        arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
+          operator.address,
+          arbitrator.address,
+          btcAddress,
+          btcPubKey,
+          feeRate,
+          deadline,
+          { value: smallStake }
+        )
+      ).to.be.revertedWith("Insufficient stake");
+    });
+
+    it("Should fail to register with invalid fee rate", async function () {
+      const lowFeeRate = 50; // Below minimum fee rate
+      const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+      const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
+      const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
+
+      await expect(
+        arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
+          operator.address,
+          arbitrator.address,
+          btcAddress,
+          btcPubKey,
+          lowFeeRate,
+          deadline,
+          { value: stakeAmount }
+        )
+      ).to.be.revertedWith("Invalid fee rate");
+    });
+
+    it("Should fail to register with invalid deadline", async function () {
+      const pastDeadline = Math.floor(Date.now() / 1000) - 24 * 60 * 60; // 1 day ago
+      const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+      const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
+
+      await expect(
+        arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
+          operator.address,
+          arbitrator.address,
+          btcAddress,
+          btcPubKey,
+          feeRate,
+          pastDeadline,
+          { value: stakeAmount }
+        )
+      ).to.be.revertedWith("Invalid deadline");
+    });
+  });
+
+  describe("Stake Management", function () {
+    beforeEach(async function () {
+      const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+      const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
+      const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
+
+      await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
+        operator.address,
         arbitrator.address,
-        "0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a",
-        "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" // Example Bitcoin address
+        btcAddress,
+        btcPubKey,
+        feeRate,
+        deadline,
+        { value: stakeAmount }
       );
-
-    });
-  });
-
-  describe("Initialization", function () {
-    let newArbitratorManager;
-
-    beforeEach(async function () {
-      const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager");
-      newArbitratorManager = await ArbitratorManager.deploy(
-        await configManager.getAddress(),
-        owner.address,
-        await mockNFT.getAddress(),
-        await mockNFTInfo.getAddress()
-      );
-      await newArbitratorManager.waitForDeployment();
     });
 
-    it("Should initialize with transaction manager", async function () {
-      await newArbitratorManager.initialize(await transactionManager.getAddress(), await compensationManager.getAddress());
-      expect(await newArbitratorManager.transactionManager()).to.equal(await transactionManager.getAddress());
-    });
-
-    it("Should fail to initialize twice", async function () {
-      await newArbitratorManager.initialize(await transactionManager.getAddress(), await compensationManager.getAddress());
-      await expect(
-        newArbitratorManager.initialize(await transactionManager.getAddress(), await compensationManager.getAddress())
-      ).to.be.revertedWithCustomError(newArbitratorManager, "ALREADY_INITIALIZED");
-    });
-
-    it("Should fail to initialize with zero address", async function () {
-      await expect(
-        newArbitratorManager.initialize(ethers.ZeroAddress, await compensationManager.getAddress())
-      ).to.be.revertedWithCustomError(newArbitratorManager, "ZERO_ADDRESS");
-    });
-  });
-
-  describe("Arbitrator Working Status", function () {
-    let transactionId;
-
-    beforeEach(async function () {
-      transactionId = ethers.ZeroHash;
-    });
-
-    it("Should set arbitrator to working status", async function () {
-      // Create a signer for transaction manager
-      const transactionManagerSigner = await ethers.getImpersonatedSigner(await transactionManager.getAddress());
-      // Send some ETH to transaction manager
-      await owner.sendTransaction({
-        to: await transactionManager.getAddress(),
-        value: ethers.parseEther("1.0")
-      });
-      await arbitratorManager.connect(transactionManagerSigner).setArbitratorWorking(arbitrator.address, transactionId);
-
-      const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
-      expect(arbitratorInfo.isWorking).to.be.true;
-      expect(arbitratorInfo.activeTransactionId).to.equal(transactionId);
-    });
-
-    it("Should fail to set working status if not transaction manager", async function () {
-      await expect(
-        arbitratorManager.connect(other).setArbitratorWorking(arbitrator.address, transactionId)
-      ).to.be.revertedWithCustomError(arbitratorManager, "NOT_TRANSACTION_MANAGER");
-    });
-
-    it("Should fail to set working status if already working", async function () {
-      // Create a signer for transaction manager
-      const transactionManagerSigner = await ethers.getImpersonatedSigner(await transactionManager.getAddress());
-      // Send some ETH to transaction manager
-      await owner.sendTransaction({
-        to: await transactionManager.getAddress(),
-        value: ethers.parseEther("1.0")
-      });
-      await arbitratorManager.connect(transactionManagerSigner).setArbitratorWorking(arbitrator.address, transactionId);
-
-      await expect(
-        arbitratorManager.connect(transactionManagerSigner).setArbitratorWorking(arbitrator.address, transactionId)
-      ).to.be.revertedWithCustomError(arbitratorManager, "ARBITRATOR_ALREADY_WORKING");
-    });
-
-    it("Should release arbitrator from working status", async function () {
-      // Create a signer for transaction manager
-      const transactionManagerSigner = await ethers.getImpersonatedSigner(await transactionManager.getAddress());
-      // Send some ETH to transaction manager
-      await owner.sendTransaction({
-        to: await transactionManager.getAddress(),
-        value: ethers.parseEther("1.0")
-      });
-      await arbitratorManager.connect(transactionManagerSigner).setArbitratorWorking(arbitrator.address, transactionId);
-      await arbitratorManager.connect(transactionManagerSigner).releaseArbitrator(arbitrator.address, transactionId);
-
-      const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
-      expect(arbitratorInfo.isWorking).to.be.false;
-      expect(arbitratorInfo.activeTransactionId).to.equal(ethers.ZeroHash);
-    });
-
-    it("Should fail to release if wrong transaction ID", async function () {
-      // Create a signer for transaction manager
-      const transactionManagerSigner = await ethers.getImpersonatedSigner(await transactionManager.getAddress());
-      // Send some ETH to transaction manager
-      await owner.sendTransaction({
-        to: await transactionManager.getAddress(),
-        value: ethers.parseEther("1.0")
-      });
-      await arbitratorManager.connect(transactionManagerSigner).setArbitratorWorking(arbitrator.address, transactionId);
-
-      const wrongTransactionId = "0x1234567890123456789012345678901234567890123456789012345678901234";
-      await expect(
-        arbitratorManager.connect(transactionManagerSigner).releaseArbitrator(arbitrator.address, wrongTransactionId)
-      ).to.be.revertedWithCustomError(arbitratorManager, "WRONG_TRANSACTION_ID");
-    });
-
-    it("Should fail to release if not working", async function () {
-      // Create a signer for transaction manager
-      const transactionManagerSigner = await ethers.getImpersonatedSigner(await transactionManager.getAddress());
-      // Send some ETH to transaction manager
-      await owner.sendTransaction({
-        to: await transactionManager.getAddress(),
-        value: ethers.parseEther("1.0")
-      });
-      await expect(
-        arbitratorManager.connect(transactionManagerSigner).releaseArbitrator(arbitrator.address, transactionId)
-      ).to.be.revertedWithCustomError(arbitratorManager, "ARBITRATOR_NOT_WORKING");
+    it("Should get available stake", async function () {
+      const availableStake = await arbitratorManager.getAvailableStake(arbitrator.address);
+      expect(availableStake).to.equal(stakeAmount);
     });
   });
 });
