@@ -76,4 +76,13 @@ library DataTypes {
         UTXO[] utxos;                         // Array of UTXOs associated with the transaction
     }
 
+    struct ZKVerification {
+        bytes rawData;
+        bytes pubKey;
+        bytes32 txHash;
+        bytes signature;
+        bool verified;
+        UTXO[] utxos;
+    }
+
 }

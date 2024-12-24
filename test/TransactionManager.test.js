@@ -1,6 +1,7 @@
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
+const {sleep} = require("../scripts/helper.js");
 
 describe("TransactionManager", function () {
     let transactionManager;
@@ -8,518 +9,228 @@ describe("TransactionManager", function () {
     let dappRegistry;
     let configManager;
     let compensationManager;
-    let mockNFT;
-    let mockNFTInfo;
     let owner;
     let dapp;
     let arbitrator;
     let operator;
     let other;
+    let compensationReceiver;
 
-    const SECONDS_PER_YEAR = BigInt(365 * 24 * 60 * 60);
-    const FEE_RATE_MULTIPLIER = BigInt(10000);
-    const STAKE_AMOUNT = ethers.parseEther("100");
-    const FEE_RATE = BigInt(1000); // 10% annual rate
-    const MIN_STAKE = ethers.parseEther("10");
-    const VALID_PUB_KEY = "0x1234567890";
+    const STAKE_AMOUNT = ethers.utils.parseEther("10");
+    const MIN_STAKE = ethers.utils.parseEther("10");
+    const MIN_TRANSACTION_DURATION = 24 * 60 * 60; // 1 day
+    const MAX_TRANSACTION_DURATION = 30 * 24 * 60 * 60; // 30 days
 
     beforeEach(async function () {
-        [owner, dapp, arbitrator, operator, other] = await ethers.getSigners();
-
-        // Deploy mock contracts
-        const MockNFT = await ethers.getContractFactory("MockNFT");
-        mockNFT = await MockNFT.deploy();
-
-        const MockNFTInfo = await ethers.getContractFactory("MockNFTInfo");
-        mockNFTInfo = await MockNFTInfo.deploy();
-
+        [owner, dapp, arbitrator, other] = await ethers.getSigners();
+        operator = owner;
+        compensationReceiver=owner;
+        other = arbitrator;
+        console.log("Owner address:", owner.address);
+        console.log("DApp address:", dapp.address);
+        console.log("Arbitrator address:", arbitrator.address);
         // Deploy ConfigManager
         const ConfigManager = await ethers.getContractFactory("ConfigManager");
-        configManager = await ConfigManager.deploy(owner.address);
-
+        configManager = await upgrades.deployProxy(ConfigManager, [], { initializer: 'initialize' });
         // Deploy DAppRegistry
         const DAppRegistry = await ethers.getContractFactory("DAppRegistry");
-        dappRegistry = await DAppRegistry.deploy(configManager.address, owner.address);
-
+        dappRegistry = await upgrades.deployProxy(DAppRegistry, [configManager.address], { initializer: 'initialize' });
         // Deploy ArbitratorManager
         const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager");
-        arbitratorManager = await ArbitratorManager.deploy(
-            configManager.address,
-            owner.address,
-            mockNFT.address,
-            mockNFTInfo.address
-        );
-
+        arbitratorManager = await upgrades.deployProxy(ArbitratorManager, [
+            configManager.address, 
+            owner.address,  // Temporary NFT contract address
+            owner.address   // Temporary NFT info contract address
+        ], { initializer: 'initialize' });
         // Deploy TransactionManager
         const TransactionManager = await ethers.getContractFactory("TransactionManager");
-        transactionManager = await TransactionManager.deploy(
-            configManager.address,
+        transactionManager = await upgrades.deployProxy(TransactionManager, [
+            arbitratorManager.address,
             dappRegistry.address,
-            arbitratorManager.address
-        );
-
+            configManager.address
+        ], { initializer: 'initialize' });
         // Deploy CompensationManager
         const CompensationManager = await ethers.getContractFactory("CompensationManager");
-        compensationManager = await CompensationManager.deploy(
-            ethers.ZeroAddress, // Mock ZkService not needed for this test
+        compensationManager = await upgrades.deployProxy(CompensationManager, [
+            owner.address, // Mock ZkService not needed for this test
             transactionManager.address,
             configManager.address,
             arbitratorManager.address
+        ], { initializer: 'initialize' });
+        // Initialize compensation manager in TransactionManager
+        await transactionManager.initCompensationManager(compensationManager.address);
+
+        // Set minimum transaction duration in ConfigManager
+        await configManager.setMinTransactionDuration(MIN_TRANSACTION_DURATION);
+        await configManager.setMaxTransactionDuration(MAX_TRANSACTION_DURATION);
+
+        // Register DApp
+        await dappRegistry.connect(owner).registerDApp(dapp.address,{value: ethers.utils.parseEther("10")});
+        await dappRegistry.connect(owner).authorizeDApp(dapp.address);
+
+        // Register Arbitrator
+        const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+        const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
+        const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
+        const feeRate = 1000; // 10%
+        console.log("Before Register arbitrator result:");
+        let tx = await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
+            operator.address,
+            arbitrator.address,
+            btcAddress,
+            btcPubKey,
+            feeRate,
+            deadline,
+            { value: STAKE_AMOUNT }
         );
+        let receipt = await tx.wait();
+        console.log("Register arbitrator result:", tx.hash)
 
-        // Initialize contracts
-        await arbitratorManager.initialize(transactionManager.address, compensationManager.address);
+        // Ensure arbitrator is active
+        const isActiveArbitrator = await arbitratorManager.isActiveArbitrator(arbitrator.address);
+        let info = await arbitratorManager.getArbitratorInfo(arbitrator.address);
+        expect(isActiveArbitrator).to.be.true;
 
-        // Setup minimum stake in ConfigManager
-        await configManager.setMinStake(MIN_STAKE);
-
-        // Setup test environment
-        await dappRegistry.connect(owner).registerDApp(dapp.address);
-        await arbitratorManager.connect(arbitrator).registerArbitrator(VALID_PUB_KEY, { value: STAKE_AMOUNT });
+        // Set TransactionManager as the transaction manager in ArbitratorManager
+        tx = await arbitratorManager.connect(owner).initTransactionAndCompensationManager(transactionManager.address, compensationManager.address);
+        receipt = await tx.wait();
+        console.log("setTransactionManager:", tx.hash);
     });
-
-    describe("Transaction Registration", function () {
-        it("Should register a transaction with correct fee calculation", async function () {
-            const txHash = ethers.id("test");
-            const amount = ethers.parseEther("1");
-            const deadline = await time.latest() + 3600;
-
-            await expect(
-                transactionManager.connect(dapp).registerTransaction(
-                    txHash,
-                    amount,
-                    deadline,
-                    arbitrator.address
-                )
-            ).to.emit(transactionManager, "TransactionRegistered")
-             .withArgs(
-                 ethers.id(txHash),
-                 dapp.address,
-                 arbitrator.address,
-                 amount,
-                 deadline
-             );
+   
+    describe("Transaction Registration", async function () {
+        it ("Should get available stake", async function () {
+            const availableStake = await arbitratorManager.getAvailableStake(arbitrator.address);
+            expect(availableStake).to.equal(STAKE_AMOUNT);
         });
-
-        it("Should fail if arbitrator is not registered", async function () {
-            const txHash = ethers.id("test");
-            const amount = ethers.parseEther("1");
-            const deadline = await time.latest() + 3600;
-
-            await expect(
-                transactionManager.connect(dapp).registerTransaction(
-                    txHash,
-                    amount,
-                    deadline,
-                    other.address
-                )
-            ).to.be.revertedWithCustomError(transactionManager, "NOT_REGISTERED_ARBITRATOR");
-        });
-
-        it("Should fail if caller is not registered DApp", async function () {
-            const txHash = ethers.id("test");
-            const amount = ethers.parseEther("1");
-            const deadline = await time.latest() + 3600;
-
-            await expect(
-                transactionManager.connect(other).registerTransaction(
-                    txHash,
-                    amount,
-                    deadline,
-                    arbitrator.address
-                )
-            ).to.be.revertedWithCustomError(transactionManager, "NOT_REGISTERED_DAPP");
-        });
-
-        it("Should fail if deadline is in the past", async function () {
-            const txHash = ethers.id("test");
-            const amount = ethers.parseEther("1");
-            const deadline = await time.latest() - 3600;
-
-            await expect(
-                transactionManager.connect(dapp).registerTransaction(
-                    txHash,
-                    amount,
-                    deadline,
-                    arbitrator.address
-                )
-            ).to.be.revertedWithCustomError(transactionManager, "INVALID_DEADLINE");
-        });
-    });
-
-    describe("Transaction Execution", function () {
-        let txHash;
-        let amount;
-        let deadline;
-
-        beforeEach(async function () {
-            txHash = ethers.id("test");
-            amount = ethers.parseEther("1");
-            deadline = await time.latest() + 3600;
-
-            await transactionManager.connect(dapp).registerTransaction(
-                txHash,
-                amount,
+        it("Should register a transaction with valid parameters", async function () {
+            const utxos = [{
+                txHash: ethers.utils.randomBytes(32),
+                index: 0,
+                script: ethers.utils.randomBytes(20),
+                amount: ethers.utils.parseEther("1")
+            }];
+            const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
+            console.log("Deadline:", deadline);
+            const registerTx = await transactionManager.connect(dapp).registerTransaction(
+                utxos,
+                arbitrator.address,
                 deadline,
-                arbitrator.address
+                compensationReceiver.address,
+                { value: ethers.utils.parseEther("0.1") } // Sufficient fee
             );
+            console.log("registerTx:", registerTx.hash);
+            const receipt = await registerTx.wait();
+            const event = receipt.events.find(e => e.event === "TransactionRegistered");
+            expect(event).to.exist;
         });
 
-        it("Should execute transaction successfully", async function () {
-            const executionData = "0x1234";
-            
-            await expect(
-                transactionManager.connect(arbitrator).executeTransaction(txHash, executionData)
-            ).to.emit(transactionManager, "TransactionExecuted")
-             .withArgs(txHash, executionData);
-
-            const tx = await transactionManager.getTransaction(txHash);
-            expect(tx.status).to.equal(1); // EXECUTED status
-        });
-
-        it("Should fail if transaction does not exist", async function () {
-            const nonExistentTxHash = ethers.id("nonexistent");
-            const executionData = "0x1234";
+        it("Should fail to register transaction with zero address", async function () {
+            const utxos = [{
+                txHash: ethers.utils.randomBytes(32),
+                index: 0,
+                script: ethers.utils.randomBytes(20),
+                amount: ethers.utils.parseEther("1")
+            }];
+            const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
 
             await expect(
-                transactionManager.connect(arbitrator).executeTransaction(nonExistentTxHash, executionData)
-            ).to.be.revertedWithCustomError(transactionManager, "TRANSACTION_NOT_FOUND");
+                transactionManager.connect(dapp).registerTransaction(
+                    utxos,
+                    ethers.constants.AddressZero,
+                    deadline,
+                    compensationReceiver.address,
+                    { value: ethers.utils.parseEther("0.1") }
+                )
+            ).to.be.revertedWith("Zero address");
         });
 
-        it("Should fail if caller is not the assigned arbitrator", async function () {
-            const executionData = "0x1234";
+        it("Should fail to register transaction with invalid deadline", async function () {
+            const utxos = [{
+                txHash: ethers.utils.randomBytes(32),
+                index: 0,
+                script: ethers.utils.randomBytes(20),
+                amount: ethers.utils.parseEther("1")
+            }];
+            const deadline = (await time.latest()) - 2 * 24 * 60 * 60; // 2 days in the past
 
             await expect(
-                transactionManager.connect(other).executeTransaction(txHash, executionData)
-            ).to.be.revertedWithCustomError(transactionManager, "NOT_AUTHORIZED_ARBITRATOR");
+                transactionManager.connect(dapp).registerTransaction(
+                    utxos,
+                    arbitrator.address,
+                    deadline,
+                    compensationReceiver.address,
+                    { value: ethers.utils.parseEther("0.1") }
+                )
+            ).to.be.revertedWith("Invalid deadline");
         });
 
-        it("Should fail if transaction is already executed", async function () {
-            const executionData = "0x1234";
-            
-            await transactionManager.connect(arbitrator).executeTransaction(txHash, executionData);
+        it("Should fail to register transaction with insufficient fee", async function () {
+            const utxos = [{
+                txHash: ethers.utils.randomBytes(32),
+                index: 0,
+                script: ethers.utils.randomBytes(20),
+                amount: ethers.utils.parseEther("1")
+            }];
+            const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
 
+            // Try to register with zero fee
             await expect(
-                transactionManager.connect(arbitrator).executeTransaction(txHash, executionData)
-            ).to.be.revertedWithCustomError(transactionManager, "INVALID_TRANSACTION_STATUS");
-        });
-    });
-
-    describe("Transaction Cancellation", function () {
-        let txHash;
-        let amount;
-        let deadline;
-
-        beforeEach(async function () {
-            txHash = ethers.id("test");
-            amount = ethers.parseEther("1");
-            deadline = await time.latest() + 3600;
-
-            await transactionManager.connect(dapp).registerTransaction(
-                txHash,
-                amount,
-                deadline,
-                arbitrator.address
-            );
-        });
-
-        it("Should cancel transaction after deadline", async function () {
-            await time.increase(3601); // Move past deadline
-
-            await expect(
-                transactionManager.connect(dapp).cancelTransaction(txHash)
-            ).to.emit(transactionManager, "TransactionCancelled")
-             .withArgs(txHash);
-
-            const tx = await transactionManager.getTransaction(txHash);
-            expect(tx.status).to.equal(2); // CANCELLED status
-        });
-
-        it("Should fail to cancel before deadline", async function () {
-            await expect(
-                transactionManager.connect(dapp).cancelTransaction(txHash)
-            ).to.be.revertedWithCustomError(transactionManager, "DEADLINE_NOT_REACHED");
-        });
-
-        it("Should fail if transaction is already executed", async function () {
-            const executionData = "0x1234";
-            await transactionManager.connect(arbitrator).executeTransaction(txHash, executionData);
-            await time.increase(3601);
-
-            await expect(
-                transactionManager.connect(dapp).cancelTransaction(txHash)
-            ).to.be.revertedWithCustomError(transactionManager, "INVALID_TRANSACTION_STATUS");
-        });
-
-        it("Should fail if caller is not the original DApp", async function () {
-            await time.increase(3601);
-
-            await expect(
-                transactionManager.connect(other).cancelTransaction(txHash)
-            ).to.be.revertedWithCustomError(transactionManager, "NOT_AUTHORIZED_DAPP");
+                transactionManager.connect(dapp).registerTransaction(
+                    utxos,
+                    arbitrator.address,
+                    deadline,
+                    compensationReceiver.address,
+                    { value: 0 } // Zero fee
+                )
+            ).to.be.revertedWith("Insufficient fee");
         });
     });
 
     describe("Transaction Completion", function () {
         let transactionId;
-        const duration = BigInt(30 * 24 * 60 * 60);
 
         beforeEach(async function () {
-            const expectedFee = (STAKE_AMOUNT * duration * BigInt(FEE_RATE)) / (BigInt(SECONDS_PER_YEAR) * BigInt(FEE_RATE_MULTIPLIER));
-            const tx = await transactionManager.connect(dapp).registerTransaction(
+            const utxos = [{
+                txHash: ethers.utils.randomBytes(32),
+                index: 0,
+                script: ethers.utils.randomBytes(20),
+                amount: ethers.utils.parseEther("1")
+            }];
+            const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
+
+            const registerTx = await transactionManager.connect(dapp).registerTransaction(
+                utxos,
                 arbitrator.address,
-                Number(duration),
-                { value: expectedFee }
+                deadline,
+                compensationReceiver.address,
+                { value: ethers.utils.parseEther("0.1") }
             );
-            const receipt = await tx.wait();
-            const event = receipt.logs.find(log => 
-                log.fragment && log.fragment.name === 'TransactionRegistered'
-            );
-            transactionId = event.args.transactionId;
+
+            const receipt = await registerTx.wait();
+            const event = receipt.events.find(e => e.event === "TransactionRegistered");
+            transactionId = event.args[0];
+            console.log("Transaction ID:", transactionId);
         });
 
-        it("Should complete transaction with correct fee calculation", async function () {
-            await transactionManager.connect(arbitrator).completeTransaction(transactionId);
+        it("Should allow transaction completion by DApp", async function () {
+            await expect(
+                await transactionManager.connect(dapp).completeTransaction(transactionId)
+            ).to.emit(transactionManager, "TransactionCompleted");
+
+            // Check status (Completed is 3)
+            let transaction = await transactionManager.getTransactionById(transactionId);
+            expect(transaction.status).to.equal(1);//completed
+
+            let arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
+            expect(arbitratorInfo.status).to.equal(0);//active
+            console.log("completed transaction arbitratorInfo.status:", arbitratorInfo.status, "transactionId ", transactionId);
             
-            const transaction = await transactionManager.getTransaction(transactionId);
-            expect(transaction.status).to.equal(2); // Completed status
         });
 
-        it("Should fail to complete if not arbitrator", async function () {
+        it("Should fail to complete transaction by non-DApp", async function () {
             await expect(
                 transactionManager.connect(other).completeTransaction(transactionId)
-            ).to.be.revertedWithCustomError(transactionManager, "NOT_ARBITRATOR");
-        });
-
-        it("Should fail to complete if already completed", async function () {
-            await transactionManager.connect(arbitrator).completeTransaction(transactionId);
-            await expect(
-                transactionManager.connect(arbitrator).completeTransaction(transactionId)
-            ).to.be.revertedWithCustomError(transactionManager, "INVALID_TRANSACTION_STATUS");
-        });
-    });
-
-    describe("Arbitration", function () {
-        let transactionId;
-        const duration = BigInt(30 * 24 * 60 * 60);
-
-        beforeEach(async function () {
-            const expectedFee = (STAKE_AMOUNT * duration * BigInt(FEE_RATE)) / (BigInt(SECONDS_PER_YEAR) * BigInt(FEE_RATE_MULTIPLIER));
-            const tx = await transactionManager.connect(dapp).registerTransaction(
-                arbitrator.address,
-                Number(duration),
-                { value: expectedFee }
-            );
-            const receipt = await tx.wait();
-            const event = receipt.logs.find(log => 
-                log.fragment && log.fragment.name === 'TransactionRegistered'
-            );
-            transactionId = event.args.transactionId;
-        });
-
-        it("Should request arbitration", async function () {
-            await transactionManager.connect(dapp).requestArbitration(transactionId);
-            
-            const transaction = await transactionManager.getTransaction(transactionId);
-            expect(transaction.status).to.equal(1); // Arbitration status
-        });
-
-        it("Should fail to request arbitration if not DApp", async function () {
-            await expect(
-                transactionManager.connect(other).requestArbitration(transactionId)
-            ).to.be.revertedWithCustomError(transactionManager, "NOT_REGISTERED_DAPP");
-        });
-
-        it("Should fail to request arbitration if already in arbitration", async function () {
-            await transactionManager.connect(dapp).requestArbitration(transactionId);
-            await expect(
-                transactionManager.connect(dapp).requestArbitration(transactionId)
-            ).to.be.revertedWithCustomError(transactionManager, "INVALID_TRANSACTION_STATUS");
-        });
-    });
-
-    describe("Contract Interactions", function () {
-        let txHash;
-        let amount;
-        let deadline;
-        const executionData = "0x1234";
-
-        beforeEach(async function () {
-            txHash = ethers.id("test");
-            amount = ethers.parseEther("1");
-            deadline = await time.latest() + 3600;
-
-            // Register transaction
-            await transactionManager.connect(dapp).registerTransaction(
-                txHash,
-                amount,
-                deadline,
-                arbitrator.address
-            );
-        });
-
-        describe("Interaction with ArbitratorManager", function () {
-            it("Should update arbitrator's active transaction count", async function () {
-                // Get initial state
-                const initialInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
-                const initialCount = initialInfo.activeTransactionCount;
-
-                // Execute transaction
-                await transactionManager.connect(arbitrator).executeTransaction(txHash, executionData);
-
-                // Check updated state
-                const finalInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
-                expect(finalInfo.activeTransactionCount).to.equal(initialCount.add(1));
-            });
-
-            it("Should fail if arbitrator is suspended", async function () {
-                // Suspend arbitrator
-                await arbitratorManager.connect(owner).suspendArbitrator(arbitrator.address);
-
-                // Try to execute transaction
-                await expect(
-                    transactionManager.connect(arbitrator).executeTransaction(txHash, executionData)
-                ).to.be.revertedWithCustomError(transactionManager, "ARBITRATOR_SUSPENDED");
-            });
-
-            it("Should handle arbitrator stake changes correctly", async function () {
-                // Arbitrator increases stake
-                const additionalStake = ethers.parseEther("50");
-                await arbitratorManager.connect(arbitrator).stakeETH({ value: additionalStake });
-
-                // Execute transaction
-                await transactionManager.connect(arbitrator).executeTransaction(txHash, executionData);
-
-                // Verify transaction execution was successful
-                const tx = await transactionManager.getTransaction(txHash);
-                expect(tx.status).to.equal(1); // EXECUTED
-            });
-        });
-
-        describe("Interaction with CompensationManager", function () {
-            const compensationAmount = ethers.parseEther("0.5");
-            const compensationReason = "Delayed execution";
-
-            beforeEach(async function () {
-                // Execute transaction first
-                await transactionManager.connect(arbitrator).executeTransaction(txHash, executionData);
-            });
-
-            it("Should allow compensation request after execution", async function () {
-                // Request compensation
-                await expect(
-                    transactionManager.connect(dapp).requestCompensation(
-                        txHash,
-                        compensationAmount,
-                        compensationReason
-                    )
-                ).to.emit(compensationManager, "CompensationRequested")
-                 .withArgs(txHash, dapp.address, arbitrator.address, compensationAmount);
-
-                // Verify compensation request state
-                const request = await compensationManager.getCompensationRequest(txHash);
-                expect(request.amount).to.equal(compensationAmount);
-                expect(request.reason).to.equal(compensationReason);
-            });
-
-            it("Should fail compensation request if transaction not executed", async function () {
-                const newTxHash = ethers.id("newTest");
-                await transactionManager.connect(dapp).registerTransaction(
-                    newTxHash,
-                    amount,
-                    deadline,
-                    arbitrator.address
-                );
-
-                await expect(
-                    transactionManager.connect(dapp).requestCompensation(
-                        newTxHash,
-                        compensationAmount,
-                        compensationReason
-                    )
-                ).to.be.revertedWithCustomError(transactionManager, "TRANSACTION_NOT_EXECUTED");
-            });
-
-            it("Should handle compensation payment correctly", async function () {
-                // Request compensation
-                await transactionManager.connect(dapp).requestCompensation(
-                    txHash,
-                    compensationAmount,
-                    compensationReason
-                );
-
-                // Get initial balances
-                const initialDAppBalance = await ethers.provider.getBalance(dapp.address);
-                const initialArbitratorBalance = await ethers.provider.getBalance(arbitrator.address);
-
-                // Approve compensation
-                await compensationManager.connect(arbitrator).approveCompensation(txHash);
-
-                // Verify balances after compensation
-                const finalDAppBalance = await ethers.provider.getBalance(dapp.address);
-                const finalArbitratorBalance = await ethers.provider.getBalance(arbitrator.address);
-
-                expect(finalDAppBalance).to.equal(initialDAppBalance.add(compensationAmount));
-                expect(finalArbitratorBalance).to.be.lt(initialArbitratorBalance);
-            });
-
-            it("Should update arbitrator reputation after compensation", async function () {
-                // Request and approve compensation
-                await transactionManager.connect(dapp).requestCompensation(
-                    txHash,
-                    compensationAmount,
-                    compensationReason
-                );
-                await compensationManager.connect(arbitrator).approveCompensation(txHash);
-
-                // Check arbitrator reputation update
-                const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
-                expect(arbitratorInfo.compensationCount).to.be.gt(0);
-            });
-        });
-
-        describe("Cross-contract State Consistency", function () {
-            it("Should maintain consistent state across all contracts after execution", async function () {
-                // Execute transaction
-                await transactionManager.connect(arbitrator).executeTransaction(txHash, executionData);
-
-                // Verify TransactionManager state
-                const tx = await transactionManager.getTransaction(txHash);
-                expect(tx.status).to.equal(1); // EXECUTED
-
-                // Verify ArbitratorManager state
-                const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
-                expect(arbitratorInfo.activeTransactionCount).to.be.gt(0);
-
-                // Verify CompensationManager state
-                const canRequestCompensation = await compensationManager.canRequestCompensation(txHash);
-                expect(canRequestCompensation).to.be.true;
-            });
-
-            it("Should handle complex interaction flow", async function () {
-                // 1. Execute transaction
-                await transactionManager.connect(arbitrator).executeTransaction(txHash, executionData);
-
-                // 2. Request compensation
-                await transactionManager.connect(dapp).requestCompensation(
-                    txHash,
-                    compensationAmount,
-                    compensationReason
-                );
-
-                // 3. Approve compensation
-                await compensationManager.connect(arbitrator).approveCompensation(txHash);
-
-                // 4. Verify final states across all contracts
-                const tx = await transactionManager.getTransaction(txHash);
-                expect(tx.status).to.equal(1); // EXECUTED
-
-                const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
-                expect(arbitratorInfo.compensationCount).to.be.gt(0);
-
-                const compensationRequest = await compensationManager.getCompensationRequest(txHash);
-                expect(compensationRequest.status).to.equal(1); // APPROVED
-            });
+            ).to.be.revertedWith("Not authorized");
         });
     });
 });

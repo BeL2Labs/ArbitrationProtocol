@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../interfaces/ICompensationManager.sol";
@@ -8,7 +8,9 @@ import "../interfaces/ITransactionManager.sol";
 import "../interfaces/IConfigManager.sol";
 import "../interfaces/IArbitratorManager.sol";
 import "../libraries/Errors.sol";
+import "../libraries/DataTypes.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "hardhat/console.sol";
 
 contract CompensationManager is 
     ICompensationManager,
@@ -127,15 +129,18 @@ contract CompensationManager is
         bytes32 evidence
     ) external override returns (bytes32 claimId) {
         // Get ZK verification details with minimal local variables
-        (bytes memory rawData, , bytes memory pubKey, bytes32 txHash, , bool verified) = zkService.getZkVerification(evidence);
+        DataTypes.ZKVerification memory verification = zkService.getZkVerification(evidence);
         
         // Basic data validation
-        if (rawData.length == 0 || pubKey.length == 0 || txHash == bytes32(0) || !verified) {
+        if(verification.rawData.length == 0 || verification.pubKey.length == 0 || verification.txHash == bytes32(0)) {
             revert(Errors.INVALID_VERIFICATION_DATA);
+        }
+        if (!verification.verified) {
+            revert(Errors.SIGNATURE_MISMATCH);
         }
 
         // Check transaction existence
-        if (transactionManager.txHashToId(txHash) != bytes32(0)) {
+        if (transactionManager.txHashToId(verification.txHash) != bytes32(0)) {
             revert(Errors.TRANSACTION_EXISTS);
         }
 
@@ -143,9 +148,17 @@ contract CompensationManager is
         DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(arbitrator);
         
         // Validate arbitrator details
-        if (arbitratorInfo.operatorBtcPubKey.length == 0 || 
-            keccak256(pubKey) != keccak256(arbitratorInfo.operatorBtcPubKey) || 
-            keccak256(btcTx) != keccak256(rawData)) {
+        if (arbitratorInfo.operatorBtcPubKey.length == 0) {
+            revert(Errors.INVALID_VERIFICATION_DATA);
+        }
+        
+        // Validate public key
+        if (keccak256(verification.pubKey) != keccak256(arbitratorInfo.operatorBtcPubKey)) {
+            revert(Errors.INVALID_VERIFICATION_DATA);
+        }
+        
+        // Validate transaction data
+        if (keccak256(btcTx) != keccak256(verification.rawData)) {
             revert(Errors.INVALID_VERIFICATION_DATA);
         }
 
@@ -177,6 +190,7 @@ contract CompensationManager is
         // Update arbitrator status
         arbitratorManager.terminateArbitratorWithSlash(arbitrator);
 
+        // Emit compensation claimed event
         emit CompensationClaimed(claimId, msg.sender, uint8(CompensationType.IllegalSignature));
     }
 
@@ -185,7 +199,7 @@ contract CompensationManager is
         DataTypes.Transaction memory transaction = transactionManager.getTransactionById(id);
         if (transaction.dapp != msg.sender) revert(Errors.NOT_TRANSACTION_OWNER);
         if (transaction.status == DataTypes.TransactionStatus.Completed) revert(Errors.TRANSACTION_COMPLETED);
-        if (block.timestamp <= transaction.deadline) revert(Errors.DEADLINE_NOT_REACHED);
+        if (block.timestamp < transaction.deadline) revert(Errors.DEADLINE_NOT_REACHED);
         if (transaction.signature.length > 0) revert(Errors.SIGNATURE_ALREADY_SUBMITTED);
 
         // Get arbitrator's stake amount
@@ -223,26 +237,25 @@ contract CompensationManager is
         bytes32 evidence
     ) external override returns (bytes32 claimId) {
         // Get ZK verification details
-        (bytes memory rawData, DataTypes.UTXO[] memory utxos, bytes memory pubKey, bytes32 txHash, bytes memory signature, bool verified) = zkService.getZkVerification(evidence);
-        
-        if (rawData.length == 0) revert(Errors.EMPTY_RAW_DATA);
-        if (pubKey.length == 0) revert(Errors.EMPTY_PUBLIC_KEY);
-        if (txHash == bytes32(0)) revert(Errors.EMPTY_HASH);
-        if (signature.length == 0) revert(Errors.EMPTY_SIGNATURE);
-        if (verified) revert(Errors.INVALID_ZK_PROOF);
-        if (keccak256(btcTx) != keccak256(rawData)) revert(Errors.BTC_TRANSACTION_MISMATCH);
+        DataTypes.ZKVerification memory verification = zkService.getZkVerification(evidence);
+        if (verification.rawData.length == 0) revert(Errors.EMPTY_RAW_DATA);
+        if (verification.pubKey.length == 0) revert(Errors.EMPTY_PUBLIC_KEY);
+        if (verification.txHash == bytes32(0)) revert(Errors.EMPTY_HASH);
+        if (verification.signature.length == 0) revert(Errors.EMPTY_SIGNATURE);
+        if (!verification.verified) {revert(Errors.SIGNATURE_MISMATCH);}
+        if (keccak256(btcTx) != keccak256(verification.rawData)) revert(Errors.BTC_TRANSACTION_MISMATCH);
 
         // Get transaction details
-        DataTypes.Transaction memory transaction = transactionManager.getTransaction(txHash);
+        DataTypes.Transaction memory transaction = transactionManager.getTransaction(verification.txHash);
 
         // Validate UTXO consistency
-        _validateUTXOConsistency(utxos, transaction.utxos);
+        _validateUTXOConsistency(verification.utxos, transaction.utxos);
 
         if (transaction.dapp != msg.sender) revert(Errors.NOT_TRANSACTION_OWNER);
         if (transaction.signature.length == 0) revert(Errors.SIGNATURE_NOT_SUBMITTED);
 
         // Get transaction signature and verify
-        if (keccak256(signature) != keccak256(transaction.signature)) revert(Errors.SIGNATURE_MISMATCH);
+        if (keccak256(transaction.signature) != keccak256(verification.signature)) revert(Errors.SIGNATURE_MISMATCH);
 
         // Get arbitrator's stake amount
         DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.arbitrator);

@@ -8,21 +8,10 @@ import "../libraries/DataTypes.sol";
  */
 interface IZkService {
     /**
-     * @notice Get raw data, public key, UTXOs, and verify signature for a given id
-     * @param id The ID to query
-     * @return rawData The raw data associated with the ID
-     * @return utxos Array of Unspent Transaction Outputs (UTXOs) associated with the transaction
-     * @return pubKey The public key associated with the ID
-     * @return hash The hash of the standard rawdata
-     * @return signature The signature associated with the ID
-     * @return verified Whether the signature is verified
+     * @notice Retrieves the complete zero-knowledge (ZK) verification details for a given ID
+     * @param id A unique bytes32 identifier for the ZK verification record
+     * @return verification A ZKVerification struct containing all verification details including raw data, public key, transaction hash, signature, verification status, and associated UTXOs
+     * @dev This function provides comprehensive read-only access to ZK verification information
      */
-    function getZkVerification(bytes32 id) external view returns (
-        bytes memory rawData,
-        DataTypes.UTXO[] memory utxos,
-        bytes memory pubKey,
-        bytes32 hash,
-        bytes memory signature,
-        bool verified
-    );
+    function getZkVerification(bytes32 id) external view returns (DataTypes.ZKVerification memory );
 }

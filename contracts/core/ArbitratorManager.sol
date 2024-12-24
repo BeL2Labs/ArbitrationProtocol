@@ -9,6 +9,7 @@ import "./ConfigManager.sol";
 import "../libraries/DataTypes.sol";
 import "../libraries/Errors.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "hardhat/console.sol";
 
 /**
  * @title ArbitratorManager
@@ -197,7 +198,7 @@ contract ArbitratorManager is
         if (feeRate < minFeeRate) revert(Errors.INVALID_FEE_RATE);
 
         // Validate deadline
-        if (deadline != 0 && deadline <= block.timestamp) revert(Errors.INVALID_DEADLINE);
+        if (deadline != 0 && deadline <= block.timestamp)revert(Errors.INVALID_DEADLINE);
 
         // Validate token IDs
         if (tokenIds.length == 0) revert(Errors.EMPTY_TOKEN_IDS);

@@ -11,6 +11,7 @@ import "../core/ConfigManager.sol";
 import "../libraries/DataTypes.sol";
 import "../libraries/Errors.sol";
 import "../libraries/BTCUtils.sol";
+import "hardhat/console.sol";
 
 /**
  * @title TransactionManager
@@ -116,9 +117,8 @@ contract TransactionManager is
             revert(Errors.ARBITRATOR_NOT_ACTIVE);
 
         // Validate deadline
-        if (deadline <= block.timestamp) 
+        if (deadline <= block.timestamp)
             revert(Errors.INVALID_DEADLINE);
-
         uint256 duration = deadline - block.timestamp;
         if (duration < configManager.getConfig(configManager.MIN_TRANSACTION_DURATION()) ||
             duration > configManager.getConfig(configManager.MAX_TRANSACTION_DURATION())) {
@@ -149,7 +149,7 @@ contract TransactionManager is
         DataTypes.Transaction storage transaction = transactions[id];
         transaction.dapp = msg.sender;
         transaction.arbitrator = arbitrator;
-        transaction.startTime = 0;
+        transaction.startTime = block.timestamp;
         transaction.deadline = deadline;
         transaction.btcTx = new bytes(0);
         transaction.btcTxHash = bytes32(0);
@@ -293,7 +293,6 @@ contract TransactionManager is
         transaction.status = DataTypes.TransactionStatus.Arbitrated;
         transaction.btcTx = btcTx;
         transaction.btcTxHash = txHash;
-        transaction.startTime = block.timestamp;
         transaction.timeoutCompensationReceiver = timeoutCompensationReceiver;
 
         // Store txHash to id mapping

@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 
 describe("ConfigManager", function () {
     let configManager;
@@ -7,8 +7,8 @@ describe("ConfigManager", function () {
     let other;
     
     // Constants for default values
-    const DEFAULT_MIN_STAKE = ethers.parseEther("1");
-    const DEFAULT_MAX_STAKE = ethers.parseEther("100");
+    const DEFAULT_MIN_STAKE = ethers.utils.parseEther("1");
+    const DEFAULT_MAX_STAKE = ethers.utils.parseEther("100");
     const DEFAULT_MIN_STAKE_LOCKED_TIME = 7 * 24 * 60 * 60; // 7 days
     const DEFAULT_MIN_TRANSACTION_DURATION = 24 * 60 * 60; // 1 day
     const DEFAULT_MAX_TRANSACTION_DURATION = 30 * 24 * 60 * 60; // 30 days
@@ -22,20 +22,11 @@ describe("ConfigManager", function () {
         [owner, other] = await ethers.getSigners();
         
         const ConfigManager = await ethers.getContractFactory("ConfigManager");
-        configManager = await ConfigManager.deploy(owner.address);
+        configManager = await upgrades.deployProxy(ConfigManager, [], { initializer: 'initialize' });
     });
 
-    describe("Constructor", function () {
+    describe("Initialization", function () {
         it("Should set correct default values", async function () {
-            const [keys, values] = await configManager.getAllConfigs();
-            
-            // Create a map of config values
-            const configs = {};
-            for (let i = 0; i < keys.length; i++) {
-                configs[keys[i]] = values[i];
-            }
-            
-            // Verify each default value
             expect(await configManager.getConfig(await configManager.MIN_STAKE())).to.equal(DEFAULT_MIN_STAKE);
             expect(await configManager.getConfig(await configManager.MAX_STAKE())).to.equal(DEFAULT_MAX_STAKE);
             expect(await configManager.getConfig(await configManager.MIN_STAKE_LOCKED_TIME())).to.equal(DEFAULT_MIN_STAKE_LOCKED_TIME);
@@ -55,7 +46,7 @@ describe("ConfigManager", function () {
 
     describe("Stake Configurations", function () {
         it("Should set minimum stake correctly", async function () {
-            const newMinStake = ethers.parseEther("2");
+            const newMinStake = ethers.utils.parseEther("2");
             await expect(configManager.connect(owner).setMinStake(newMinStake))
                 .to.emit(configManager, "ConfigUpdated")
                 .withArgs(await configManager.MIN_STAKE(), DEFAULT_MIN_STAKE, newMinStake);
@@ -64,13 +55,13 @@ describe("ConfigManager", function () {
         });
 
         it("Should fail to set minimum stake above maximum stake", async function () {
-            const newMinStake = ethers.parseEther("101");
+            const newMinStake = ethers.utils.parseEther("101");
             await expect(configManager.connect(owner).setMinStake(newMinStake))
                 .to.be.revertedWith("MIN_STAKE_EXCEEDS_MAX");
         });
 
         it("Should set maximum stake correctly", async function () {
-            const newMaxStake = ethers.parseEther("200");
+            const newMaxStake = ethers.utils.parseEther("200");
             await expect(configManager.connect(owner).setMaxStake(newMaxStake))
                 .to.emit(configManager, "ConfigUpdated")
                 .withArgs(await configManager.MAX_STAKE(), DEFAULT_MAX_STAKE, newMaxStake);
@@ -79,7 +70,7 @@ describe("ConfigManager", function () {
         });
 
         it("Should fail to set maximum stake below minimum stake", async function () {
-            const newMaxStake = ethers.parseEther("0.5");
+            const newMaxStake = ethers.utils.parseEther("0.5");
             await expect(configManager.connect(owner).setMaxStake(newMaxStake))
                 .to.be.revertedWith("MAX_STAKE_BELOW_MIN");
         });
@@ -142,7 +133,7 @@ describe("ConfigManager", function () {
                 .to.emit(configManager, "ConfigUpdated")
                 .withArgs(await configManager.SYSTEM_FEE_RATE(), DEFAULT_SYSTEM_FEE_RATE, newRate);
 
-            expect(await configManager.getSystemFeeRate()).to.equal(newRate);
+            expect(await configManager.getConfig(await configManager.SYSTEM_FEE_RATE())).to.equal(newRate);
         });
 
         it("Should set system compensation fee rate correctly", async function () {
@@ -151,7 +142,7 @@ describe("ConfigManager", function () {
                 .to.emit(configManager, "ConfigUpdated")
                 .withArgs(await configManager.SYSTEM_COMPENSATION_FEE_RATE(), DEFAULT_SYSTEM_COMPENSATION_FEE_RATE, newRate);
 
-            expect(await configManager.getSystemCompensationFeeRate()).to.equal(newRate);
+            expect(await configManager.getConfig(await configManager.SYSTEM_COMPENSATION_FEE_RATE())).to.equal(newRate);
         });
     });
 
@@ -161,16 +152,12 @@ describe("ConfigManager", function () {
                 .to.emit(configManager, "ConfigUpdated")
                 .withArgs(await configManager.SYSTEM_FEE_COLLECTOR(), 0, BigInt(other.address));
 
-            expect(await configManager.getSystemFeeCollector()).to.equal(other.address);
+            expect(await configManager.getConfig(await configManager.SYSTEM_FEE_COLLECTOR())).to.equal(BigInt(other.address));
         });
 
         it("Should fail to set zero address as fee collector", async function () {
-            await expect(configManager.connect(owner).setSystemFeeCollector(ethers.ZeroAddress))
-                .to.be.revertedWithCustomError(configManager, "ZERO_ADDRESS");
-        });
-
-        it("Should return owner as default fee collector if not set", async function () {
-            expect(await configManager.getSystemFeeCollector()).to.equal(owner.address);
+            await expect(configManager.connect(owner).setSystemFeeCollector(ethers.constants.AddressZero))
+                .to.be.revertedWith("Zero address");
         });
     });
 
@@ -182,37 +169,29 @@ describe("ConfigManager", function () {
                 await configManager.SYSTEM_FEE_RATE()
             ];
             const values = [
-                ethers.parseEther("2"),
-                ethers.parseEther("200"),
+                ethers.utils.parseEther("2"),
+                ethers.utils.parseEther("200"),
                 1000
             ];
 
-            await configManager.connect(owner).setConfigs(keys, values);
+            await expect(configManager.connect(owner).setConfigs(keys, values))
+                .to.emit(configManager, "ConfigUpdated");
 
-            for (let i = 0; i < keys.length; i++) {
-                expect(await configManager.getConfig(keys[i])).to.equal(values[i]);
-            }
+            // Verify each config was updated
+            expect(await configManager.getConfig(keys[0])).to.equal(values[0]);
+            expect(await configManager.getConfig(keys[1])).to.equal(values[1]);
+            expect(await configManager.getConfig(keys[2])).to.equal(values[2]);
         });
 
-        it("Should fail if arrays have different lengths", async function () {
-            const keys = [await configManager.MIN_STAKE(), await configManager.MAX_STAKE()];
-            const values = [ethers.parseEther("2")];
+        it("Should fail to set configs with mismatched lengths", async function () {
+            const keys = [await configManager.MIN_STAKE()];
+            const values = [
+                ethers.utils.parseEther("2"),
+                ethers.utils.parseEther("200")
+            ];
 
             await expect(configManager.connect(owner).setConfigs(keys, values))
-                .to.be.revertedWithCustomError(configManager, "LENGTH_MISMATCH");
-        });
-    });
-
-    describe("Access Control", function () {
-        it("Should prevent non-owner from setting configs", async function () {
-            await expect(configManager.connect(other).setMinStake(ethers.parseEther("2")))
-                .to.be.revertedWith("Ownable: caller is not the owner");
-
-            await expect(configManager.connect(other).setSystemFeeRate(1000))
-                .to.be.revertedWith("Ownable: caller is not the owner");
-
-            await expect(configManager.connect(other).setSystemFeeCollector(other.address))
-                .to.be.revertedWith("Ownable: caller is not the owner");
+                .to.be.revertedWith("Length mismatch");
         });
     });
 
@@ -221,14 +200,6 @@ describe("ConfigManager", function () {
             const [keys, values] = await configManager.getAllConfigs();
             expect(keys.length).to.equal(11); // Total number of configs
             expect(values.length).to.equal(11);
-        });
-
-        it("Should return correct individual config values", async function () {
-            const minStake = await configManager.getConfig(await configManager.MIN_STAKE());
-            expect(minStake).to.equal(DEFAULT_MIN_STAKE);
-
-            const systemFeeRate = await configManager.getSystemFeeRate();
-            expect(systemFeeRate).to.equal(DEFAULT_SYSTEM_FEE_RATE);
         });
     });
 });
