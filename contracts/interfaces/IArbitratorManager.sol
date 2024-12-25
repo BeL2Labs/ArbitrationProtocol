@@ -132,7 +132,8 @@ interface IArbitratorManager {
     event StakeAdded(
         address indexed arbitrator, 
         address indexed assetAddress,  // 0x0 for ETH
-        uint256 amount
+        uint256 amount,
+        uint256[] nftTokenIds
     );
     
     event StakeWithdrawn(

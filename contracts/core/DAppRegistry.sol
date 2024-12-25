@@ -48,9 +48,9 @@ contract DAppRegistry is IDAppRegistry, OwnableUpgradeable {
             revert(Errors.ZERO_ADDRESS);
         }
 
-//        if (dappStatus[dappContract] != DataTypes.DAppStatus.None) {
-//            revert(Errors.DAPP_ALREADY_REGISTERED);
-//        }
+       if (dappStatus[dappContract] != DataTypes.DAppStatus.None) {
+           revert(Errors.DAPP_ALREADY_REGISTERED);
+       }
 
         if (msg.value != REGISTRATION_FEE) {
             revert(Errors.INSUFFICIENT_FEE);

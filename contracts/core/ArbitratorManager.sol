@@ -106,6 +106,39 @@ contract ArbitratorManager is
         nftInfo = IBNFTInfo(_nftInfo);
     }
 
+    // Helper function to validate inputs
+    function _validateInputs(
+        address operator,
+        address revenueAddress,
+        string calldata btcAddress,
+        bytes calldata btcPubKey,
+        uint256 feeRate,
+        uint256 deadline
+    ) private view {
+        if (operator == zeroAddress) revert(Errors.ZERO_ADDRESS);
+        if (revenueAddress == zeroAddress) revert(Errors.ZERO_ADDRESS);
+        if (bytes(btcAddress).length == 0) revert(Errors.INVALID_PARAMETER);
+        if (btcPubKey.length == 0) revert(Errors.INVALID_PARAMETER);
+        
+        // Validate fee rate
+        uint256 minFeeRate = configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE());
+        if (feeRate < minFeeRate) revert(Errors.INVALID_FEE_RATE);
+
+        // Validate deadline
+        if (deadline != 0 && deadline <= block.timestamp) revert(Errors.INVALID_DEADLINE);
+    }
+
+    // Helper function to get or create arbitrator info
+    function _getOrCreateArbitratorInfo(address sender) private returns (DataTypes.ArbitratorInfo storage) {
+        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[sender];
+        
+        if (arbitrator.arbitrator == zeroAddress) {
+            arbitrator.arbitrator = sender;
+        }
+
+        return arbitrator;
+    }
+
     function registerArbitratorByStakeETH(
         address operator,
         address revenueAddress,
@@ -114,18 +147,7 @@ contract ArbitratorManager is
         uint256 feeRate,
         uint256 deadline
     ) external payable override {
-        // Check if the operator is not zero address
-        require(operator != address(0), Errors.INVALID_OPERATOR);
-
-        // Check if the revenue address is not zero address
-        require(revenueAddress != address(0), Errors.INVALID_REVENUE_ADDRESS);
-
-        // Check if the fee rate is within the allowed range
-        require(feeRate >= configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE()), Errors.INVALID_FEE_RATE);
-
-        // Check if the deadline is in the future
-        require(deadline == 0 || deadline > block.timestamp, Errors.INVALID_DEADLINE);
-
+        _validateInputs(operator, revenueAddress, btcAddress, btcPubKey, feeRate, deadline);
         // Check total stake is within limits
         uint256 minStake = configManager.getConfig(configManager.MIN_STAKE());
         uint256 maxStake = configManager.getConfig(configManager.MAX_STAKE());
@@ -156,7 +178,7 @@ contract ArbitratorManager is
         arbitrator.ethAmount += msg.value;
 
         // Emit an event to notify the registration
-        emit StakeAdded(arbitrator.arbitrator, address(0), msg.value);
+        emit StakeAdded(arbitrator.arbitrator, address(0), msg.value, new uint256[](0));
         emit ArbitratorRegistered(
             msg.sender,
             operator,
@@ -168,16 +190,6 @@ contract ArbitratorManager is
         );
     }
 
-    /**
-     * @notice Register an arbitrator by staking NFTs
-     * @param tokenIds Array of NFT token IDs to stake
-     * @param operator Address of the arbitrator's operator
-     * @param revenueAddress Address to receive revenue
-     * @param btcAddress Bitcoin address of the arbitrator
-     * @param btcPubKey Bitcoin public key of the arbitrator
-     * @param feeRate Fee rate for arbitration
-     * @param deadline Optional deadline for arbitration availability
-     */
     function registerArbitratorByStakeNFT(
         uint256[] calldata tokenIds,
         address operator,
@@ -186,19 +198,9 @@ contract ArbitratorManager is
         bytes calldata btcPubKey,
         uint256 feeRate,
         uint256 deadline
-    ) external {
-        // Validate operator address
-        if (operator == address(0)) revert(Errors.INVALID_OPERATOR);
-
-        // Validate revenue address
-        if (revenueAddress == address(0)) revert(Errors.INVALID_REVENUE_ADDRESS);
-
-        // Validate fee rate
-        uint256 minFeeRate = configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE());
-        if (feeRate < minFeeRate) revert(Errors.INVALID_FEE_RATE);
-
-        // Validate deadline
-        if (deadline != 0 && deadline <= block.timestamp)revert(Errors.INVALID_DEADLINE);
+    ) external nonReentrant {
+        // Validate inputs
+        _validateInputs(operator, revenueAddress, btcAddress, btcPubKey, feeRate, deadline);
 
         // Validate token IDs
         if (tokenIds.length == 0) revert(Errors.EMPTY_TOKEN_IDS);
@@ -216,7 +218,7 @@ contract ArbitratorManager is
         arbitrator.currentFeeRate = feeRate;
         arbitrator.deadLine = deadline;
 
-       // Calculate total NFT value
+        // Calculate total NFT value
         uint256 totalNftValue = _calculateNFTValue(tokenIds);
 
         // Transfer NFTs and update arbitrator's token list
@@ -228,8 +230,7 @@ contract ArbitratorManager is
         // Set or validate NFT contract
         _setOrValidateNFTContract(arbitrator);
 
-        emit StakeAdded(msg.sender, address(nftContract), totalNftValue);
-        // Emit arbitrator registration event
+        emit StakeAdded(msg.sender, address(nftContract), totalNftValue, tokenIds);
         emit ArbitratorRegistered(
             msg.sender,
             operator,
@@ -265,8 +266,7 @@ contract ArbitratorManager is
         
         if (totalStakeValue < minStake) revert(Errors.INSUFFICIENT_STAKE);
         if (totalStakeValue > maxStake) revert(Errors.STAKE_EXCEEDS_MAX);
-
-        emit StakeAdded(arbitrator.arbitrator, address(0), msg.value);
+        emit StakeAdded(arbitrator.arbitrator, address(0), msg.value,new uint256[](0));
     }
 
     /**
@@ -295,7 +295,7 @@ contract ArbitratorManager is
         // Set or validate NFT contract
         _setOrValidateNFTContract(arbitrator);
 
-        emit StakeAdded(msg.sender, address(nftContract), totalNftValue);
+        emit StakeAdded(msg.sender, address(nftContract), totalNftValue, tokenIds);
     }
 
     /**
