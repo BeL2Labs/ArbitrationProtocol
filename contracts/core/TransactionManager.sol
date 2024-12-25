@@ -397,6 +397,11 @@ contract TransactionManager is
         return fee;
     }
 
+    function setArbitratorManager(address _arbitratorManager) external onlyOwner {
+        arbitratorManager = IArbitratorManager(_arbitratorManager);
+        emit SetArbitratorManager(_arbitratorManager);
+    }
+
     // Add a gap for future storage variables
     uint256[50] private __gap;
 }

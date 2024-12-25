@@ -140,3 +140,17 @@ MIT License
 - Issue 提交
 - Pull Request
 - 邮件联系
+
+## Setting ArbitratorManager
+
+To set the ArbitratorManager for the TransactionManager contract:
+
+1. Replace `YOUR_TRANSACTION_MANAGER_ADDRESS` with the actual deployed TransactionManager contract address
+2. Replace `YOUR_ARBITRATOR_MANAGER_ADDRESS` with the address of the ArbitratorManager you want to set
+3. Run the script:
+
+```bash
+npx hardhat run scripts/setArbitratorManager.js --network <your-network>
+```
+
+Note: Ensure you are using an account with owner permissions when running this script.

@@ -51,7 +51,17 @@ interface ICompensationManager {
         address _arbitratorManager
     ) external;
 
+    // Setter methods for critical interfaces
+    function setZkService(address _zkService) external;
+    function setTransactionManager(address _transactionManager) external;
+    function setConfigManager(address _configManager) external;
+    function setArbitratorManager(address _arbitratorManager) external;
+
     // Events
     event CompensationClaimed(bytes32 indexed claimId, address indexed claimer, uint8 claimType);
     event CompensationWithdrawn(bytes32 indexed claimId);
+    event ZkServiceUpdated(address indexed newZkService);
+    event TransactionManagerUpdated(address indexed newTransactionManager);
+    event ConfigManagerUpdated(address indexed newConfigManager);
+    event ArbitratorManagerUpdated(address indexed newArbitratorManager);
 }

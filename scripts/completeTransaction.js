@@ -16,7 +16,7 @@ async function main() {
     const transactionManager = TransactionManager.attach(transactionManagerAddress);
 
     // Transaction ID to complete
-    const transactionId = "0x1a1c954f3e18c81d6f127913cbbc8a5e533ad25d1dbd1e83afcd08ef981d04e5";
+    const transactionId = "0x3bfda6c7defc6ffc9ec3dcfec845b2b0b6e8ad3658ab856cc493882c765a5323";
 
     try {
         // Log transaction details

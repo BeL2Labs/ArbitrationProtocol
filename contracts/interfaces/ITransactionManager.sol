@@ -55,8 +55,10 @@ interface ITransactionManager {
     event TransactionCreated(bytes32 indexed id, address indexed sender, address indexed arbitrator);
     event TransactionCancelled(bytes32 indexed id);
     event CompensationManagerInitialized(address indexed compensationManager);
+    event SetArbitratorManager(address indexed arbitratorManager);
 
     // Functions
     function initialize(address _arbitratorManager, address _dappRegistry, address _configManager) external;
     function initCompensationManager(address _compensationManager) external;
+    function setArbitratorManager(address _arbitratorManager) external;
 }

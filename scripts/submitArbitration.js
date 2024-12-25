@@ -16,10 +16,10 @@ async function main() {
     const transactionManager = TransactionManager.attach(transactionManagerAddress).connect(operator);
 
     // Transaction ID for arbitration submission
-    const transactionId = "0x1a1c954f3e18c81d6f127913cbbc8a5e533ad25d1dbd1e83afcd08ef981d04e5";
+    const transactionId = "0xf27cf083281e34b8e74f401424745ac1cb560597cc6a70fe38a5fabe2c316181";
 
     // Arbitration signature
-    const signature = "0x304402202c731fd1feff32e502ea2364b10556e1d5e1a141a7837b993f84a03d2109a7a802202a05b2328d14287b7f0a2882b3255303671b7b949b065b7c0a8a946048829be4";
+    const signature = "0x3045022100da26bd7bc69739e6745c16276845541ccc837969014aea50b6b44b447fdc84ac02203f1a3a5066b2bd1462ad2185e57f3a10d6e7d5b42156475461ad8e6d8605a6a2";
 
     try {
         // Log transaction details

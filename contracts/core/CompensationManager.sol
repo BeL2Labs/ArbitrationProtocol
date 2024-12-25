@@ -366,6 +366,36 @@ contract CompensationManager is
     receive() external payable {
     }
 
+
+
+    // Setter for ZkService
+    function setZkService(address _zkService) external onlyOwner {
+        require(address(_zkService) != address(0), "Invalid ZkService address");
+        zkService = IZkService(_zkService);
+        emit ZkServiceUpdated(address(_zkService));
+    }
+
+    // Setter for TransactionManager
+    function setTransactionManager(address _transactionManager) external onlyOwner {
+        require(address(_transactionManager) != address(0), "Invalid TransactionManager address");
+        transactionManager = ITransactionManager(_transactionManager);
+        emit TransactionManagerUpdated(address(_transactionManager));
+    }
+
+    // Setter for ConfigManager
+    function setConfigManager(address _configManager) external onlyOwner {
+        require(address(_configManager) != address(0), "Invalid ConfigManager address");
+        configManager = IConfigManager(_configManager);
+        emit ConfigManagerUpdated(address(_configManager));
+    }
+
+    // Setter for ArbitratorManager
+    function setArbitratorManager(address _arbitratorManager) external onlyOwner {
+        require(address(_arbitratorManager) != address(0), "Invalid ArbitratorManager address");
+        arbitratorManager = IArbitratorManager(_arbitratorManager);
+        emit ArbitratorManagerUpdated(address(_arbitratorManager));
+    }
+
     // Add a gap for future storage variables
     uint256[50] private __gap;
 }

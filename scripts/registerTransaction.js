@@ -2,7 +2,7 @@ const { ethers, network } = require("hardhat");
 const { readConfig } = require("./helper.js");
 
 async function main() {
-    let [deployer] = await ethers.getSigners();
+    let [deployer, receiver] = await ethers.getSigners();
     console.log("Deployer address:", deployer.address);
 
     // Get the contract factory for TransactionManager
@@ -17,75 +17,46 @@ async function main() {
 
     // Parameters for registerTransaction
     const arbitratorAddress = deployer.address;
-    const compensationReceiverAddress = deployer.address;
+    const compensationReceiverAddress = receiver.address;
     const deadline = Math.floor(Date.now() / 1000) + 3600 * 24 + 180; // 1 days from now
     const value = ethers.utils.parseEther("0.1");
-    try {
-        // Log detailed transaction parameters
-        console.log("Transaction Parameters:");
-        console.log("Arbitrator Address:", arbitratorAddress);
-        console.log("Compensation Receiver Address:", compensationReceiverAddress);
-        console.log("Deadline:", deadline);
-        console.log("Value:", value);
-        let gasLimit = await transactionManager.estimateGas.registerTransaction(
-            arbitratorAddress, deadline, compensationReceiverAddress,
-            {value: value}
-        );
-        console.log("Gas Limit:", gasLimit);
-        // Call registerTransaction directly with transaction options
-        const tx = await transactionManager.registerTransaction(
-            arbitratorAddress, 
-            deadline, 
-            compensationReceiverAddress,
-            {
-                value: value,
-                gasLimit: gasLimit
-            }
-        );
-
-        // Wait for the transaction to be mined
-        const receipt = await tx.wait();
-
-        // Log the transaction details
-        console.log("Transaction registered successfully!");
-        console.log("Transaction Hash:", tx.hash);
-        console.log("Block Number:", receipt.blockNumber);
-        
-        // Check if there are any events
-        if (receipt.logs && receipt.logs.length > 0) {
-            console.log("Transaction Logs:", receipt.logs);
-            
-            // Try to parse events
-            receipt.logs.forEach((log, index) => {
-                try {
-                    const parsedLog = transactionManager.interface.parseLog(log);
-                    console.log(`Parsed Event ${index}:`, parsedLog);
-                } catch (parseError) {
-                    console.error(`Error parsing event ${index}:`, parseError);
-                }
-            });
+    // Log detailed transaction parameters
+    const utxos = [{
+        txHash: ethers.utils.randomBytes(32),
+        index: 0,
+        script: ethers.utils.randomBytes(20),
+        amount: ethers.utils.parseEther("1")
+    }];
+    console.log("Transaction Parameters:");
+    console.log("Arbitrator Address:", arbitratorAddress);
+    console.log("Compensation Receiver Address:", compensationReceiverAddress);
+    console.log("Deadline:", deadline);
+    console.log("Value:", value);
+    let gasLimit = await transactionManager.estimateGas.registerTransaction(utxos,
+        arbitratorAddress, deadline, compensationReceiverAddress,
+        {value: value}
+    );
+    console.log("Gas Limit:", gasLimit);
+    // Call registerTransaction directly with transaction options
+    const tx = await transactionManager.registerTransaction(
+        utxos,
+        arbitratorAddress, 
+        deadline, 
+        compensationReceiverAddress,
+        {
+            value: value,
+            gasLimit: gasLimit
         }
-    } catch (error) {
-        console.error("Error registering transaction:", error);
+    );
+
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+
+    // Log the transaction details
+    console.log("Transaction registered successfully!");
+    console.log("Transaction Hash:", tx.hash);
+    console.log("Block Number:", receipt.blockNumber);
         
-        // Detailed error logging
-        console.error("Error Name:", error.name);
-        console.error("Error Message:", error.message);
-        
-        // If it's a revert error, try to decode the reason
-        if (error.code === 'ACTION_REJECTED' || error.code === 'CALL_EXCEPTION') {
-            try {
-                const errorInterface = transactionManager.interface;
-                const errorDescription = errorInterface.decodeErrorResult(error.data);
-                console.error("Decoded Error:", errorDescription);
-            } catch (decodeError) {
-                console.error("Could not decode error:", decodeError);
-            }
-        }
-        
-        // Additional error context
-        console.error("Full Error Object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-    }
 }
 
 main()
