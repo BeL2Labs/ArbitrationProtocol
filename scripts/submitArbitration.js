@@ -4,6 +4,7 @@ const { readConfig } = require("./helper.js");
 async function main() {
     let [deployer, operator] = await ethers.getSigners();
     console.log("Deployer address:", deployer.address);
+    console.log("operator address:", operator.address);
 
     // Get the contract factory for TransactionManager
     const TransactionManager = await ethers.getContractFactory("TransactionManager");
@@ -16,7 +17,7 @@ async function main() {
     const transactionManager = TransactionManager.attach(transactionManagerAddress).connect(operator);
 
     // Transaction ID for arbitration submission
-    const transactionId = "0xf27cf083281e34b8e74f401424745ac1cb560597cc6a70fe38a5fabe2c316181";
+    const transactionId = "0x6cbb76ac88c1c6eafe4559ff73f4b35a5437879f96618779049ba9d34aad96ee";
 
     // Arbitration signature
     const signature = "0x3045022100da26bd7bc69739e6745c16276845541ccc837969014aea50b6b44b447fdc84ac02203f1a3a5066b2bd1462ad2185e57f3a10d6e7d5b42156475461ad8e6d8605a6a2";

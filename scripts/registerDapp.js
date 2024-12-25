@@ -23,7 +23,7 @@ async function main() {
   let gasLimit = await contract.estimateGas.registerDApp(dapp, {value:payAmount});
   console.log("gasLimit:", gasLimit);
 
-  const tx = await contract.registerDApp(deployer.address, {gasLimit: gasLimit, value:payAmount});
+  const tx = await contract.registerDApp(dapp, {gasLimit: gasLimit, value:payAmount});
   await tx.wait();
   console.log("registerDapp dapp tx ", tx.hash);
 }

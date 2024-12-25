@@ -6,7 +6,7 @@ async function main() {
   console.log("chain ID:", chainID);
   const [deployer] = await ethers.getSigners();
   console.log("Deployer address:", deployer.address);
-
+  let dapp = '0x98568A3abB586B92294cDb4AD5b03E560BCADb06';
   // Get the contract factory
   const DAppRegistry = await ethers.getContractFactory("DAppRegistry");
   
@@ -16,9 +16,9 @@ async function main() {
   
   // Get the contract instance
   const contract = await DAppRegistry.attach(dappRegistryAddress);
-  let gasLimit = await contract.estimateGas.authorizeDApp(deployer.address);
+  let gasLimit = await contract.estimateGas.authorizeDApp(dapp);
   console.log("gasLimit:", gasLimit);
-  const tx = await contract.authorizeDApp(deployer.address, {gasLimit: gasLimit});
+  const tx = await contract.authorizeDApp(dapp, {gasLimit: gasLimit});
   await tx.wait();
   console.log("authorizeDApp dapp tx ", tx.hash);
 }
