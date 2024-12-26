@@ -230,8 +230,8 @@ contract ArbitratorManager is
             msg.sender,
             arbitrator.operator, // operator
             arbitrator.revenueETHAddress, // revenue ETH address
-            defaultRevenueBtcAddress,
-            defaultRevenueBtcPubKey,
+            defaultBtcAddress,
+            defaultBtcPubKey,
             feeRate,
             deadline
         );
