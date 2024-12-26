@@ -75,8 +75,6 @@ describe("TransactionManager", function () {
         const feeRate = 1000; // 10%
         console.log("Before Register arbitrator result:");
         let tx = await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
-            operator.address,
-            arbitrator.address,
             btcAddress,
             btcPubKey,
             feeRate,

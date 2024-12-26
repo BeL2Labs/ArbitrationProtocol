@@ -78,8 +78,6 @@ describe("CompensationManager", function () {
         const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
         const feeRate = 1000; // 10%
         let tx = await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
-            arbitrator.address,
-            arbitrator.address,
             btcAddress,
             btcPubKey,
             feeRate,

@@ -47,8 +47,6 @@ describe("ArbitratorManager", function () {
 
       await expect(
         arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
-          operator.address,
-          arbitrator.address,
           btcAddress,
           btcPubKey,
           feeRate,
@@ -58,7 +56,7 @@ describe("ArbitratorManager", function () {
       ).to.emit(arbitratorManager, "ArbitratorRegistered");
 
       const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
-      expect(arbitratorInfo.operator).to.equal(operator.address);
+      expect(arbitratorInfo.operator).to.equal(arbitrator.address);
       expect(arbitratorInfo.revenueETHAddress).to.equal(arbitrator.address);
       expect(arbitratorInfo.operatorBtcAddress).to.equal(btcAddress);
       expect(arbitratorInfo.currentFeeRate).to.equal(feeRate);
@@ -72,8 +70,6 @@ describe("ArbitratorManager", function () {
 
          await expect(
            arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
-             operator.address,
-             arbitrator.address,
              btcAddress,
              btcPubKey,
              feeRate,
@@ -91,8 +87,6 @@ describe("ArbitratorManager", function () {
 
          await expect(
            arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
-             operator.address,
-             arbitrator.address,
              btcAddress,
              btcPubKey,
              lowFeeRate,
@@ -109,8 +103,6 @@ describe("ArbitratorManager", function () {
 
          await expect(
            arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
-             operator.address,
-             arbitrator.address,
              btcAddress,
              btcPubKey,
              feeRate,
@@ -134,8 +126,6 @@ describe("ArbitratorManager", function () {
 
          // Register arbitrator
          await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
-           operator.address,
-           arbitrator.address,
            btcAddress,
            btcPubKey,
            feeRate,
@@ -167,7 +157,7 @@ describe("ArbitratorManager", function () {
 
          // Validate specific fields
          expect(arbitratorInfo.ethAmount).to.equal(stakeAmount);
-         expect(arbitratorInfo.operator).to.equal(operator.address);
+         expect(arbitratorInfo.operator).to.equal(arbitrator.address);
          expect(arbitratorInfo.currentFeeRate).to.equal(feeRate);
          expect(arbitratorInfo.deadLine).to.equal(deadline);
          expect(arbitratorInfo.operatorBtcAddress).to.equal(btcAddress);
