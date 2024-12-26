@@ -23,15 +23,15 @@ async function main() {
     // Wait for the transaction to be mined
     let receipt = await tx.wait();
     
-    console.log(`transactionManager ArbitratorManager set successfully. Transaction hash: ${receipt.hash}`);
+    console.log(`transactionManager ArbitratorManager set successfully. Transaction hash: ${tx.hash}`);
 
     const compensationManagerAddress = await readConfig(hre.network.name, "COMPENSATION_MANAGER");
     const CompensationManager = await ethers.getContractFactory("CompensationManager");
     const compensationManager = CompensationManager.attach(compensationManagerAddress);
 
-    // tx = await compensationManager.setArbitratorManager(arbitratorManagerAddress);
-    // receipt = await tx.wait();
-    // console.log(`compensationManager ArbitratorManager set successfully. Transaction hash: ${receipt.hash}`);
+    tx = await compensationManager.setArbitratorManager(arbitratorManagerAddress);
+    receipt = await tx.wait();
+    console.log(`compensationManager ArbitratorManager set successfully. Transaction hash: ${tx.hash}`);
 
 }
 
