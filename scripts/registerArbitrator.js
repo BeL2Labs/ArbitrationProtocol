@@ -56,7 +56,7 @@ async function main() {
     const minStake = await configManager.getConfig(await configManager.MIN_STAKE());
     console.log("Minimum Stake Requirement:", ethers.utils.formatEther(minStake), "ETH");
 
-    let operator_index = 1;
+    let arbitrator_index = 0;
     const accounts = network.config.accounts;
     let privateKey;
     if (typeof accounts === 'string') {
@@ -65,22 +65,20 @@ async function main() {
         privateKey = wallet.privateKey;
     } else if (Array.isArray(accounts)) {
         // If using private keys array
-        privateKey = accounts[operator_index];
+        privateKey = accounts[arbitrator_index];
     } else {
         throw new Error("Could not get private key from network config");
     }
 
     // Prepare arbitrator registration parameters
     let { btcPubKey, btcAddress } = await getBitcoinCredentials(privateKey);
-    const operatorAddress = operator.address; // Using the same address as operator
-    const revenueAddress = signer.address; // Revenue address same as signer
     const feeRate = ethers.utils.parseUnits("0.05", 4); // 0.5% fee rate (4 decimal places)
     const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
     btcPubKey = "0x" + btcPubKey;
     try {
         // Estimate gas for the transaction
         const gasEstimate = await arbitratorManager.estimateGas.registerArbitratorByStakeETH(
-            operatorAddress,revenueAddress, btcAddress, btcPubKey, feeRate, deadline,
+            btcAddress, btcPubKey, feeRate, deadline,
             {
                  value: minStake
             });
@@ -88,7 +86,7 @@ async function main() {
 
         // Send transaction to register arbitrator
         const tx = await arbitratorManager.registerArbitratorByStakeETH(
-            operatorAddress,revenueAddress, btcAddress, btcPubKey, feeRate, deadline,
+            btcAddress, btcPubKey, feeRate, deadline,
             {
                 value: minStake,
                 gasLimit: gasEstimate.mul(2) // Add some buffer
@@ -97,7 +95,7 @@ async function main() {
         // Wait for transaction confirmation
         const receipt = await tx.wait();
         console.log("Arbitrator Registration Transaction Hash:", receipt.transactionHash);
-
+        console.log("Next Step, you should call setOperator use set_operator.js");
 
     } catch (error) {
         console.error("Error registering arbitrator:", error);
