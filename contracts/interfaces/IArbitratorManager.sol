@@ -86,6 +86,13 @@ interface IArbitratorManager {
      */
     function terminateArbitratorWithSlash(address arbitrator) external;
 
+    /**
+     * @notice Freezes an arbitrator's status after submitted transactions
+     * @dev Only callable by authorized transaction manager
+     * @param arbitrator The address of the arbitrator to be frozen
+     */
+    function frozenArbitrator(address arbitrator) external;
+
     // Query interfaces
     function getArbitratorInfo(address arbitrator) external view returns (DataTypes.ArbitratorInfo memory);
     function isActiveArbitrator(address arbitrator) external view returns (bool);

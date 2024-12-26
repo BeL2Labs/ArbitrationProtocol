@@ -6,7 +6,8 @@ library DataTypes {
         Active,     // Arbitrator is available for new transactions
         Working,    // Arbitrator is currently working on a transaction
         Paused,     // Arbitrator is temporarily paused
-        Terminated  // Arbitrator has been terminated
+        Terminated,  // Arbitrator has been terminated
+        Frozen // Arbitrator has been frozen
     }
 
     enum DAppStatus {
@@ -58,7 +59,7 @@ library DataTypes {
         bytes revenueBtcPubKey;   // Bitcoin public key for receiving arbitrator earnings
         string revenueBtcAddress; // Bitcoin address for receiving arbitrator earnings
         address revenueETHAddress; // ETH address for receiving arbitrator earnings
-        uint256 lastCompletedWorkTime; // Last completed work time
+        uint256 lastSubmittedWorkTime; // Last submitted work time
     }
 
     struct Transaction {

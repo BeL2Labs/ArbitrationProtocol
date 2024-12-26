@@ -353,7 +353,7 @@ contract ArbitratorManager is
      */
     function unstake() external override notWorking {
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (isFrozenArbitrator(arbitrator)) revert(Errors.IS_FROZEN);
+        if(!this.canUnStake(arbitrator.arbitrator)) revert(Errors.STAKE_STILL_LOCKED);
         require(arbitrator.ethAmount > 0 || arbitrator.nftTokenIds.length > 0, "NoStake");
         
         uint256 amount = arbitrator.ethAmount;
@@ -518,13 +518,13 @@ contract ArbitratorManager is
         return totalStakeValue >= configManager.getConfig(configManager.MIN_STAKE());
     }
 
-    function isFrozenArbitrator( DataTypes.ArbitratorInfo memory arbitrator) internal view returns(bool) {
+    function isFrozenArbitrator(DataTypes.ArbitratorInfo memory arbitrator) internal view returns(bool) {
         uint256 freeze_period = configManager.getArbitrationFrozenPeriod();
-        if (arbitrator.lastCompletedWorkTime == 0) {
+        if (arbitrator.lastSubmittedWorkTime == 0) {
             return false;
         }
-        if (arbitrator.lastCompletedWorkTime + freeze_period <= block.timestamp) {
-            return false;
+        if (arbitrator.lastSubmittedWorkTime + freeze_period <= block.timestamp) {
+            return true;
         }
         return false;
     }
@@ -603,9 +603,6 @@ contract ArbitratorManager is
     ) external onlyTransactionManager {
         DataTypes.ArbitratorInfo storage arbitratorInfo = arbitrators[arbitrator];
         
-        // Validate arbitrator state
-        if (arbitratorInfo.status != DataTypes.ArbitratorStatus.Working)
-            revert(Errors.ARBITRATOR_NOT_WORKING);
         if (arbitratorInfo.activeTransactionId != transactionId)
             revert(Errors.INVALID_TRANSACTION_ID);
             
@@ -670,6 +667,26 @@ contract ArbitratorManager is
         }
 
         return totalValue;
+    }
+
+    /**
+     * @notice Freeze an arbitrator's status after submitted transactions
+     * @param arbitrator Address of the arbitrator
+     */
+    function frozenArbitrator(address arbitrator) external override onlyTransactionManager {
+
+        // Get the arbitrator's info
+        DataTypes.ArbitratorInfo storage arbitratorInfo = arbitrators[arbitrator];
+
+        // Ensure the arbitrator exists and is active
+        require(arbitratorInfo.arbitrator != address(0), Errors.ARBITRATOR_NOT_REGISTERED);
+        require(arbitratorInfo.status == DataTypes.ArbitratorStatus.Working, Errors.INVALID_ARBITRATOR_STATUS);
+
+        // Set the last submitted work time to current timestamp to trigger freeze
+        arbitratorInfo.lastSubmittedWorkTime = block.timestamp;
+        arbitratorInfo.status = DataTypes.ArbitratorStatus.Frozen;
+        // Emit event about arbitrator being frozen
+        emit ArbitratorStatusChanged(arbitrator, DataTypes.ArbitratorStatus.Frozen);
     }
 
     /**

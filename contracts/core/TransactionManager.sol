@@ -326,6 +326,7 @@ contract TransactionManager is
 
         transaction.status = DataTypes.TransactionStatus.Submitted;
         transaction.signature = btcTxSignature;
+        arbitratorManager.frozenArbitrator(transaction.arbitrator);
 
         emit ArbitrationSubmitted(transaction.dapp, id);
     }
