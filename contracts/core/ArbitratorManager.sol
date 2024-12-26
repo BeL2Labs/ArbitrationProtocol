@@ -519,9 +519,9 @@ contract ArbitratorManager is
     }
 
     function isFrozenStatus(address arbitrator) external view returns (bool) {
-        DataTypes.ArbitratorInfo memory arbitrator = arbitrators[arbitrator];
-        require(arbitrator.arbitrator != address(0), Errors.ARBITRATOR_NOT_REGISTERED);
-        return isFrozenArbitrator(arbitrator);
+        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitrators[arbitrator];
+        require(arbitratorInfo.arbitrator != address(0), Errors.ARBITRATOR_NOT_REGISTERED);
+        return isFrozenArbitrator(arbitratorInfo);
     }
 
     function isFrozenArbitrator(DataTypes.ArbitratorInfo memory arbitrator) internal view returns(bool) {
