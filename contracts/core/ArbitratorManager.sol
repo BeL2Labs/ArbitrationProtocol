@@ -136,12 +136,12 @@ contract ArbitratorManager is
     }
 
     function registerArbitratorByStakeETH(
-        string calldata defaultRevenueBtcAddress,
-        bytes calldata defaultRevenueBtcPubKey,
+        string calldata defaultBtcAddress,
+        bytes calldata defaultBtcPubKey,
         uint256 feeRate,
         uint256 deadline
     ) external payable {
-        _validateInputs(defaultRevenueBtcAddress, defaultRevenueBtcPubKey, feeRate, deadline);
+        _validateInputs(defaultBtcAddress, defaultBtcPubKey, feeRate, deadline);
 
         _validateStakeAmount(msg.value, 0);
 
@@ -153,9 +153,11 @@ contract ArbitratorManager is
         arbitrator.operator = msg.sender;//default use self as operator
         // Set the arbitrator's revenue address
         arbitrator.revenueETHAddress = msg.sender;
-        // Set the arbitrator's Bitcoin address and public key
-        arbitrator.revenueBtcAddress = defaultRevenueBtcAddress;
-        arbitrator.revenueBtcPubKey = defaultRevenueBtcPubKey;
+        // Set the arbitrator and operator's Bitcoin address and public key
+        arbitrator.revenueBtcAddress = defaultBtcAddress;
+        arbitrator.revenueBtcPubKey = defaultBtcPubKey;
+        arbitrator.operatorBtcAddress = defaultBtcAddress;
+        arbitrator.operatorBtcPubKey = defaultBtcPubKey;
 
         // Set the arbitrator's fee rate
         arbitrator.currentFeeRate = feeRate;
@@ -181,13 +183,13 @@ contract ArbitratorManager is
 
     function registerArbitratorByStakeNFT(
         uint256[] calldata tokenIds,
-        string calldata defaultRevenueBtcAddress,
-        bytes calldata defaultRevenueBtcPubKey,
+        string calldata defaultBtcAddress,
+        bytes calldata defaultBtcPubKey,
         uint256 feeRate,
         uint256 deadline
     ) external nonReentrant {
         // Validate inputs
-        _validateInputs(defaultRevenueBtcAddress, defaultRevenueBtcPubKey, feeRate, deadline);
+        _validateInputs(defaultBtcAddress, defaultBtcPubKey, feeRate, deadline);
 
         // Validate token IDs
         if (tokenIds.length == 0) revert(Errors.EMPTY_TOKEN_IDS);
@@ -202,9 +204,11 @@ contract ArbitratorManager is
         arbitrator.operator = msg.sender;
         // Default revenue ETH address is the sender
         arbitrator.revenueETHAddress = msg.sender;
-        // Set the arbitrator's Bitcoin address and public key
-        arbitrator.revenueBtcAddress = defaultRevenueBtcAddress;
-        arbitrator.revenueBtcPubKey = defaultRevenueBtcPubKey;
+        // Set the arbitrator and operator's Bitcoin address and public key
+        arbitrator.revenueBtcAddress = defaultBtcAddress;
+        arbitrator.revenueBtcPubKey = defaultBtcPubKey;
+        arbitrator.operatorBtcAddress = defaultBtcAddress;
+        arbitrator.operatorBtcPubKey = defaultBtcPubKey;
         arbitrator.currentFeeRate = feeRate;
         arbitrator.deadLine = deadline;
 

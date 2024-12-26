@@ -9,33 +9,35 @@ interface IArbitratorManager {
     function stakeNFT(uint256[] calldata tokenIds) external;
     function unstake() external;  // Withdraw all staked assets
 
-    /// @notice Registers a new arbitrator by staking ETH and providing revenue details
+    /// @notice Registers a new arbitrator by staking ETH
     /// @dev Allows an entity to become an arbitrator in the protocol by staking ETH
-    /// @param defaultRevenueBtcAddress Bitcoin address where arbitrator will receive revenue payments
-    /// @param defaultRevenueBtcPubKey Public key corresponding to the Bitcoin revenue address
+    /// @param defaultBtcAddress Bitcoin address for receiving arbitrator earnings set to revenueBtcAddress and operatorBtcAddress
+    /// @param defaultBtcPubKey Public key corresponding to the Bitcoin address set to revenueBtcPubKey and operatorBtcPubKey
     /// @param feeRate Percentage fee (in basis points) that the arbitrator will charge for services (4 decimal places)
-    /// @param deadline Timestamp by which the registration must be completed (in seconds 0 for no deadline)
+    /// @param deadline Timestamp by which the registration must be completed (0 for no deadline)
     /// @dev Requires msg.value to meet the minimum ETH staking requirement
+    /// @dev Sets the arbitrator's operator and revenue addresses to the sender by default
     /// @dev Emits an ArbitratorStatusChanged event upon successful registration
     function registerArbitratorByStakeETH(
-        string calldata defaultRevenueBtcAddress,
-        bytes calldata defaultRevenueBtcPubKey,
+        string calldata defaultBtcAddress,
+        bytes calldata defaultBtcPubKey,
         uint256 feeRate,
         uint256 deadline) external payable;
 
-    /// @notice Registers a new arbitrator by staking NFTs and providing revenue details
+    /// @notice Registers a new arbitrator by staking NFTs
     /// @dev Allows an entity to become an arbitrator in the protocol by staking NFTs
     /// @param tokenIds Array of NFT token IDs to be staked as collateral
-    /// @param defaultRevenueBtcAddress Bitcoin address where arbitrator will receive revenue payments
-    /// @param defaultRevenueBtcPubKey Public key corresponding to the Bitcoin revenue address
+    /// @param defaultBtcAddress Bitcoin address for receiving arbitrator earnings
+    /// @param defaultBtcPubKey Public key corresponding to the Bitcoin address
     /// @param feeRate Percentage fee (in basis points) that the arbitrator will charge for services (4 decimal places)
-    /// @param deadline Timestamp by which the registration must be completed (in seconds 0 for no deadline)
+    /// @param deadline Timestamp by which the registration must be completed (0 for no deadline)
     /// @dev Requires a minimum number of NFTs to be staked
+    /// @dev Sets the arbitrator's operator and revenue addresses to the sender by default
     /// @dev Emits an ArbitratorStatusChanged event upon successful registration
     function registerArbitratorByStakeNFT(
         uint256[] calldata tokenIds,
-        string calldata defaultRevenueBtcAddress,
-        bytes calldata defaultRevenueBtcPubKey,
+        string calldata defaultBtcAddress,
+        bytes calldata defaultBtcPubKey,
         uint256 feeRate,
         uint256 deadline) external;
 
