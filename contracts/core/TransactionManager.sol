@@ -154,7 +154,7 @@ contract TransactionManager is
         transaction.btcTx = new bytes(0);
         transaction.btcTxHash = bytes32(0);
         transaction.status = DataTypes.TransactionStatus.Active;
-        transaction.depositedFee = fee;
+        transaction.depositedFee = msg.value;
         transaction.signature = new bytes(0);
         transaction.compensationReceiver = compensationReceiver;
         transaction.timeoutCompensationReceiver = compensationReceiver;
@@ -165,7 +165,7 @@ contract TransactionManager is
             transaction.utxos.push(utxos[i]);
         }
 
-        emit TransactionRegistered(id, msg.sender, arbitrator, deadline);
+        emit TransactionRegistered(id, msg.sender, arbitrator, deadline, transaction.depositedFee);
         return id;
     }
 
@@ -303,7 +303,7 @@ contract TransactionManager is
         // Store txHash to id mapping
         txHashToId[txHash] = id;
 
-        emit ArbitrationRequested(transaction.dapp, id);
+        emit ArbitrationRequested(transaction.dapp, id, btcTx);
     }
 
     /**
