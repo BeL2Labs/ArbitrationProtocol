@@ -165,7 +165,7 @@ contract TransactionManager is
             transaction.utxos.push(utxos[i]);
         }
 
-        emit TransactionRegistered(id, msg.sender, arbitrator);
+        emit TransactionRegistered(id, msg.sender, arbitrator, deadline);
         return id;
     }
 
