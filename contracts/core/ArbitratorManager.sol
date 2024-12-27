@@ -537,7 +537,7 @@ contract ArbitratorManager is
         if (arbitrator.lastSubmittedWorkTime == 0) {
             return false;
         }
-        if (arbitrator.lastSubmittedWorkTime + freeze_period <= block.timestamp) {
+        if (arbitrator.lastSubmittedWorkTime + freeze_period > block.timestamp) {
             return true;
         }
         return false;
