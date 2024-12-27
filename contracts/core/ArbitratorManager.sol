@@ -169,7 +169,7 @@ contract ArbitratorManager is
         arbitrator.ethAmount += msg.value;
 
         // Emit an event to notify the registration
-        emit StakeAdded(arbitrator.arbitrator, address(0), msg.value, new uint256[](0));
+        emit StakeAdded(arbitrator.arbitrator, address(0), msg.value, new uint256[](0), this.getArbitratorStatus(arbitrator.arbitrator));
         emit ArbitratorRegistered(
             msg.sender,
             arbitrator.operator,
@@ -225,7 +225,8 @@ contract ArbitratorManager is
         _setOrValidateNFTContract(arbitrator);
 
         // Emit events
-        emit StakeAdded(msg.sender, address(nftContract), totalNftValue, tokenIds);
+        
+        emit StakeAdded(msg.sender, address(nftContract), totalNftValue, tokenIds, this.getArbitratorStatus(arbitrator.arbitrator));
         emit ArbitratorRegistered(
             msg.sender,
             arbitrator.operator, // operator
@@ -253,10 +254,10 @@ contract ArbitratorManager is
         // Update ETH amount and calculate total stake
         uint256 newEthAmount = arbitrator.ethAmount + msg.value;
         arbitrator.ethAmount = newEthAmount;
- 
+        arbitrator.status = this.getArbitratorStatus(arbitrator.arbitrator); 
         _validateStakeAmount(newEthAmount, totalNftValue);
 
-        emit StakeAdded(arbitrator.arbitrator, address(0), msg.value,new uint256[](0));
+        emit StakeAdded(arbitrator.arbitrator, address(0), msg.value,new uint256[](0), arbitrator.status);
     }
 
     /**
@@ -285,7 +286,9 @@ contract ArbitratorManager is
         // Set or validate NFT contract
         _setOrValidateNFTContract(arbitrator);
 
-        emit StakeAdded(msg.sender, address(nftContract), totalNftValue, tokenIds);
+        arbitrator.status = this.getArbitratorStatus(arbitrator.arbitrator); 
+
+        emit StakeAdded(msg.sender, address(nftContract), totalNftValue, tokenIds, arbitrator.status);
     }
 
     /**
@@ -503,19 +506,15 @@ contract ArbitratorManager is
         returns (bool) 
     {
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[arbitratorAddress];
-        if (arbitrator.status != DataTypes.ArbitratorStatus.Active) {
-            return false;
-        }
         // check deadline time in life circle
-        if (arbitrator.deadLine > 0 && arbitrator.deadLine <= block.timestamp) {
+        if (isTerminated(arbitrator)) {
             return false;
         }
         // freeze lock time
         if (isFrozenArbitrator(arbitrator)) {
             return false;
         }
-        uint256 totalStakeValue = this.getAvailableStake(arbitratorAddress);
-        return totalStakeValue >= configManager.getConfig(configManager.MIN_STAKE());
+        return arbitrator.status == DataTypes.ArbitratorStatus.Active;
     }
 
     function isFrozenStatus(address arbitrator) external view returns (bool) {
@@ -534,6 +533,33 @@ contract ArbitratorManager is
         }
         return false;
     }
+
+    function isTerminated(DataTypes.ArbitratorInfo memory arbitrator) internal view returns(bool) {
+        if (arbitrator.deadLine > 0 && arbitrator.deadLine <= block.timestamp) {
+            return true;
+        }
+
+        uint256 totalStakeValue = this.getAvailableStake(arbitrator.arbitrator);
+        return totalStakeValue >= configManager.getConfig(configManager.MIN_STAKE());
+    }
+
+    function getArbitratorStatus(address arbitrator) external view returns (DataTypes.ArbitratorStatus) {
+        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitrators[arbitrator];
+        if (arbitratorInfo.arbitrator == address(0)) {
+            revert(Errors.ARBITRATOR_NOT_REGISTERED);
+        }
+        if (this.isActiveArbitrator(arbitrator)) {
+            return DataTypes.ArbitratorStatus.Active;
+        }
+        if (isFrozenArbitrator(arbitratorInfo)) {
+            return DataTypes.ArbitratorStatus.Frozen;
+        }
+        if (isTerminated(arbitratorInfo)) {
+            return DataTypes.ArbitratorStatus.Terminated;
+        }
+        return arbitratorInfo.status;
+    }
+
     /**
      * @notice Get available stake amount for an arbitrator
      * @param arbitrator Address of the arbitrator

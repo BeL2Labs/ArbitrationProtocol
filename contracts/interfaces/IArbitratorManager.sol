@@ -101,6 +101,13 @@ interface IArbitratorManager {
     function isActiveArbitrator(address arbitrator) external view returns (bool);
     function getAvailableStake(address arbitrator) external view returns (uint256);
     function getTotalNFTStakeValue(address arbitrator) external view returns (uint256);
+    /**
+     * @notice Retrieves the current status of a specific arbitrator
+     * @dev Returns the status of an arbitrator from the ArbitratorManager
+     * @param arbitrator The address of the arbitrator to query
+     * @return The current status of the arbitrator as defined in the DataTypes enum
+     */
+    function getArbitratorStatus(address arbitrator) external view returns (DataTypes.ArbitratorStatus);
 
     /**
      * @notice Check if the given operator address is the operator of the arbitrator
@@ -136,7 +143,8 @@ interface IArbitratorManager {
         address indexed arbitrator, 
         address indexed assetAddress,  // 0x0 for ETH
         uint256 amount,
-        uint256[] nftTokenIds
+        uint256[] nftTokenIds,
+        DataTypes.ArbitratorStatus status
     );
     
     event StakeWithdrawn(
