@@ -249,7 +249,7 @@ contract TransactionManager is
         uint256 remainingBalance = transaction.depositedFee - arbitratorFee;
         if (remainingBalance > 0) {
             (bool success3, ) = transaction.dapp.call{value: remainingBalance}("");
-            if (!success3) revert(Errors.TRANSFER_FAILED);
+            if (!success3) revert(Errors.NO_RECEIVE_METHOD);
         }
         return (finalArbitratorFee, systemFee);
     }

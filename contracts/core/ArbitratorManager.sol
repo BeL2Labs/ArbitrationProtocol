@@ -254,6 +254,11 @@ contract ArbitratorManager is
         // Update ETH amount and calculate total stake
         uint256 newEthAmount = arbitrator.ethAmount + msg.value;
         arbitrator.ethAmount = newEthAmount;
+        if (arbitrator.status == DataTypes.ArbitratorStatus.Terminated) {
+            if(!isTerminated(arbitrator)) {
+                arbitrator.status = DataTypes.ArbitratorStatus.Active;
+            }
+        }
         arbitrator.status = this.getArbitratorStatus(arbitrator.arbitrator); 
         _validateStakeAmount(newEthAmount, totalNftValue);
 
@@ -285,7 +290,11 @@ contract ArbitratorManager is
 
         // Set or validate NFT contract
         _setOrValidateNFTContract(arbitrator);
-
+        if (arbitrator.status == DataTypes.ArbitratorStatus.Terminated) {
+            if(!isTerminated(arbitrator)) {
+                arbitrator.status = DataTypes.ArbitratorStatus.Active;
+            }
+        }
         arbitrator.status = this.getArbitratorStatus(arbitrator.arbitrator); 
 
         emit StakeAdded(msg.sender, address(nftContract), totalNftValue, tokenIds, arbitrator.status);
@@ -540,7 +549,7 @@ contract ArbitratorManager is
         }
 
         uint256 totalStakeValue = this.getAvailableStake(arbitrator.arbitrator);
-        return totalStakeValue >= configManager.getConfig(configManager.MIN_STAKE());
+        return totalStakeValue < configManager.getConfig(configManager.MIN_STAKE());
     }
 
     function getArbitratorStatus(address arbitrator) external view returns (DataTypes.ArbitratorStatus) {

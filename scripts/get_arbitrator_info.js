@@ -32,7 +32,8 @@ async function main() {
   console.log("\nArbitrator Information:");
   console.log("------------------------");
   console.log("Arbitrator Address:", info.arbitrator);
-  console.log("Status:", formatArbitratorStatus(info.status));
+  let status = await arbitratorManager.getArbitratorStatus(info.arbitrator);
+  console.log("Status:", formatArbitratorStatus(status), "Status", status);
   console.log("Current Fee Rate:", info.currentFeeRate.toString(), "basis points");
   console.log("ETH Stake Amount:", ethers.utils.formatEther(info.ethAmount), "ETH");
   console.log("Active Transaction ID:", info.activeTransactionId);

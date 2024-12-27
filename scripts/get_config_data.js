@@ -38,6 +38,9 @@ async function main() {
 
   const systemFeeRate = await contract.getConfig(SYSTEM_FEE_RATE);
   console.log("SYSTEM_FEE_RATE:", systemFeeRate.toString(), "basis points");
+
+  const feeCollector = await contract.getSystemFeeCollector();
+  console.log("SYSTEM_FEE_COLLECTOR:", feeCollector);
 }
 
 main()
