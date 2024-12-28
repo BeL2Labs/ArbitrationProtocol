@@ -6,7 +6,11 @@ async function main() {
   console.log("chain ID:", chainID);
   const [deployer] = await ethers.getSigners();
   console.log("Deployer address:", deployer.address);
-  let dapp = '0x98568A3abB586B92294cDb4AD5b03E560BCADb06';
+  let dapp = await readConfig(network.name, "DAPP");
+  if (dapp == "" || dapp == undefined) {
+    console.log("No set DAPP in config")
+     return;
+  }
   // Get the contract factory
   const DAppRegistry = await ethers.getContractFactory("DAppRegistry");
   
