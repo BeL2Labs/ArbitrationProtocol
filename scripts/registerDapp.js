@@ -1,7 +1,7 @@
 const { ethers, network, getChainId } = require("hardhat");
 const { readConfig } = require("./helper.js");
 
-let dapp = '0x98568A3abB586B92294cDb4AD5b03E560BCADb06';
+let dapp = '';
 
 async function main() {
   const chainID = await getChainId();
@@ -9,6 +9,11 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("Deployer address:", deployer.address);
   console.log("Account balance:", ethers.utils.formatEther(await deployer.provider.getBalance(deployer.address)).toString());
+  dapp = await readConfig(network.name, "DAPP");
+  if (dapp == '') {
+    console.log("DAPP not set in config");
+    process.exit(1);
+  }
   // Get the contract factory
   const DAppRegistry = await ethers.getContractFactory("DAppRegistry");
   // Get the deployed contract address from config
