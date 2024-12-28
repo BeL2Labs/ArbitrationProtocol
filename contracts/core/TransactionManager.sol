@@ -303,7 +303,7 @@ contract TransactionManager is
         // Store txHash to id mapping
         txHashToId[txHash] = id;
 
-        emit ArbitrationRequested(transaction.dapp, id, btcTx);
+        emit ArbitrationRequested(transaction.dapp, id, btcTx, transaction.arbitrator);
     }
 
     /**

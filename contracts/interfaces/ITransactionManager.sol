@@ -55,7 +55,7 @@ interface ITransactionManager {
         uint256 deadline,
         uint256 depositFee);
     event TransactionCompleted(address indexed dapp, bytes32 indexed txId);
-    event ArbitrationRequested(address indexed dapp, bytes32 indexed txId, bytes btcTx);
+    event ArbitrationRequested(address indexed dapp, bytes32 indexed txId, bytes btcTx, address arbitrator);
     event ArbitrationSubmitted(address indexed dapp, bytes32 indexed txId);
     event TransactionCreated(bytes32 indexed id, address indexed sender, address indexed arbitrator);
     event TransactionCancelled(bytes32 indexed id);
