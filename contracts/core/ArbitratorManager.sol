@@ -478,7 +478,7 @@ contract ArbitratorManager is
         require(arbitrator.status == DataTypes.ArbitratorStatus.Active, "Not active");
         arbitrator.status = DataTypes.ArbitratorStatus.Paused;
         
-        emit ArbitratorPaused(msg.sender);
+        emit ArbitratorPaused(msg.sender, arbitrator.status);
     }
 
     /**
@@ -491,7 +491,7 @@ contract ArbitratorManager is
         require(arbitrator.status == DataTypes.ArbitratorStatus.Paused, "not paused");
         arbitrator.status = DataTypes.ArbitratorStatus.Active;
         
-        emit ArbitratorUnpaused(msg.sender);
+        emit ArbitratorUnpaused(msg.sender, arbitrator.status);
     }
 
     /**

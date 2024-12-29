@@ -174,8 +174,8 @@ interface IArbitratorManager {
         DataTypes.ArbitratorStatus status
     );
     
-    event ArbitratorPaused(address indexed arbitrator);
-    event ArbitratorUnpaused(address indexed arbitrator);
+    event ArbitratorPaused(address indexed arbitrator, DataTypes.ArbitratorStatus status);
+    event ArbitratorUnpaused(address indexed arbitrator, DataTypes.ArbitratorStatus status);
     event TransactionManagerUpdated(address indexed oldManager, address indexed newManager);
     event CompensationManagerUpdated(address indexed oldManager, address indexed newManager);
     event ArbitratorRegistered(
