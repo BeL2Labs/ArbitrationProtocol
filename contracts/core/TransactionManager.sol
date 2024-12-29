@@ -258,11 +258,13 @@ contract TransactionManager is
      * @notice Request arbitration for a transaction
      * @param id Transaction ID
      * @param btcTx Bitcoin transaction data
+     * @param script Bitcoin transaction script
      * @param timeoutCompensationReceiver Address to receive timeout compensation
      */
     function requestArbitration(
         bytes32 id,
         bytes calldata btcTx,
+        bytes calldata script,
         address timeoutCompensationReceiver
     ) external override nonReentrant {
         if (timeoutCompensationReceiver == address(0)) {
@@ -303,7 +305,7 @@ contract TransactionManager is
         // Store txHash to id mapping
         txHashToId[txHash] = id;
 
-        emit ArbitrationRequested(transaction.dapp, id, btcTx, transaction.arbitrator);
+        emit ArbitrationRequested(transaction.dapp, id, btcTx, script,transaction.arbitrator);
     }
 
     /**
