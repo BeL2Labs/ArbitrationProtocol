@@ -170,7 +170,8 @@ interface IArbitratorManager {
     event ArbitratorParamsSet(
         address indexed arbitrator,
         uint256 feeRate,
-        uint256 deadline
+        uint256 deadline,
+        DataTypes.ArbitratorStatus status
     );
     
     event ArbitratorPaused(address indexed arbitrator);

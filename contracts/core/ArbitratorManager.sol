@@ -465,7 +465,7 @@ contract ArbitratorManager is
             }
         }
         arbitrator.status = this.getArbitratorStatus(arbitrator.arbitrator);
-        emit ArbitratorParamsSet(msg.sender, feeRate, deadline);
+        emit ArbitratorParamsSet(msg.sender, feeRate, deadline, arbitrator.status);
     }
 
     /**
