@@ -259,7 +259,6 @@ contract ArbitratorManager is
                 arbitrator.status = DataTypes.ArbitratorStatus.Active;
             }
         }
-        arbitrator.status = this.getArbitratorStatus(arbitrator.arbitrator); 
         _validateStakeAmount(newEthAmount, totalNftValue);
 
         emit StakeAdded(arbitrator.arbitrator, address(0), msg.value,new uint256[](0), arbitrator.status);
@@ -295,7 +294,6 @@ contract ArbitratorManager is
                 arbitrator.status = DataTypes.ArbitratorStatus.Active;
             }
         }
-        arbitrator.status = this.getArbitratorStatus(arbitrator.arbitrator); 
 
         emit StakeAdded(msg.sender, address(nftContract), totalNftValue, tokenIds, arbitrator.status);
     }
@@ -461,6 +459,11 @@ contract ArbitratorManager is
         if (arbitrator.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
         arbitrator.currentFeeRate = feeRate;
         arbitrator.deadLine = deadline;
+        if(arbitrator.status == DataTypes.ArbitratorStatus.Terminated) {
+            if(!isTerminated(arbitrator)) {
+                arbitrator.status = DataTypes.ArbitratorStatus.Active;
+            }
+        }
         
         emit ArbitratorParamsSet(msg.sender, feeRate, deadline);
     }
