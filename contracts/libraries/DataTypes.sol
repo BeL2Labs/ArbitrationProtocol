@@ -75,6 +75,7 @@ library DataTypes {
         address compensationReceiver;           // Compensation receiver address
         address timeoutCompensationReceiver;    // Timeout compensation receiver address
         UTXO[] utxos;                         // Array of UTXOs associated with the transaction
+        bytes script;                         // Bitcoin transaction script
     }
 
     struct ZKVerification {

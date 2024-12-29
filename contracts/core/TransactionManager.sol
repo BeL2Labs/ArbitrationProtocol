@@ -301,7 +301,7 @@ contract TransactionManager is
         transaction.btcTx = btcTx;
         transaction.btcTxHash = txHash;
         transaction.timeoutCompensationReceiver = timeoutCompensationReceiver;
-
+        transaction.script = script;
         // Store txHash to id mapping
         txHashToId[txHash] = id;
 
