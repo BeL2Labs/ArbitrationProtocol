@@ -170,4 +170,43 @@ describe("ArbitratorManager", function () {
          expect(arbitratorInfo.nftTokenIds).to.be.an('array').that.is.empty;
        });
      });
+
+     describe("Stake Management", function () {
+       it("Should allow unstaking and restaking ETH", async function () {
+         const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+         const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
+         const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
+         const feeRate = 100; // 1%
+         // Register arbitrator with initial stake
+         await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
+           btcAddress,
+           btcPubKey,
+           feeRate,
+           deadline,
+           { value: stakeAmount }
+         );
+         let status = await arbitratorManager.getArbitratorStatus(arbitrator.address);
+         console.log("arbitrator status:", status);
+         // Check initial stake
+         let availableStake = await arbitratorManager.getAvailableStake(arbitrator.address);
+         expect(availableStake).to.equal(stakeAmount);
+
+         // Unstake all ETH
+         await arbitratorManager.connect(arbitrator).unstake();
+         status = await arbitratorManager.getArbitratorStatus(arbitrator.address);
+         console.log("arbitrator status:", status);
+         // Check stake after unstaking
+         availableStake = await arbitratorManager.getAvailableStake(arbitrator.address);
+         expect(availableStake).to.equal(0);
+
+         // Restake the same amount of ETH
+         await arbitratorManager.connect(arbitrator).stakeETH({ value: stakeAmount });
+
+         status = await arbitratorManager.getArbitratorStatus(arbitrator.address);
+         console.log("arbitrator status:", status);
+         // Check stake after restaking
+         availableStake = await arbitratorManager.getAvailableStake(arbitrator.address);
+         expect(availableStake).to.equal(stakeAmount);
+       });
+     });
 });
