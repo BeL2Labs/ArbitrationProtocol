@@ -32,8 +32,6 @@ async function main() {
   console.log("\nArbitrator Information:");
   console.log("------------------------");
   console.log("Arbitrator Address:", info.arbitrator);
-  let status = await arbitratorManager.getArbitratorStatus(info.arbitrator);
-  console.log("Status:", formatArbitratorStatus(status), "Status", status);
   console.log("Current Fee Rate:", info.currentFeeRate.toString(), "basis points");
   console.log("ETH Stake Amount:", ethers.utils.formatEther(info.ethAmount), "ETH");
   console.log("Active Transaction ID:", info.activeTransactionId);
@@ -47,14 +45,14 @@ async function main() {
   // Get additional information
   const isActive = await arbitratorManager.isActiveArbitrator(arbitratorAddress);
   const availableStake = await arbitratorManager.getAvailableStake(arbitratorAddress);
-  const canUnstake = await arbitratorManager.canUnStake(arbitratorAddress);
+  const isConfigModifiable = await arbitratorManager.isConfigModifiable(arbitratorAddress);
   const isPaused = await arbitratorManager.isPaused(arbitratorAddress);
 
   console.log("\nAdditional Status:");
   console.log("------------------------");
   console.log("Is Active Arbitrator:", isActive);
   console.log("Available Stake:", ethers.utils.formatEther(availableStake), "ETH");
-  console.log("Can Unstake:", canUnstake);
+  console.log("IsConfigModifiable:", isConfigModifiable);
   console.log("Is Paused:", isPaused);
 }
 
