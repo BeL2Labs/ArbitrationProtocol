@@ -688,6 +688,7 @@ contract ArbitratorManager is
             uint256[] memory nftTokenIds = info.nftTokenIds;
             info.nftTokenIds = new uint256[](0);
             info.nftContract = address(0);
+
             for (uint256 i = 0; i < nftTokenIds.length; i++) {
                 nftContract.transferFrom(
                     address(this),
@@ -779,6 +780,21 @@ contract ArbitratorManager is
         address oldManager = compensationManager;
         compensationManager = _compensationManager;
         emit CompensationManagerUpdated(oldManager, _compensationManager);
+    }
+
+    /**
+     * @notice Set the NFT contract address
+     * @dev Can only be called by the contract owner
+     * @param _nftContract New NFT contract address
+     */
+    function setNFTContract(address _nftContract) external onlyOwner {
+        if (_nftContract == address(0)) 
+            revert(Errors.ZERO_ADDRESS);
+        
+        address oldNFTContract = address(nftContract);
+        nftContract = IERC721(_nftContract);
+        
+        emit NFTContractUpdated(oldNFTContract, _nftContract);
     }
 
     // Add a gap for future storage variables

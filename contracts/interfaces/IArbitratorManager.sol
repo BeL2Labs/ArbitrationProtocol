@@ -135,7 +135,7 @@ interface IArbitratorManager {
     function setTransactionManager(address _transactionManager) external;
     function setCompensationManager(address _compensationManager) external;
     function initTransactionAndCompensationManager(address _transactionManager, address _compensationManager) external;
-
+    function setNFTContract(address _nftContract) external;
     // Events
     event ArbitratorStatusChanged(address indexed arbitrator, DataTypes.ArbitratorStatus status);
     event InitializedManager(address indexed transactionManager, address indexed compensationManager);
@@ -187,4 +187,5 @@ interface IArbitratorManager {
         uint256 feeRate,
         uint256 deadline
     );
+    event NFTContractUpdated(address indexed oldNFTContract, address indexed newNFTContract);
 }
