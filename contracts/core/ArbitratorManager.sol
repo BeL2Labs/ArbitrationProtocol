@@ -3,12 +3,13 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../interfaces/IArbitratorManager.sol";
 import "../interfaces/IBNFTInfo.sol";
 import "./ConfigManager.sol";
 import "../libraries/DataTypes.sol";
 import "../libraries/Errors.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "hardhat/console.sol";
 
 /**
@@ -305,12 +306,31 @@ contract ArbitratorManager is
      */
     function _calculateNFTValue(uint256[] calldata tokenIds) internal view returns (uint256) {
         uint256 totalNftValue = 0;
+        uint256 votes = 0;
+        uint256 power = 10 ** 10;
+        // Calculate value for newly staked NFTs
         for (uint256 i = 0; i < tokenIds.length; i++) {
             (,BNFTVoteInfo memory info) = nftInfo.getNftInfo(tokenIds[i]);
             for (uint256 j = 0; j < info.infos.length; j++) {
-                totalNftValue += info.infos[j].votes * (10 ** 10);
+                votes = uint256(info.infos[j].votes);
+                (bool success, uint256 value) = Math.tryMul(votes, power);
+                if (!success) revert("Overflow");
+                totalNftValue += value;
             }
         }
+        
+        // Calculate value for existing arbitrator's NFTs
+        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
+        for (uint256 i = 0; i < arbitrator.nftTokenIds.length; i++) {
+            (,BNFTVoteInfo memory info) = nftInfo.getNftInfo(arbitrator.nftTokenIds[i]);
+            for (uint256 j = 0; j < info.infos.length; j++) {
+                votes = uint256(info.infos[j].votes);
+                (bool success, uint256 value) = Math.tryMul(votes, power);
+                if (!success) revert("Overflow");
+                totalNftValue += value;
+            }
+        }
+        
         return totalNftValue;
     }
 
@@ -323,7 +343,13 @@ contract ArbitratorManager is
         DataTypes.ArbitratorInfo storage arbitrator, 
         uint256[] calldata tokenIds
     ) internal {
+        bool isApproved = nftContract.isApprovedForAll(msg.sender, address(this));
         for (uint256 i = 0; i < tokenIds.length; i++) {
+            if (!isApproved) {
+                if(nftContract.getApproved(tokenIds[i]) != address(this)) {
+                    revert("NoApprove");
+                }
+            }
             nftContract.transferFrom(msg.sender, address(this), tokenIds[i]);
             arbitrator.nftTokenIds.push(tokenIds[i]);
         }
@@ -562,9 +588,6 @@ contract ArbitratorManager is
         if (arbitratorInfo.arbitrator == address(0)) {
             revert(Errors.ARBITRATOR_NOT_REGISTERED);
         }
-        if (this.isActiveArbitrator(arbitrator)) {
-            return DataTypes.ArbitratorStatus.Active;
-        }
         if (isFrozenArbitrator(arbitratorInfo)) {
             return DataTypes.ArbitratorStatus.Frozen;
         }
@@ -715,7 +738,9 @@ contract ArbitratorManager is
             (,BNFTVoteInfo memory info) = nftInfo.getNftInfo(arbiInfo.nftTokenIds[i]);
             for (uint256 j = 0; j < info.infos.length; j++) {
                 // Convert from 8 decimals to 18 decimals by multiplying by 10^10
-                totalValue += info.infos[j].votes * (10 ** 10);
+                (bool success, uint256 value) = Math.tryMul(uint256(info.infos[j].votes), 10 ** 10);
+                if (!success) revert("Overflow");
+                totalValue += value;
             }
         }
 

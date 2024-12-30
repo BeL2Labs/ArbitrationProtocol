@@ -16,19 +16,21 @@ async function main() {
   const arbitratorManager = await ArbitratorManager.attach(arbitratorManagerAddress).connect(deployer);
 
   // Amount of ETH to stake (in wei)
-  const NFTID = BigInt("72598004356559417196495298856325007855191710830020734162052702392624669074472"); 
+  const NFTID = BigInt("30243043197013028619958910705737974404473646632886461185500847819109343512777");
   console.log("Staking NFTID:", NFTID);
 
+  let gasLimit = await arbitratorManager.estimateGas.stakeNFT([NFTID])
+  console.log("gasLimit:", gasLimit);
   // Call stakeETH with the specified amount
-  const tx = await arbitratorManager.stakeNFT([NFTID],{
-    gasLimit: 5000000
-  });
-  
-  // Wait for the transaction to be mined
-  await tx.wait();
-  
-  console.log("Successfully staked NFT!");
-  console.log("Transaction hash:", tx.hash);
+  // const tx = await arbitratorManager.stakeNFT([NFTID],{
+  //   gasLimit: gasLimit
+  // });
+  //
+  // // Wait for the transaction to be mined
+  // await tx.wait();
+  //
+  // console.log("Successfully staked NFT!");
+  // console.log("Transaction hash:", tx.hash);
 }
 
 main()
