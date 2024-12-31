@@ -1,5 +1,8 @@
 const { ethers, network } = require("hardhat");
 const { readConfig } = require("./helper.js");
+const {sha256} = require("bitcoinjs-lib/src/crypto");
+const secp256k1 = require("secp256k1");
+const bitcoin = require('bitcoinjs-lib');
 
 async function main() {
     let [deployer, operator] = await ethers.getSigners();
@@ -18,10 +21,42 @@ async function main() {
     const transactionManager = TransactionManager.attach(transactionManagerAddress).connect(operator);
 
     // Transaction ID for arbitration submission
-    const transactionId = "0xa4081daccb992d5187d3088e4abfa495e0b2f04bb897f46ee6f57d361d82b5ea";
+    const transactionId = "0xa0978ec76b6d7995e85d11ec2ed557b645dcd9d3ebde9ddd7218487a14a3adbb";
 
-    // Arbitration signature
-    const signature = "0x3045022100da26bd7bc69739e6745c16276845541ccc837969014aea50b6b44b447fdc84ac02203f1a3a5066b2bd1462ad2185e57f3a10d6e7d5b42156475461ad8e6d8605a6a2";
+    let btcRawData = "0x02000000000101d0a974b9186943c73fb4445e76dd948d562abcebf896472e1745e405a502e6fd00000000000000000001132b0000000000001976a914cb539f4329eeb589e83659c8304bcc6c99553a9688ac050000010100fd0a016321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad2102e4059d0a57813a1974ddfd8555d3b5fe89717dfa76651a32604065eab3a47e94ac676321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad21036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac676303ab0440b2752102e4059d0a57813a1974ddfd8555d3b5fe89717dfa76651a32604065eab3a47e94ada8205a0737e8cbcfa24dcc118b0ab1e6d98bee17c57daa8a1686024159aae707ed6f876703b20440b27521036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac68686800000000";
+    if (btcRawData.length == 0) {
+        console.log("getArbitrationBtcNoWitnessTx is empty");
+        return;
+    }
+    let privateKey = process.env.staging_key;
+    if (network.name == "stage") {
+        privateKey = process.env.staging_key;
+    } else if (network.name == "prod") {
+        privateKey = process.env.prod_key;
+    }
+   
+    if (!privateKey) {
+        throw new Error('No private key found in environment');
+    }
+    // Remove '0x' prefix if present
+    const cleanPrivateKey = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
+    const privateKeyBuffer = Buffer.from(cleanPrivateKey, 'hex');
+
+    // Sign the raw transaction using secp256k1
+    const messageHash = sha256(Buffer.from(btcRawData.replace('0x', ''), 'hex')); // In Bitcoin, the entire transaction is hashed
+    const signatureObj = secp256k1.ecdsaSign(messageHash, privateKeyBuffer);
+    
+    // Convert signature to DER format
+    const derSignature = Buffer.concat([
+        Buffer.from([signatureObj.signature.length]),
+        signatureObj.signature,
+        Buffer.from([bitcoin.Transaction.SIGHASH_ALL])
+    ]);
+
+    const signature = `0x${derSignature.toString('hex')}`;
+
+    console.log(' Signature:', signature);
+
 
     try {
         // Log transaction details

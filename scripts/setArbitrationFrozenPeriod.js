@@ -11,7 +11,7 @@ async function main() {
     const configManagerAddress = await readConfig(network.name, "CONFIG_MANAGER");
     
     // The period you want to set (in seconds)
-    const frozenPeriod = 60 * 30; // Example: 1 day (24 * 60 * 60)
+    const frozenPeriod = 10;//60 * 30; // Example: 1 day (24 * 60 * 60)
 
     // Get the ConfigManager contract
     const ConfigManager = await ethers.getContractFactory("ConfigManager");

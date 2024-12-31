@@ -14,9 +14,11 @@ async function main() {
     
     // Connect to the deployed contract
     const transactionManager = TransactionManager.attach(transactionManagerAddress);
+    let arbitratorManagerAddress = await transactionManager.arbitratorManager();
+    console.log("arbitratorManagerAddress", arbitratorManagerAddress);
 
     // Transaction ID to query
-    const transactionId = "0x1a1c954f3e18c81d6f127913cbbc8a5e533ad25d1dbd1e83afcd08ef981d04e5";
+    const transactionId = "0xadd9c012352d8721c28ddc82f79700c979bd8621facc9b93efc83678e6907350";
 
     try {
         // Log transaction details
@@ -29,13 +31,14 @@ async function main() {
         console.log("DApp:", transaction.dapp);
         console.log("Arbitrator:", transaction.arbitrator);
         console.log("Deadline:", new Date(Number(transaction.deadline) * 1000).toUTCString());
+        console.log("Deadline:", transaction.deadline);
         console.log("Deposited Fee:", ethers.utils.formatEther(transaction.depositedFee), "ETH");
         console.log("Start Time:", new Date(Number(transaction.startTime) * 1000).toUTCString());
         console.log("Status:", getTransactionStatus(transaction.status));
         console.log("BTC Tx Hash:", transaction.btcTxHash);
         console.log("Compensation Receiver:", transaction.compensationReceiver);
         console.log("Timeout Compensation Receiver:", transaction.timeoutCompensationReceiver);
-
+        console.log("UTXOs:", transaction.utxos);
         // Additional parsing of transaction data
         if (transaction.btcTx && transaction.btcTx.length > 0) {
             console.log("BTC Tx Data:", transaction.btcTx);
