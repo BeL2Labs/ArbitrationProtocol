@@ -63,17 +63,17 @@ contract ArbitratorManager is
 
     modifier onlyTransactionManager() {
         if (msg.sender != transactionManager) 
-            revert(Errors.NOT_TRANSACTION_MANAGER);
+            revert Errors.NOT_TRANSACTION_MANAGER();
         if (!initialized)
-            revert(Errors.NOT_INITIALIZED);
+            revert Errors.NOT_INITIALIZED();
         _;
     }
 
     modifier onlyCompensationManager() {
         if (msg.sender != compensationManager) 
-            revert(Errors.NOT_COMPENSATION_MANAGER);
+            revert Errors.NOT_COMPENSATION_MANAGER();
         if (!initialized)
-            revert(Errors.NOT_INITIALIZED);
+            revert Errors.NOT_INITIALIZED();
         _;
     }
 
@@ -97,11 +97,11 @@ contract ArbitratorManager is
         __Ownable_init(msg.sender);
 
         if (_configManager == address(0)) 
-            revert(Errors.ZERO_ADDRESS);
+            revert Errors.ZERO_ADDRESS();
         if (_nftContract == address(0))
-            revert(Errors.ZERO_ADDRESS);
+            revert Errors.ZERO_ADDRESS();
         if (_nftInfo == address(0))
-            revert(Errors.ZERO_ADDRESS);
+            revert Errors.ZERO_ADDRESS();
         configManager = ConfigManager(_configManager);
         nftContract = IERC721(_nftContract);
         nftInfo = IBNFTInfo(_nftInfo);
@@ -114,15 +114,15 @@ contract ArbitratorManager is
         uint256 feeRate,
         uint256 deadline
     ) private view {
-        if (bytes(revenueBtcAddress).length == 0) revert(Errors.INVALID_PARAMETER);
-        if (revenueBtcPubKey.length == 0) revert(Errors.INVALID_PARAMETER);
+        if (bytes(revenueBtcAddress).length == 0) revert Errors.INVALID_PARAMETER();
+        if (revenueBtcPubKey.length == 0) revert Errors.INVALID_PARAMETER();
         
         // Validate fee rate
         uint256 minFeeRate = configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE());
-        if (feeRate < minFeeRate) revert(Errors.INVALID_FEE_RATE);
+        if (feeRate < minFeeRate) revert Errors.INVALID_FEE_RATE();
 
         // Validate deadline
-        if (deadline != 0 && deadline <= block.timestamp) revert(Errors.INVALID_DEADLINE);
+        if (deadline != 0 && deadline <= block.timestamp) revert Errors.INVALID_DEADLINE();
     }
 
     // Helper function to get or create arbitrator info
@@ -148,7 +148,9 @@ contract ArbitratorManager is
 
         // Create a new arbitrator info struct
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        require(arbitrator.arbitrator == address(0), Errors.ARBITRATOR_ALREADY_REGISTERED);
+        if (arbitrator.arbitrator != address(0)) {
+            revert Errors.ARBITRATOR_ALREADY_REGISTERED();
+        }
         arbitrator.arbitrator = msg.sender;
         // Set the arbitrator's operator
         arbitrator.operator = msg.sender;//default use self as operator
@@ -193,12 +195,11 @@ contract ArbitratorManager is
         _validateInputs(defaultBtcAddress, defaultBtcPubKey, feeRate, deadline);
 
         // Validate token IDs
-        if (tokenIds.length == 0) revert(Errors.EMPTY_TOKEN_IDS);
+        if (tokenIds.length == 0) revert Errors.EMPTY_TOKEN_IDS();
 
         // Check arbitrator is not already registered
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        require(arbitrator.arbitrator == address(0), Errors.ARBITRATOR_ALREADY_REGISTERED);
-
+        if (arbitrator.arbitrator != address(0)) revert Errors.ARBITRATOR_ALREADY_REGISTERED();
         // Initialize arbitrator information
         arbitrator.arbitrator = msg.sender;
         // Default operator is the sender
@@ -246,10 +247,10 @@ contract ArbitratorManager is
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
         
         if (arbitrator.arbitrator == address(0)) {
-           revert(Errors.ARBITRATOR_NOT_REGISTERED);
+           revert Errors.ARBITRATOR_NOT_REGISTERED();
         }
         if (!isConfigModifiable(msg.sender)) {
-            revert(Errors.CONFIG_NOT_MODIFIABLE);
+            revert Errors.CONFIG_NOT_MODIFIABLE();
         }
 
         // Calculate total NFT value
@@ -269,16 +270,16 @@ contract ArbitratorManager is
      * @param tokenIds Array of NFT token IDs to stake
      */
     function stakeNFT(uint256[] calldata tokenIds) external override {
-        if (tokenIds.length == 0) revert(Errors.EMPTY_TOKEN_IDS);
+        if (tokenIds.length == 0) revert Errors.EMPTY_TOKEN_IDS();
 
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
         
         // If first time staking, set arbitrator address
         if (arbitrator.arbitrator == address(0)) {
-            revert(Errors.ARBITRATOR_NOT_REGISTERED);
+            revert Errors.ARBITRATOR_NOT_REGISTERED();
         }
         if (!isConfigModifiable(msg.sender)) {
-            revert(Errors.CONFIG_NOT_MODIFIABLE);
+            revert Errors.CONFIG_NOT_MODIFIABLE();
         }
 
         // Calculate total NFT value
@@ -365,8 +366,8 @@ contract ArbitratorManager is
         uint256 minStake = configManager.getConfig(configManager.MIN_STAKE());
         uint256 maxStake = configManager.getConfig(configManager.MAX_STAKE());
         
-        if (totalStakeValue < minStake) revert(Errors.INSUFFICIENT_STAKE);
-        if (totalStakeValue > maxStake) revert(Errors.STAKE_EXCEEDS_MAX);
+        if (totalStakeValue < minStake) revert Errors.INSUFFICIENT_STAKE();
+        if (totalStakeValue > maxStake) revert Errors.STAKE_EXCEEDS_MAX();
     }
 
     /**
@@ -379,7 +380,7 @@ contract ArbitratorManager is
         if (arbitrator.nftContract == address(0)) {
             arbitrator.nftContract = address(nftContract);
         } else if (arbitrator.nftContract != address(nftContract)) {
-            revert(Errors.INVALID_NFT_CONTRACT);
+            revert Errors.INVALID_NFT_CONTRACT();
         }
     }
 
@@ -390,7 +391,7 @@ contract ArbitratorManager is
      */
     function unstake() external override nonReentrant notWorking {
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if(!isConfigModifiable(arbitrator.arbitrator)) revert(Errors.STAKE_STILL_LOCKED);
+        if(!isConfigModifiable(arbitrator.arbitrator)) revert Errors.STAKE_STILL_LOCKED();
         require(arbitrator.ethAmount > 0 || arbitrator.nftTokenIds.length > 0, "NoStake");
         
         uint256 amount = arbitrator.ethAmount;
@@ -434,11 +435,11 @@ contract ArbitratorManager is
         require(operator != address(0), "InvalidOperator");
 
         if (!isConfigModifiable(msg.sender)) {
-            revert(Errors.CONFIG_NOT_MODIFIABLE);
+            revert Errors.CONFIG_NOT_MODIFIABLE();
         }
 
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
+        if (arbitrator.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
         
         arbitrator.operator = operator;
         arbitrator.operatorBtcPubKey = btcPubKey;
@@ -458,10 +459,10 @@ contract ArbitratorManager is
         string calldata btcAddress
     ) external override {
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
+        if (arbitrator.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
 
         if (!isConfigModifiable(msg.sender)) {
-            revert(Errors.CONFIG_NOT_MODIFIABLE);
+            revert Errors.CONFIG_NOT_MODIFIABLE();
         }
 
         arbitrator.revenueETHAddress = ethAddress;
@@ -482,9 +483,9 @@ contract ArbitratorManager is
         require(feeRate >= configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE()), "FeeTooLow");
         
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
+        if (arbitrator.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
         if (!isConfigModifiable(msg.sender)) {
-            revert(Errors.CONFIG_NOT_MODIFIABLE);
+            revert Errors.CONFIG_NOT_MODIFIABLE();
         }
 
         arbitrator.currentFeeRate = feeRate;
@@ -498,11 +499,11 @@ contract ArbitratorManager is
      * @param deadline In seconds, Arbitrator end of term, must bigger than prev deadline
      */
     function setArbitratorDeadline(uint256 deadline) external override {
-        if (deadline <= block.timestamp) revert(Errors.INVALID_DEADLINE);
+        if (deadline <= block.timestamp) revert Errors.INVALID_DEADLINE();
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
+        if (arbitrator.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
 
-        if (arbitrator.deadLine > 0 && deadline <= arbitrator.deadLine) revert(Errors.INVALID_DEADLINE);
+        if (arbitrator.deadLine > 0 && deadline <= arbitrator.deadLine) revert Errors.INVALID_DEADLINE();
         arbitrator.deadLine = deadline;
 
         emit ArbitratorDeadlineUpdated(msg.sender, deadline);
@@ -514,7 +515,7 @@ contract ArbitratorManager is
      */
     function pause() external override {
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
+        if (arbitrator.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
         require(isActiveArbitrator(msg.sender), "Not active");
         arbitrator.paused = true;
         
@@ -527,7 +528,7 @@ contract ArbitratorManager is
      */
     function unpause() external override {
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
+        if (arbitrator.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
         require(arbitrator.paused, "not paused");
         arbitrator.paused = false;
         
@@ -587,7 +588,7 @@ contract ArbitratorManager is
 
     function isFrozenStatus(address arbitrator) external view returns (bool) {
         DataTypes.ArbitratorInfo memory arbitratorInfo = arbitrators[arbitrator];
-        require(arbitratorInfo.arbitrator != address(0), Errors.ARBITRATOR_NOT_REGISTERED);
+        if (arbitratorInfo.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
         return isFrozenArbitrator(arbitratorInfo);
     }
 
@@ -657,7 +658,7 @@ contract ArbitratorManager is
     ) external onlyTransactionManager {
         DataTypes.ArbitratorInfo storage arbitratorInfo = arbitrators[arbitrator];
         if (!isActiveArbitrator(arbitrator)) {
-            revert (Errors.ARBITRATOR_NOT_ACTIVE);
+            revert Errors.ARBITRATOR_NOT_ACTIVE();
         }
 
         // Update arbitrator state
@@ -678,7 +679,7 @@ contract ArbitratorManager is
         DataTypes.ArbitratorInfo storage arbitratorInfo = arbitrators[arbitrator];
         
         if (arbitratorInfo.activeTransactionId != transactionId)
-            revert(Errors.INVALID_TRANSACTION_ID);
+            revert Errors.INVALID_TRANSACTION_ID();
             
         // Update arbitrator state
         arbitratorInfo.activeTransactionId = bytes32(0);
@@ -693,14 +694,14 @@ contract ArbitratorManager is
      */
     function terminateArbitratorWithSlash(address arbitrator) external override onlyCompensationManager {
         DataTypes.ArbitratorInfo storage info = arbitrators[arbitrator];
-        if (info.arbitrator == address(0)) revert(Errors.ARBITRATOR_NOT_REGISTERED);
+        if (info.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
 
         // Transfer ETH stake to compensation manager
         uint256 ethAmount = info.ethAmount;
         if (ethAmount > 0) {
             info.ethAmount = 0;
             (bool success, ) = compensationManager.call{value: ethAmount}("");
-            if (!success) revert(Errors.TRANSFER_FAILED);
+            if (!success) revert Errors.TRANSFER_FAILED();
         }
 
         // Transfer NFTs to compensation manager if any
@@ -754,8 +755,8 @@ contract ArbitratorManager is
         DataTypes.ArbitratorInfo storage arbitratorInfo = arbitrators[arbitrator];
 
         // Ensure the arbitrator exists and is active
-        require(arbitratorInfo.arbitrator != address(0), Errors.ARBITRATOR_NOT_REGISTERED);
-        require(arbitratorInfo.activeTransactionId != bytes32(0), Errors.ARBITRATOR_NOT_WORKING);
+        if (arbitratorInfo.arbitrator == address(0)) revert Errors.ARBITRATOR_NOT_REGISTERED();
+        if (arbitratorInfo.activeTransactionId == bytes32(0)) revert Errors.ARBITRATOR_NOT_WORKING();
 
         // Set the last submitted work time to current timestamp to trigger freeze
         arbitratorInfo.lastSubmittedWorkTime = block.timestamp;
@@ -772,9 +773,9 @@ contract ArbitratorManager is
      * @custom:event Emits an Initialized event with both manager addresses
      */
     function initTransactionAndCompensationManager(address _transactionManager, address _compensationManager) external override onlyOwner {
-         if (initialized) revert(Errors.ALREADY_INITIALIZED);
-          if (_transactionManager == address(0)) revert(Errors.ZERO_ADDRESS);
-          if (_compensationManager == address(0)) revert(Errors.ZERO_ADDRESS);
+         if (initialized) revert Errors.ALREADY_INITIALIZED();
+          if (_transactionManager == address(0)) revert Errors.ZERO_ADDRESS();
+          if (_compensationManager == address(0)) revert Errors.ZERO_ADDRESS();
           transactionManager = _transactionManager;
           compensationManager = _compensationManager;
           initialized = true;
@@ -786,7 +787,7 @@ contract ArbitratorManager is
      * @param _transactionManager New transaction manager address
      */
     function setTransactionManager(address _transactionManager) external override onlyOwner {
-        if (_transactionManager == address(0)) revert(Errors.ZERO_ADDRESS);
+        if (_transactionManager == address(0)) revert Errors.ZERO_ADDRESS();
         address oldManager = transactionManager;
         transactionManager = _transactionManager;
         emit TransactionManagerUpdated(oldManager, _transactionManager);
@@ -797,7 +798,7 @@ contract ArbitratorManager is
      * @param _compensationManager New compensation manager address
      */
     function setCompensationManager(address _compensationManager) external override onlyOwner {
-        if (_compensationManager == address(0)) revert(Errors.ZERO_ADDRESS);
+        if (_compensationManager == address(0)) revert Errors.ZERO_ADDRESS();
         address oldManager = compensationManager;
         compensationManager = _compensationManager;
         emit CompensationManagerUpdated(oldManager, _compensationManager);
@@ -810,7 +811,7 @@ contract ArbitratorManager is
      */
     function setNFTContract(address _nftContract) external onlyOwner {
         if (_nftContract == address(0)) 
-            revert(Errors.ZERO_ADDRESS);
+            revert Errors.ZERO_ADDRESS();
         
         address oldNFTContract = address(nftContract);
         nftContract = IERC721(_nftContract);

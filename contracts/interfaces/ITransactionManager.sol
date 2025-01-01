@@ -14,6 +14,7 @@ interface ITransactionManager {
     
     // Complete transaction
     function completeTransaction(bytes32 id) external;
+    function completeTransactionWithSlash(bytes32 id, address receivedCompensationAddress) external;
     function isAbleCompletedTransaction(bytes32 id) external view returns (bool);
     // Request arbitration
     function requestArbitration(

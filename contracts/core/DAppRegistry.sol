@@ -35,7 +35,7 @@ contract DAppRegistry is IDAppRegistry, OwnableUpgradeable {
     function initialize(address _configManager) public initializer {
          __Ownable_init(msg.sender);
          if (_configManager == address(0)) {
-            revert(Errors.ZERO_ADDRESS);
+            revert Errors.ZERO_ADDRESS();
         }
         configManager = IConfigManager(_configManager);
     }
@@ -45,15 +45,15 @@ contract DAppRegistry is IDAppRegistry, OwnableUpgradeable {
      */
     function registerDApp(address dappContract) external payable {
         if (dappContract == address(0)) {
-            revert(Errors.ZERO_ADDRESS);
+            revert Errors.ZERO_ADDRESS();
         }
 
        if (dappStatus[dappContract] != DataTypes.DAppStatus.None) {
-           revert(Errors.DAPP_ALREADY_REGISTERED);
+           revert Errors.DAPP_ALREADY_REGISTERED();
        }
 
         if (msg.value != REGISTRATION_FEE) {
-            revert(Errors.INSUFFICIENT_FEE);
+            revert Errors.INSUFFICIENT_FEE();
         }
 
         // Get system fee collector address from config manager
@@ -61,7 +61,7 @@ contract DAppRegistry is IDAppRegistry, OwnableUpgradeable {
         
         // Transfer registration fee to system fee collector
         (bool success, ) = feeCollector.call{value: msg.value}("");
-        if (!success) revert(Errors.TRANSFER_FAILED);
+        if (!success) revert Errors.TRANSFER_FAILED();
 
         dappStatus[dappContract] = DataTypes.DAppStatus.Pending;
         dappOwner[dappContract] = msg.sender;
@@ -75,11 +75,11 @@ contract DAppRegistry is IDAppRegistry, OwnableUpgradeable {
      */
     function authorizeDApp(address dapp) external onlyOwner {
         if (dapp == address(0)) {
-            revert(Errors.ZERO_ADDRESS);
+            revert Errors.ZERO_ADDRESS();
         }
 
         if (dappStatus[dapp] != DataTypes.DAppStatus.Pending) {
-            revert(Errors.DAPP_NOT_REGISTERED);
+            revert Errors.DAPP_NOT_REGISTERED();
         }
 
         dappStatus[dapp] = DataTypes.DAppStatus.Active;
@@ -93,15 +93,15 @@ contract DAppRegistry is IDAppRegistry, OwnableUpgradeable {
      */
     function deregisterDApp(address dapp) external {
         if (dapp == address(0)) {
-            revert(Errors.ZERO_ADDRESS);
+            revert Errors.ZERO_ADDRESS();
         }
 
         if (dappStatus[dapp] == DataTypes.DAppStatus.None) {
-            revert(Errors.DAPP_NOT_REGISTERED);
+            revert Errors.DAPP_NOT_REGISTERED();
         }
 
         if (msg.sender != dappOwner[dapp] && msg.sender != owner()) {
-            revert(Errors.NOT_AUTHORIZED);
+            revert Errors.NOT_AUTHORIZED();
         }
 
         dappStatus[dapp] = DataTypes.DAppStatus.Terminated;
@@ -150,7 +150,7 @@ contract DAppRegistry is IDAppRegistry, OwnableUpgradeable {
      * @param _configManager New config manager address
      */
     function setConfigManager(address _configManager) external onlyOwner {
-        if (_configManager == address(0)) revert(Errors.ZERO_ADDRESS);
+        if (_configManager == address(0)) revert Errors.ZERO_ADDRESS();
         
         address oldConfigManager = address(configManager);
         configManager = IConfigManager(_configManager);

@@ -158,7 +158,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
      * @param collector Address of the system fee collector
      */
     function setSystemFeeCollector(address collector) external override onlyOwner {
-        if (collector == address(0)) revert(Errors.ZERO_ADDRESS);
+        if (collector == address(0)) revert Errors.ZERO_ADDRESS();
         uint256 oldValue = configs[SYSTEM_FEE_COLLECTOR];
         configs[SYSTEM_FEE_COLLECTOR] = uint256(uint160(collector));
         emit ConfigUpdated(SYSTEM_FEE_COLLECTOR, oldValue, uint256(uint160(collector)));
@@ -170,7 +170,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
      * @param values Array of config values
      */
     function setConfigs(bytes32[] calldata keys, uint256[] calldata values) external onlyOwner {
-        if (keys.length != values.length) revert(Errors.LENGTH_MISMATCH);
+        if (keys.length != values.length) revert Errors.LENGTH_MISMATCH();
         
         for (uint256 i = 0; i < keys.length; i++) {
             uint256 oldValue = configs[keys[i]];

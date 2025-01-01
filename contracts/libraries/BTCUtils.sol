@@ -53,7 +53,7 @@ library BTCUtils {
         uint256 txLength = txBytes.length;
 
         // Parse version (4 bytes)
-        if (offset + VERSION_SIZE > txLength) revert(Errors.INVALID_BTC_TX);
+        if (offset + VERSION_SIZE > txLength) revert Errors.INVALID_BTC_TX();
         transaction.version = uint32(bytes4(txBytes[offset:offset + VERSION_SIZE]));
         offset += VERSION_SIZE;
 
@@ -80,12 +80,12 @@ library BTCUtils {
 
         require(inputs.length == 1, "debug ");
         // Parse locktime (4 bytes)
-        if (offset + 4 > txLength) revert(Errors.INVALID_BTC_TX);
+        if (offset + 4 > txLength) revert Errors.INVALID_BTC_TX();
         transaction.locktime = uint32(bytes4(txBytes[offset:offset + 4]));
         offset += 4;
 
         // Ensure we've parsed the entire transaction
-        if (offset != txLength) revert(Errors.INVALID_BTC_TX);
+        if (offset != txLength) revert Errors.INVALID_BTC_TX();
     }
 
     /**
@@ -262,19 +262,19 @@ library BTCUtils {
      * @return size Size of varint in bytes
      */
     function parseVarInt(bytes calldata data, uint256 offset) internal pure returns (uint256 value, uint256 size) {
-        if (offset >= data.length) revert(Errors.INVALID_BTC_TX);
+        if (offset >= data.length) revert Errors.INVALID_BTC_TX();
         
         uint8 first = uint8(data[offset]);
         if (first < VARINT_SINGLE_BYTE) {
             return (first, 1);
         } else if (first == VARINT_TWO_BYTES) {
-            if (offset + 3 > data.length) revert(Errors.INVALID_BTC_TX);
+            if (offset + 3 > data.length) revert Errors.INVALID_BTC_TX();
             return (littleEndianToUint16(data, offset + 1), 3);
         } else if (first == VARINT_FOUR_BYTES) {
-            if (offset + 5 > data.length) revert(Errors.INVALID_BTC_TX);
+            if (offset + 5 > data.length) revert Errors.INVALID_BTC_TX();
             return (littleEndianToUint32(data, offset + 1), 5);
         } else {
-            if (offset + 9 > data.length) revert(Errors.INVALID_BTC_TX);
+            if (offset + 9 > data.length) revert Errors.INVALID_BTC_TX();
             return (littleEndianToUint64(data, offset + 1), 9);
         }
     }
@@ -290,24 +290,24 @@ library BTCUtils {
         uint256 startOffset = offset;
 
         // Parse txid (32 bytes)
-        if (offset + 32 > data.length) revert(Errors.INVALID_BTC_TX);
+        if (offset + 32 > data.length) revert Errors.INVALID_BTC_TX();
         input.txid = bytes32(data[offset:offset + 32]);
         offset += 32;
 
         // Parse vout (4 bytes)
-        if (offset + 4 > data.length) revert(Errors.INVALID_BTC_TX);
+        if (offset + 4 > data.length) revert Errors.INVALID_BTC_TX();
         input.vout = uint32(bytes4(data[offset:offset + 4]));
         offset += 4;
 
         // Parse scriptSig
         (uint256 scriptLength, uint256 scriptLengthSize) = parseVarInt(data, offset);
         offset += scriptLengthSize;
-        if (offset + scriptLength > data.length) revert(Errors.INVALID_BTC_TX);
+        if (offset + scriptLength > data.length) revert Errors.INVALID_BTC_TX();
         input.scriptSig = data[offset:offset + scriptLength];
         offset += scriptLength;
 
         // Parse sequence (4 bytes)
-        if (offset + 4 > data.length) revert(Errors.INVALID_BTC_TX);
+        if (offset + 4 > data.length) revert Errors.INVALID_BTC_TX();
         input.sequence = uint32(bytes4(data[offset:offset + 4]));
         offset += 4;
 
@@ -325,14 +325,14 @@ library BTCUtils {
         uint256 startOffset = offset;
 
         // Parse value (8 bytes)
-        if (offset + 8 > data.length) revert(Errors.INVALID_BTC_TX);
+        if (offset + 8 > data.length) revert Errors.INVALID_BTC_TX();
         output.value = uint64(bytes8(data[offset:offset + 8]));
         offset += 8;
 
         // Parse scriptPubKey
         (uint256 scriptLength, uint256 scriptLengthSize) = parseVarInt(data, offset);
         offset += scriptLengthSize;
-        if (offset + scriptLength > data.length) revert(Errors.INVALID_BTC_TX);
+        if (offset + scriptLength > data.length) revert Errors.INVALID_BTC_TX();
         output.scriptPubKey = data[offset:offset + scriptLength];
         offset += scriptLength;
 
