@@ -23,7 +23,7 @@ async function main() {
   const arbitratorManager = await ArbitratorManager.attach(arbitratorManagerAddress).connect(deployer);
 
   // Get arbitrator info for the deployer address
-  const arbitratorAddress = "0xbe54e511d6c435e0c58b595bef0c69441dadcc04";//deployer.address;
+  const arbitratorAddress = deployer.address;
   console.log("\nGetting arbitrator info for address:", arbitratorAddress);
   console.log("Account balance:", ethers.utils.formatEther(await deployer.provider.getBalance(deployer.address)).toString());
   const info = await arbitratorManager.getArbitratorInfo(arbitratorAddress);
