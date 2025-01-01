@@ -78,7 +78,6 @@ library BTCUtils {
             offset = skipWitnessData(txBytes, offset, inputs.length);
         }
 
-        require(inputs.length == 1, "debug ");
         // Parse locktime (4 bytes)
         if (offset + 4 > txLength) revert Errors.INVALID_BTC_TX();
         transaction.locktime = uint32(bytes4(txBytes[offset:offset + 4]));

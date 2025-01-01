@@ -6,7 +6,10 @@ import "../libraries/BTCUtils.sol";
 contract TestBTCUtils {
     using BTCUtils for bytes;
 
-    function testParseBTCTransaction(bytes calldata txBytes) external pure returns (BTCUtils.BTCTransaction memory) {
-        return BTCUtils.parseBTCTransaction(txBytes);
+    function testParseBTCTransaction(bytes calldata txBytes) external pure returns (bytes memory, bytes32) {
+        BTCUtils.BTCTransaction memory transaction = BTCUtils.parseBTCTransaction(txBytes);
+        bytes memory rawData = BTCUtils.serializeBTCTransaction(transaction);
+        bytes32 hash = sha256(rawData);
+        return (rawData, hash);
     }
 }

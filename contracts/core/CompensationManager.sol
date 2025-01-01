@@ -141,10 +141,6 @@ contract CompensationManager is
             revert Errors.SIGNATURE_MISMATCH();
         }
 
-        if (transaction.btcTxHash != verification.txHash) {
-            revert Errors.BTC_TRANSACTION_MISMATCH();
-        }
-
         // Validate arbitrator details
         if (arbitratorInfo.operatorBtcPubKey.length == 0) {
             revert Errors.INVALID_VERIFICATION_DATA();
