@@ -131,7 +131,8 @@ contract CompensationManager is
         }
 
         // Get ZK verification details with minimal local variables
-        DataTypes.ZKVerification memory verification = zkService.getZkVerification(evidence);
+        DataTypes.ZKVerification memory verification;
+        verification = zkService.getZkVerification(evidence);
 
         // Basic data validation
         if(verification.pubKey.length == 0 || verification.txHash == bytes32(0)) {
@@ -143,7 +144,7 @@ contract CompensationManager is
 
         // Validate arbitrator details
         if (arbitratorInfo.operatorBtcPubKey.length == 0) {
-            revert Errors.INVALID_VERIFICATION_DATA();
+            revert Errors.EMPTY_PUBLIC_KEY();
         }
 
         // Validate public key
@@ -155,6 +156,17 @@ contract CompensationManager is
         bytes memory rawData = BTCUtils.serializeBTCTransaction(parsedTx);
         if (sha256(rawData) != verification.txHash) {
             revert Errors.INVALID_VERIFICATION_DATA();
+        }
+
+        // Validate UTXOs
+        if (parsedTx.inputs.length != verification.utxos.length || verification.utxos.length == 0) {
+            revert Errors.INVALID_UTXO();
+        }
+        for (uint i = 0; i < parsedTx.inputs.length; i++) {
+            DataTypes.UTXO memory utxo = verification.utxos[i];
+            if (parsedTx.inputs[i].txid != utxo.txHash || parsedTx.inputs[i].vout != utxo.index) {
+                revert Errors.INVALID_UTXO();
+            }
         }
 
         // Validate stake

@@ -41,7 +41,7 @@ contract TransactionManager is
     bool private initialized;
 
     modifier onlyCompensationManager() {
-        if (msg.sender != compensationManager) revert Errors.NOT_COMPENSATION_MANAGER();
+        if (msg.sender != compensationManager) revert Errors.NOT_COMPENSATION_MANAGER("NotCompensationManager");
         if (!initialized) revert Errors.NOT_INITIALIZED();
         _;
     }

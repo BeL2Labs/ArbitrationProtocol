@@ -65,7 +65,7 @@ library Errors {
     error OPERATOR_ALREADY_REGISTERED();
     error OPERATOR_NOT_REGISTERED();
     error OPERATOR_NOT_AUTHORIZED();
-    error NOT_COMPENSATION_MANAGER();
+    error NOT_COMPENSATION_MANAGER(string);
 
     // Compensation related errors
     error EMPTY_RAW_DATA();

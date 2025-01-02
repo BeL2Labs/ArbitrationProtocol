@@ -71,7 +71,7 @@ contract ArbitratorManager is
 
     modifier onlyCompensationManager() {
         if (msg.sender != compensationManager) 
-            revert Errors.NOT_COMPENSATION_MANAGER();
+            revert Errors.NOT_COMPENSATION_MANAGER("not compensation manager");
         if (!initialized)
             revert Errors.NOT_INITIALIZED();
         _;
