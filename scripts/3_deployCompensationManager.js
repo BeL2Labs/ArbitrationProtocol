@@ -39,9 +39,8 @@ async function main() {
 
         console.log("\nDeploying CompensationManager...");
         const CompensationManager = await ethers.getContractFactory("CompensationManager", deployer);
-        
         const compensationManager = await upgrades.deployProxy(CompensationManager, 
-            [zkServiceAddress, transactionManagerAddress, configManagerAddress, arbitratorManagerAddress], 
+            [zkServiceAddress, configManagerAddress, arbitratorManagerAddress],
             { 
                 initializer: "initialize",
                 timeout: 60000,

@@ -122,7 +122,8 @@ contract CompensationManager is
         }
 
         // Get ZK verification details with minimal local variables
-        DataTypes.ZKVerification memory verification = zkService.getZkVerification(evidence);
+        DataTypes.ZKVerification memory verification;
+        verification = zkService.getZkVerification(evidence);
 
         // Basic data validation
         if(verification.pubKey.length == 0 || verification.txHash == bytes32(0)) {

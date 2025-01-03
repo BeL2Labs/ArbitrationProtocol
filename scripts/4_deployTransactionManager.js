@@ -1,6 +1,7 @@
 const { ethers, network, getChainId } = require("hardhat");
 const { sleep, writeConfig, readConfig } = require("./helper.js");
 const { upgrades } = require("hardhat");
+const net = require("node:net");
 
 async function main() {
     try {
@@ -31,11 +32,16 @@ async function main() {
         }
         console.log("Using ArbitratorManager at:", arbitratorManagerAddress);
 
+        const compensationManager = await readConfig(network.name, "COMPENSATION_MANAGER");
+        if (!compensationManager) {
+            throw new Error("compensationManager address not found.");
+        }
+        console.log("Using CompensationManager at:", compensationManager);
         console.log("\nDeploying TransactionManager...");
         const TransactionManager = await ethers.getContractFactory("TransactionManager", deployer);
         
         const transactionManager = await upgrades.deployProxy(TransactionManager, 
-            [arbitratorManagerAddress, dappRegistryAddress, configManagerAddress], 
+            [arbitratorManagerAddress, dappRegistryAddress, configManagerAddress, compensationManager],
             { 
                 initializer: "initialize",
                 timeout: 60000,

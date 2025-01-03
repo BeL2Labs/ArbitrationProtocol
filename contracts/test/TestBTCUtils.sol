@@ -12,4 +12,9 @@ contract TestBTCUtils {
         bytes32 hash = sha256(rawData);
         return (rawData, hash);
     }
+
+    function parseBTCTransaction(bytes calldata txBytes) external pure returns (BTCUtils.BTCTransaction memory) {
+        BTCUtils.BTCTransaction memory transaction = BTCUtils.parseBTCTransaction(txBytes);
+        return transaction;
+    }
 }
