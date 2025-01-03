@@ -224,7 +224,8 @@ contract CompensationManager is
         bytes32 evidence
     ) external override returns (bytes32 claimId) {
         // Get ZK verification details
-        DataTypes.ZKVerification memory verification = zkService.getZkVerification(evidence);
+        DataTypes.ZKVerification memory verification;
+        verification = zkService.getZkVerification(evidence);
         if (verification.pubKey.length == 0) revert (Errors.EMPTY_PUBLIC_KEY);
         if (verification.txHash == bytes32(0)) revert (Errors.EMPTY_HASH);
         if (verification.signature.length == 0) revert (Errors.EMPTY_SIGNATURE);

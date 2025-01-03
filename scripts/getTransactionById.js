@@ -18,7 +18,7 @@ async function main() {
     console.log("arbitratorManagerAddress", arbitratorManagerAddress);
 
     // Transaction ID to query
-    const transactionId = "0xadd9c012352d8721c28ddc82f79700c979bd8621facc9b93efc83678e6907350";
+    const transactionId = "0xabf4c224ab5ba74040202b0ad2eed7fef604a335bfc3f3c51600d4d0ac5c618f";
 
     try {
         // Log transaction details
