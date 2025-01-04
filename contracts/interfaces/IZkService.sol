@@ -14,4 +14,6 @@ interface IZkService {
      * @dev This function provides comprehensive read-only access to ZK verification information
      */
     function getZkVerification(bytes32 id) external view returns (DataTypes.ZKVerification memory );
+
+    function submitArbitration(bytes calldata pubKey, bytes calldata rawData, bytes[] calldata utxos, uint256 inputIndex, uint256 signatureIndex) external;
 }

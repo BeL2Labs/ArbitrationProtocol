@@ -15,13 +15,7 @@ async function main() {
 
     const contractFactory = await ethers.getContractFactory("TransactionManager", deployer);
     // await upgrades.forceImport(contractAddress, contractFactory);
-    const newContract = await upgrades.upgradeProxy(contractAddress, contractFactory, {
-        timeout: 60000,
-        pollingInterval: 5000,
-        txOverrides: {
-            gasLimit: 3500000,
-            gasPrice: 1000000000 // 1 gwei
-        }});
+    const newContract = await upgrades.upgradeProxy(contractAddress, contractFactory);
 
     console.log("upgrade address ", newContract.address);
 

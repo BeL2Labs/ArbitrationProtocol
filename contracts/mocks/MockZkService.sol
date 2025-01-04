@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "../interfaces/IZkService.sol";
 import "../libraries/DataTypes.sol";
+import "hardhat/console.sol";
 
 contract MockZkService is IZkService {
     // Mapping to store mock verification data
@@ -52,7 +53,7 @@ contract MockZkService is IZkService {
         for (uint256 i = 0; i < utxos.length; i++) {
             verification.utxos.push(utxos[i]);
         }
-    }
+}
 
 
 
@@ -90,5 +91,19 @@ contract MockZkService is IZkService {
         verification.signature = "0x9012";
         verification.verified = true;
         verification.status = 0;
+    }
+
+    function submitArbitration(bytes calldata pubKey, bytes calldata rawData, bytes[] calldata utxos, uint256 inputIndex, uint256 signatureIndex) external {
+        bytes32 evidence = sha256(rawData);
+        DataTypes.ZKVerification storage verification = _verifications[evidence];
+        verification.pubKey = pubKey;
+        verification.txHash = evidence;
+        verification.signature = "0x5678";
+        verification.verified = true;
+        verification.status = 0;
+        for(uint i = 0; i < utxos.length; i++) {
+        }
+        console.log("inputIndex", inputIndex);
+        console.log("signatureIndex", signatureIndex);
     }
 }

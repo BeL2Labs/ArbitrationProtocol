@@ -2,7 +2,7 @@ const { ethers, network } = require("hardhat");
 const { readConfig } = require("./helper.js");
 async function main() {
   // Transaction ID to claim timeout compensation for
-  const txId = "0xadd9c012352d8721c28ddc82f79700c979bd8621facc9b93efc83678e6907350";
+  const txId = "0x492d988d47f46931e6469fc6bb521e08275ee980a84fea565fc524ca499a47d6";
 
   // Get the deployed CompensationManager contract
   const CompensationManager = await ethers.getContractFactory("CompensationManager");
