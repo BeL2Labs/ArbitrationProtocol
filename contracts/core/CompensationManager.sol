@@ -178,7 +178,16 @@ contract CompensationManager is
         arbitratorManager.terminateArbitratorWithSlash(arbitrator);
         transactionManager.completeTransactionWithSlash(arbitratorInfo.activeTransactionId, transaction.compensationReceiver);
         // Emit compensation claimed event
-        emit CompensationClaimed(claimId, msg.sender, uint8(CompensationType.IllegalSignature));
+        emit CompensationClaimed(
+            claimId,
+            msg.sender,
+            arbitrator,
+            arbitratorInfo.ethAmount,
+            arbitratorInfo.nftTokenIds,
+            stakeAmount,
+            transaction.compensationReceiver,
+            uint8(CompensationType.IllegalSignature)
+        );
     }
 
     function claimTimeoutCompensation(bytes32 id) external override returns (bytes32 claimId) {
@@ -217,7 +226,15 @@ contract CompensationManager is
         // Update arbitrator status
         arbitratorManager.terminateArbitratorWithSlash(transaction.arbitrator);
         transactionManager.completeTransactionWithSlash(arbitratorInfo.activeTransactionId, transaction.timeoutCompensationReceiver);
-        emit CompensationClaimed(claimId, msg.sender, uint8(CompensationType.Timeout));
+        emit CompensationClaimed(
+            claimId,
+            msg.sender,
+            transaction.arbitrator,
+            arbitratorInfo.ethAmount,
+            arbitratorInfo.nftTokenIds,
+            stakeAmount,
+            transaction.timeoutCompensationReceiver,
+            uint8(CompensationType.Timeout));
     }
 
     function claimFailedArbitrationCompensation(
@@ -284,7 +301,15 @@ contract CompensationManager is
         // Update arbitrator status
         arbitratorManager.terminateArbitratorWithSlash(transaction.arbitrator);
         transactionManager.completeTransactionWithSlash(arbitratorInfo.activeTransactionId, transaction.compensationReceiver);
-        emit CompensationClaimed(claimId, msg.sender, uint8(CompensationType.FailedArbitration));
+        emit CompensationClaimed(
+            claimId,
+            msg.sender,
+            transaction.arbitrator,
+            arbitratorInfo.ethAmount,
+            arbitratorInfo.nftTokenIds,
+            stakeAmount,
+            transaction.compensationReceiver,
+            uint8(CompensationType.FailedArbitration));
     }
 
     function claimArbitratorFee(bytes32 txId) external override returns (bytes32) {
@@ -313,8 +338,16 @@ contract CompensationManager is
             claimType: CompensationType.ArbitratorFee,
             receivedCompensationAddress: arbitratorInfo.revenueETHAddress
         });
-
-        emit CompensationClaimed(claimId, msg.sender, uint8(CompensationType.ArbitratorFee));
+        emit CompensationClaimed(
+            claimId,
+            msg.sender,
+            transaction.arbitrator,
+            arbitratorFee,
+            new uint256[](0),
+            arbitratorFee,
+            arbitratorInfo.revenueETHAddress,
+            uint8(CompensationType.ArbitratorFee)
+        );
         return claimId;
     }
 
@@ -345,12 +378,21 @@ contract CompensationManager is
         feeCollector.transfer(systemFee);
 
         // Refund excess payment
+        uint256 excessPayment = 0;
         if (msg.value > systemFee) {
-            (bool success, ) = msg.sender.call{value: msg.value - systemFee}("");
+            excessPayment = msg.value - systemFee;
+            (bool success, ) = msg.sender.call{value: excessPayment}("");
             require(success, "TransferFailed");
         }
 
-        emit CompensationWithdrawn(claimId, msg.sender, systemFee);
+        emit CompensationWithdrawn(
+            claimId,
+            msg.sender,
+            claim.receivedCompensationAddress,
+            claim.ethAmount,
+            claim.nftTokenIds,
+            systemFee,
+            excessPayment);
     }
 
     function getClaimableAmount(bytes32 claimId) external view override returns (uint256) {

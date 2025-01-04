@@ -57,8 +57,24 @@ interface ICompensationManager {
     function setArbitratorManager(address _arbitratorManager) external;
 
     // Events
-    event CompensationClaimed(bytes32 indexed claimId, address indexed claimer, uint8 claimType);
-    event CompensationWithdrawn(bytes32 indexed claimId, address indexed recipient, uint256 fee);
+    event CompensationClaimed(
+        bytes32 indexed claimId,
+        address indexed claimer,
+        address indexed arbitrator,
+        uint256 ethAmount,
+        uint256[] nftTokenIds,
+        uint256 totalAmount,
+        address receivedCompensationAddress,
+        uint8 claimType);
+    event CompensationWithdrawn(
+        bytes32 indexed claimId,
+        address indexed claimer,
+        address indexed receivedCompensationAddress,
+        uint256 ethAmount,
+        uint256[] nftTokenIds,
+        uint256 systemFee,
+        uint256 excessPaymenttoClaimer
+    );
     event ZkServiceUpdated(address indexed newZkService);
     event TransactionManagerUpdated(address indexed newTransactionManager);
     event ConfigManagerUpdated(address indexed newConfigManager);
