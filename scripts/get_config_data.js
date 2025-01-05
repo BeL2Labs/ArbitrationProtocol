@@ -27,6 +27,9 @@ async function main() {
   const MIN_STAKE_LOCKED_TIME = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MIN_STAKE_LOCKED_TIME"));
   const SYSTEM_FEE_RATE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("systemFeeRate"));
 
+  const getArbitrationTimeout = await contract.getArbitrationTimeout();
+  console.log("ARBITRATION_TIMEOUT:", getArbitrationTimeout.toString(), "seconds");
+
   const minStake = await contract.getConfig(MIN_STAKE);
   console.log("MIN_STAKE:", ethers.utils.formatEther(minStake), "ETH");
 
