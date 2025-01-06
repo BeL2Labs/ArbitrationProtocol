@@ -55,9 +55,11 @@ export const TransactionRow: FC<{
     return (
       transaction.status === "Arbitrated" &&
       isSameEVMAddress(transaction.arbiter, evmAccount) &&
-      moment().isBefore(transaction.deadline)
+      moment().isBefore(transaction.deadline) &&
+      !!configSettings &&
+      moment().isBefore(transaction.requestArbitrationTime.add(Number(configSettings.arbitrationTimeout), "seconds"))
     );
-  }, [transaction, evmAccount]);
+  }, [transaction, evmAccount, configSettings]);
 
   /*
    * If transaction deadline is passed, and transaction is in arbitration,
