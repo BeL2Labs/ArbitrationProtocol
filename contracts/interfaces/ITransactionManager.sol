@@ -38,6 +38,7 @@ interface ITransactionManager {
     // Query transaction
     function getTransactionById(bytes32 id) external view returns (DataTypes.Transaction memory);
     function getTransaction(bytes32 txHash) external view returns (DataTypes.Transaction memory);
+    function getTransactionStatus(bytes32 id) external view returns (DataTypes.TransactionStatus status);
 
     function txHashToId(bytes32 txHash) external view returns (bytes32);
 

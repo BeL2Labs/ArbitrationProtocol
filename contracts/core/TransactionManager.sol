@@ -411,6 +411,18 @@ contract TransactionManager is
         return transactions[txHashToId[txHash]];
     }
 
+    function getTransactionStatus(bytes32 id) external view override returns (DataTypes.TransactionStatus status) {
+        DataTypes.Transaction memory transaction = transactions[id];
+        status = transaction.status;
+        if (status == DataTypes.TransactionStatus.Active && transaction.deadline < block.timestamp) {
+            status = DataTypes.TransactionStatus.Expired;
+        }
+        if (status == DataTypes.TransactionStatus.Arbitrated && isSubmitArbitrationOutTime(transaction)) {
+            status = DataTypes.TransactionStatus.Expired;
+        }
+        return status;
+    }
+
     /**
      * @notice Transfer arbitration fee to arbitrator and system fee address
      * @dev Only callable by compensation manager

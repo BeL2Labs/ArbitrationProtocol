@@ -18,7 +18,7 @@ async function main() {
     console.log("arbitratorManagerAddress", arbitratorManagerAddress);
 
     // Transaction ID to query
-    const transactionId = "0x49ac7d8a1933185d0a7220913b937f3042942c07b39f87e711fe7e8490e5000e";
+    const transactionId = "0xc5692b18f5028c89ea23051f1795935e1a56ef31b3b5cd1b33b21441c05980a9";
 
     try {
         // Log transaction details
@@ -26,6 +26,7 @@ async function main() {
 
         // Call getTransactionById
         const transaction = await transactionManager.getTransactionById(transactionId);
+        const status = await transactionManager.getTransactionStatus(transactionId);
         // Log the transaction details
         console.log("\n--- Transaction Details ---");
         console.log("DApp:", transaction.dapp);
@@ -35,6 +36,7 @@ async function main() {
         console.log("Deposited Fee:", ethers.utils.formatEther(transaction.depositedFee), "ETH");
         console.log("Start Time:", new Date(Number(transaction.startTime) * 1000).toUTCString());
         console.log("Status:", getTransactionStatus(transaction.status));
+        console.log("Status:", getTransactionStatus(status));
         console.log("BTC Tx Hash:", transaction.btcTxHash);
         console.log("Compensation Receiver:", transaction.compensationReceiver);
         console.log("Timeout Compensation Receiver:", transaction.timeoutCompensationReceiver);
@@ -64,7 +66,7 @@ function getTransactionStatus(status) {
         0: "Active",
         1: "Completed",
         2: "Arbitration Requested",
-        3: "Arbitration Expired",
+        3: "Expired",
         4: "Timeout Compensation Claimed",
         5: "Submitted",
     };
