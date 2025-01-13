@@ -35,7 +35,8 @@ interface ICompensationManager {
 
     // Withdraw compensation
     function withdrawCompensation(bytes32 claimId) external payable;
-    
+    // Query withdrawal fee
+    function getWithdrawCompensationFee(bytes32 claimId) external view returns (uint256);
     // Query claimable compensation amount
     function getClaimableAmount(
         bytes32 claimId

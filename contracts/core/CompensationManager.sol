@@ -344,14 +344,20 @@ contract CompensationManager is
         return claimId;
     }
 
+    function getWithdrawCompensationFee(bytes32 claimId) external view override returns (uint256) {
+        CompensationClaim storage claim = claims[claimId];
+        uint256 systemFeeRate = configManager.getSystemCompensationFeeRate();
+        uint256 systemFee = claim.totalAmount * systemFeeRate / 10000;
+        return systemFee;
+    }
+
     function withdrawCompensation(bytes32 claimId) external override payable {
         CompensationClaim storage claim = claims[claimId];
         if (claim.withdrawn) revert (Errors.COMPENSATION_WITHDRAWN);
         if (claim.ethAmount == 0 && claim.nftTokenIds.length == 0) revert (Errors.NO_COMPENSATION_AVAILABLE);
         if (claim.receivedCompensationAddress == address(0)) revert (Errors.ZERO_ADDRESS);
 
-        uint256 systemFeeRate = configManager.getSystemCompensationFeeRate();
-        uint256 systemFee = claim.totalAmount * systemFeeRate / 10000;
+        uint256 systemFee = this.getWithdrawCompensationFee(claimId);
         if (msg.value < systemFee) revert (Errors.INSUFFICIENT_FEE);
 
         // Mark as withdrawn
