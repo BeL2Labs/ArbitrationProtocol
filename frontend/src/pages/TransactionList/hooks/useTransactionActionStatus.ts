@@ -22,7 +22,7 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
       isSameEVMAddress(transaction.arbiter, evmAccount) &&
       moment().isBefore(transaction.deadline) &&
       !!configSettings &&
-      moment().isBefore(transaction.requestArbitrationTime.add(Number(configSettings.arbitrationTimeout), "seconds"))
+      moment().isBefore(transaction.requestArbitrationTime.clone().add(Number(configSettings.arbitrationTimeout), "seconds"))
     );
   }, [transaction, evmAccount, configSettings]);
 
@@ -37,7 +37,7 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
       // Follow the logic of transactionManager.isSubmitArbitrationOutTime()
       moment().isAfter(transaction.deadline) &&
       !!configSettings &&
-      moment().isAfter(transaction.requestArbitrationTime.add(Number(configSettings.arbitrationTimeout), "seconds"))
+      moment().isAfter(transaction.requestArbitrationTime.clone().add(Number(configSettings.arbitrationTimeout), "seconds"))
     );
   }, [transaction, evmAccount, configSettings]);
 
