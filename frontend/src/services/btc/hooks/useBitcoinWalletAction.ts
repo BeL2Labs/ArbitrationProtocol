@@ -50,12 +50,12 @@ export const useBitcoinWalletAction = () => {
     }
   }, [bitcoinProvider, okxwallet]);
 
-  const signScriptData = useCallback((rawTxData: string) => {
+  const unsafeSignData = useCallback((hash: string) => {
     if (!canSignData())
-      throw new Error("signScriptData(): this method is only supported by Essentials or Unisat wallets");
+      throw new Error("unsafeSignData(): this method is only supported by Essentials or Unisat wallets");
 
     const bitcoinProvider = window.unisat as SignDataBitcoinProvider;
-    return bitcoinProvider.signData(rawTxData, "ecdsa");
+    return bitcoinProvider.signData(hash, "ecdsa");
   }, [canSignData]);
 
   return {
@@ -77,6 +77,6 @@ export const useBitcoinWalletAction = () => {
      * Requests the bitcoin wallet to sign a transaction HASH (not raw transaction) using signData(). Not all wallets support this (Unisat, Essentials can).
      * The hash is different according to different use cases, for example obtained through hashForWitnessV0().
      */
-    signScriptData
+    unsafeSignData
   }
 }

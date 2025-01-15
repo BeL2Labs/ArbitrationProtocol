@@ -135,6 +135,22 @@ export function handleArbitratorTerminatedWithSlash(event: ArbitratorTerminatedW
 }
 
 /**
+ * To be called from other event handlers to update `isActive` field of an arbitrator, for example
+ * when transactions make the arbitrator status change.
+ */
+export function recomputeArbitratorIsActive(arbitratorAddress: string | null, block: ethereum.Block): void {
+    if (!arbitratorAddress)
+        return;
+
+    const arbitrator = getArbitratorInfo(block, arbitratorAddress!);
+    if (!arbitrator)
+        return;
+
+    arbitrator.isActive = computeIsActive(arbitrator, block);
+    arbitrator.save();
+}
+
+/**
  * Mimics the `isActiveArbitrator` logic from the ArbitratorManager. No "isActive" event parameter 
  * can be sent from the contract so this is the only way to cache that status in the subgraph without
  * asking all client apps to multicall fetch arbiters "availability".

@@ -9,18 +9,29 @@ import { formatDate } from "@/utils/dates";
 import { formatAddress } from "@/utils/formatAddress";
 import { ChevronsUpDown } from "lucide-react";
 import { FC } from "react";
+import { SecondaryArbiterStatusLabel } from "./components/SecondaryArbiterStatusLabel";
 
 export const GridView: FC<{
-  arbiters: ArbiterInfo[],
-}> = ({ arbiters }) => {
+  arbiters: ArbiterInfo[];
+  showOperatorInfo: boolean;
+  onOperatorVisibilityChange: (visible: boolean) => void;
+}> = ({ arbiters, showOperatorInfo, onOperatorVisibilityChange }) => {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {arbiters.map(arbiter => <ArbiterGridItem key={arbiter.address} arbiter={arbiter} />)}
+      {arbiters.map(arbiter => <ArbiterGridItem
+        key={arbiter.address}
+        arbiter={arbiter}
+        showOperatorInfo={showOperatorInfo}
+        onOperatorVisibilityChange={onOperatorVisibilityChange} />)}
     </div>
   )
 }
 
-const ArbiterGridItem: FC<{ arbiter: ArbiterInfo }> = ({ arbiter }) => {
+const ArbiterGridItem: FC<{
+  arbiter: ArbiterInfo;
+  showOperatorInfo: boolean;
+  onOperatorVisibilityChange: (visible: boolean) => void;
+}> = ({ arbiter, showOperatorInfo, onOperatorVisibilityChange }) => {
   const activeChain = useActiveEVMChainConfig();
   const deadline = arbiter.getDeadlineDate();
 
@@ -32,28 +43,28 @@ const ArbiterGridItem: FC<{ arbiter: ArbiterInfo }> = ({ arbiter }) => {
       </h3>
       <div className="flex gap-1">
         <StatusLabel title={arbiterStatusLabelTitle(arbiter)} color={arbiterStatusLabelColor(arbiter)} />
-        {arbiter.activeTransactionId && <StatusLabel title="Working" color="yellow" />}
+        <SecondaryArbiterStatusLabel arbiter={arbiter} />
       </div>
     </div>
     <div className="space-y-3 text-sm">
       <div className="flex justify-between">
+        <span className="text-gray-600">Stake</span>
+        <TokenWithValue amount={arbiter.totalValue} token={activeChain?.nativeCurrency} />
+      </div>
+      <div className="flex justify-between">
         <span className="text-gray-600">Fee Rate</span>
-        <span>{Number(arbiter.currentFeeRate) / 100}%</span>
+        <span>{Number(arbiter.currentFeeRate) / 100} %</span>
       </div>
       <div className="flex justify-between">
         <span className="text-gray-600">Deadline</span>
-        <span>{deadline ? formatDate(deadline) : '-'}</span>
-      </div>
-      <div className="flex justify-between">
-        <span className="text-gray-600">Stake</span>
-        <TokenWithValue amount={arbiter.getTotalValue()} token={activeChain?.nativeCurrency} />
+        <span>{deadline ? formatDate(deadline, "YYYY/MM/DD") : '-'}</span>
       </div>
       <div className="flex justify-between items-center">
         <span className="text-gray-600">Active transaction</span>
         {arbiter.activeTransactionId ? <div className="flex items-center gap-2">{formatAddress(arbiter.activeTransactionId)} <CopyField value={arbiter.activeTransactionId} padding={false} /></div> : "-"}
       </div>
       <div className="mt-4 pt-4 border-t">
-        <Collapsible>
+        <Collapsible open={showOperatorInfo} onOpenChange={onOperatorVisibilityChange}>
           <CollapsibleTrigger className="w-full">
             <div className="flex justify-between items-center w-full">
               <span className="text-gray-600">Operator</span>
@@ -66,21 +77,21 @@ const ArbiterGridItem: FC<{ arbiter: ArbiterInfo }> = ({ arbiter }) => {
             <div className="flex justify-between items-center w-full">
               <span className="text-gray-600">EVM Address</span>
               <div>
-                <span className="font-mono">{formatAddress(arbiter.operatorEvmAddress)}</span>
+                <span>{formatAddress(arbiter.operatorEvmAddress)}</span>
                 <CopyField value={arbiter.operatorEvmAddress} />
               </div>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">BTC Address</span>
               <div>
-                <span className="font-mono">{formatAddress(arbiter.operatorBtcAddress)}</span>
+                <span>{formatAddress(arbiter.operatorBtcAddress)}</span>
                 <CopyField value={arbiter.operatorBtcAddress} />
               </div>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">BTC Pub Key</span>
               <div>
-                <span className="font-mono">{formatAddress(arbiter.operatorBtcPubKey)}</span>
+                <span>{formatAddress(arbiter.operatorBtcPubKey)}</span>
                 <CopyField value={arbiter.operatorBtcPubKey} />
               </div>
             </div>

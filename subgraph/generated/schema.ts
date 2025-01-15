@@ -480,40 +480,6 @@ export class Transaction extends Entity {
     this.set("deadline", Value.fromI32(value));
   }
 
-  get btcTx(): string | null {
-    let value = this.get("btcTx");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toString();
-    }
-  }
-
-  set btcTx(value: string | null) {
-    if (!value) {
-      this.unset("btcTx");
-    } else {
-      this.set("btcTx", Value.fromString(<string>value));
-    }
-  }
-
-  get btcTxHash(): string | null {
-    let value = this.get("btcTxHash");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toString();
-    }
-  }
-
-  set btcTxHash(value: string | null) {
-    if (!value) {
-      this.unset("btcTxHash");
-    } else {
-      this.set("btcTxHash", Value.fromString(<string>value));
-    }
-  }
-
   get status(): string {
     let value = this.get("status");
     if (!value || value.kind == ValueKind.NULL) {

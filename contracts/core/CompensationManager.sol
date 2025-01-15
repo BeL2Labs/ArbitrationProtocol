@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../interfaces/ICompensationManager.sol";
 import "../interfaces/IZkService.sol";
+import "../interfaces/ISignatureValidationService.sol";
 import "../interfaces/ITransactionManager.sol";
 import "../interfaces/IConfigManager.sol";
 import "../interfaces/IArbitratorManager.sol";
@@ -11,7 +12,6 @@ import "../libraries/Errors.sol";
 import "../libraries/DataTypes.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "hardhat/console.sol";
-import {BTCUtils} from "../libraries/BTCUtils.sol";
 
 contract CompensationManager is 
     ICompensationManager,
@@ -24,6 +24,8 @@ contract CompensationManager is
 
     // Mapping from claim ID to compensation details
     mapping(bytes32 => CompensationClaim) public claims;
+
+    ISignatureValidationService public signatureValidationService;
 
     struct CompensationClaim {
         address claimer;
@@ -54,21 +56,25 @@ contract CompensationManager is
      * @param _zkService Address of the ZkService contract
      * @param _configManager Address of the config manager contract
      * @param _arbitratorManager Address of the arbitrator manager contract
+     * @param _signatureValidationService Address of the signature validation service
      */
     function initialize(
         address _zkService,
         address _configManager,
-        address _arbitratorManager
+        address _arbitratorManager,
+        address _signatureValidationService
     ) public initializer {
         __Ownable_init(msg.sender);
 
         if (_zkService == address(0)
             || _configManager == address(0)
-            || _arbitratorManager == address(0)) revert (Errors.ZERO_ADDRESS);
+            || _arbitratorManager == address(0)
+            || _signatureValidationService == address(0)) revert (Errors.ZERO_ADDRESS);
 
         zkService = IZkService(_zkService);
         configManager = IConfigManager(_configManager);
         arbitratorManager = IArbitratorManager(_arbitratorManager);
+        signatureValidationService = ISignatureValidationService(_signatureValidationService);
     }
 
     function _validateUTXOConsistency(
@@ -101,7 +107,6 @@ contract CompensationManager is
 
     function claimIllegalSignatureCompensation(
         address arbitrator,
-        bytes calldata btcTx,
         bytes32 evidence
     ) external override returns (bytes32 claimId) {
         // Get arbitrator details
@@ -144,12 +149,6 @@ contract CompensationManager is
         // Validate public key
         if (keccak256(verification.pubKey) != keccak256(arbitratorInfo.operatorBtcPubKey)) {
             revert (Errors.PUBLIC_KEY_MISMATCH);
-        }
-        // Validate transaction data
-        BTCUtils.BTCTransaction memory parsedTx = BTCUtils.parseBTCTransaction(btcTx);
-        bytes memory rawData = BTCUtils.serializeBTCTransaction(parsedTx);
-        if (sha256(rawData) != verification.txHash) {
-            revert (Errors.BTC_TRANSACTION_MISMATCH);
         }
 
         // Validate UTXO consistency
@@ -238,27 +237,24 @@ contract CompensationManager is
     }
 
     function claimFailedArbitrationCompensation(
-        bytes calldata btcTx,
         bytes32 evidence
     ) external override returns (bytes32 claimId) {
         // Get ZK verification details
-        DataTypes.ZKVerification memory verification;
-        verification = zkService.getZkVerification(evidence);
-        if (verification.status != 0) {
+        (bool verified, bytes32 msghash, bytes memory signature, bytes memory pubkey)
+            = signatureValidationService.getResult(evidence);
+        if (msghash == bytes32(0) || signature.length == 0 || pubkey.length == 0) {
             revert(Errors.ZK_PROOF_FAILED);
         }
 
-        if (verification.pubKey.length == 0) revert (Errors.EMPTY_PUBLIC_KEY);
-        if (verification.txHash == bytes32(0)) revert (Errors.EMPTY_HASH);
-        if (verification.signature.length == 0) revert (Errors.EMPTY_SIGNATURE);
-        if (verification.verified) {revert (Errors.SIGNATURE_VERIFIED);}
+        if (verified) {
+            revert(Errors.SIGNATURE_VERIFIED);
+        }
 
         // Get transaction details
-        DataTypes.Transaction memory transaction = transactionManager.getTransaction(verification.txHash);
-
-        BTCUtils.BTCTransaction memory parsedTx = BTCUtils.parseBTCTransaction(btcTx);
-        bytes memory rawData = BTCUtils.serializeBTCTransaction(parsedTx);
-        if (sha256(rawData) != transaction.btcTxHash) revert (Errors.BTC_TRANSACTION_MISMATCH);
+        DataTypes.Transaction memory transaction = transactionManager.getTransaction(msghash);
+        if (transaction.dapp == address(0) || transaction.arbitrator == address(0)) {
+            revert (Errors.NO_ACTIVE_TRANSACTION);
+        }
 
         // Generate claim ID
         claimId = keccak256(abi.encodePacked(evidence, transaction.arbitrator, transaction.compensationReceiver, CompensationType.FailedArbitration));
@@ -266,18 +262,15 @@ contract CompensationManager is
             revert (Errors.COMPENSATION_ALREADY_CLAIMED);
         }
 
-        // Validate UTXO consistency
-        _validateUTXOConsistency(verification.utxos, transaction.utxos);
-
         if (transaction.signature.length == 0) revert (Errors.SIGNATURE_NOT_SUBMITTED);
 
         // Get transaction signature and verify
-        if (keccak256(transaction.signature) != keccak256(verification.signature)) revert (Errors.SIGNATURE_MISMATCH);
+        if (keccak256(transaction.signature) != keccak256(signature)) revert (Errors.SIGNATURE_MISMATCH);
 
         DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.arbitrator);
 
         // Validate public key
-        if (keccak256(verification.pubKey) != keccak256(arbitratorInfo.operatorBtcPubKey)) {
+        if (keccak256(pubkey) != keccak256(arbitratorInfo.operatorBtcPubKey)) {
             revert (Errors.PUBLIC_KEY_MISMATCH);
         }
 
@@ -351,14 +344,20 @@ contract CompensationManager is
         return claimId;
     }
 
+    function getWithdrawCompensationFee(bytes32 claimId) external view override returns (uint256) {
+        CompensationClaim storage claim = claims[claimId];
+        uint256 systemFeeRate = configManager.getSystemCompensationFeeRate();
+        uint256 systemFee = claim.totalAmount * systemFeeRate / 10000;
+        return systemFee;
+    }
+
     function withdrawCompensation(bytes32 claimId) external override payable {
         CompensationClaim storage claim = claims[claimId];
         if (claim.withdrawn) revert (Errors.COMPENSATION_WITHDRAWN);
         if (claim.ethAmount == 0 && claim.nftTokenIds.length == 0) revert (Errors.NO_COMPENSATION_AVAILABLE);
         if (claim.receivedCompensationAddress == address(0)) revert (Errors.ZERO_ADDRESS);
 
-        uint256 systemFeeRate = configManager.getSystemCompensationFeeRate();
-        uint256 systemFee = claim.totalAmount * systemFeeRate / 10000;
+        uint256 systemFee = this.getWithdrawCompensationFee(claimId);
         if (msg.value < systemFee) revert (Errors.INSUFFICIENT_FEE);
 
         // Mark as withdrawn
@@ -436,6 +435,13 @@ contract CompensationManager is
         emit ArbitratorManagerUpdated(address(_arbitratorManager));
     }
 
+    // Setter for SignatureValidationService
+    function setSignatureValidationService(address _signatureValidationService) external onlyOwner {
+        require(address(_signatureValidationService) != address(0), "Invalid SignatureValidationService address");
+        signatureValidationService = ISignatureValidationService(_signatureValidationService);
+        emit SignatureValidationServiceUpdated(_signatureValidationService);
+    }
+
     // Add a gap for future storage variables
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 }

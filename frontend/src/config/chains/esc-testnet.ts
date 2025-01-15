@@ -22,7 +22,9 @@ export const escTestnet: ChainConfig = {
     transactionManager: "0xD206be45b53Fa5C2065049c7a70B1aa1755a9475",
     nftInfo: "0x3fB20197AD095724662bF0AD499F3994bfD222D3",
     bPoSNFT: "0x6C91352F89b169843D8B50E1A34B60a46e363841",
-    zkpService: null
+    zkpService: null,
+    signatureValidation: null,
+    multicall3: null
   },
   tokens: [
     escTestnetBtcToken,

@@ -174,6 +174,24 @@ export class OwnershipTransferred__Params {
   }
 }
 
+export class SignatureValidationServiceUpdated extends ethereum.Event {
+  get params(): SignatureValidationServiceUpdated__Params {
+    return new SignatureValidationServiceUpdated__Params(this);
+  }
+}
+
+export class SignatureValidationServiceUpdated__Params {
+  _event: SignatureValidationServiceUpdated;
+
+  constructor(event: SignatureValidationServiceUpdated) {
+    this._event = event;
+  }
+
+  get newSignatureValidationService(): Address {
+    return this._event.parameters[0].value.toAddress();
+  }
+}
+
 export class TransactionManagerUpdated extends ethereum.Event {
   get params(): TransactionManagerUpdated__Params {
     return new TransactionManagerUpdated__Params(this);
@@ -340,30 +358,23 @@ export class CompensationManager extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
-  claimFailedArbitrationCompensation(btcTx: Bytes, evidence: Bytes): Bytes {
+  claimFailedArbitrationCompensation(evidence: Bytes): Bytes {
     let result = super.call(
       "claimFailedArbitrationCompensation",
-      "claimFailedArbitrationCompensation(bytes,bytes32):(bytes32)",
-      [
-        ethereum.Value.fromBytes(btcTx),
-        ethereum.Value.fromFixedBytes(evidence),
-      ],
+      "claimFailedArbitrationCompensation(bytes32):(bytes32)",
+      [ethereum.Value.fromFixedBytes(evidence)],
     );
 
     return result[0].toBytes();
   }
 
   try_claimFailedArbitrationCompensation(
-    btcTx: Bytes,
     evidence: Bytes,
   ): ethereum.CallResult<Bytes> {
     let result = super.tryCall(
       "claimFailedArbitrationCompensation",
-      "claimFailedArbitrationCompensation(bytes,bytes32):(bytes32)",
-      [
-        ethereum.Value.fromBytes(btcTx),
-        ethereum.Value.fromFixedBytes(evidence),
-      ],
+      "claimFailedArbitrationCompensation(bytes32):(bytes32)",
+      [ethereum.Value.fromFixedBytes(evidence)],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -374,15 +385,13 @@ export class CompensationManager extends ethereum.SmartContract {
 
   claimIllegalSignatureCompensation(
     arbitrator: Address,
-    btcTx: Bytes,
     evidence: Bytes,
   ): Bytes {
     let result = super.call(
       "claimIllegalSignatureCompensation",
-      "claimIllegalSignatureCompensation(address,bytes,bytes32):(bytes32)",
+      "claimIllegalSignatureCompensation(address,bytes32):(bytes32)",
       [
         ethereum.Value.fromAddress(arbitrator),
-        ethereum.Value.fromBytes(btcTx),
         ethereum.Value.fromFixedBytes(evidence),
       ],
     );
@@ -392,15 +401,13 @@ export class CompensationManager extends ethereum.SmartContract {
 
   try_claimIllegalSignatureCompensation(
     arbitrator: Address,
-    btcTx: Bytes,
     evidence: Bytes,
   ): ethereum.CallResult<Bytes> {
     let result = super.tryCall(
       "claimIllegalSignatureCompensation",
-      "claimIllegalSignatureCompensation(address,bytes,bytes32):(bytes32)",
+      "claimIllegalSignatureCompensation(address,bytes32):(bytes32)",
       [
         ethereum.Value.fromAddress(arbitrator),
-        ethereum.Value.fromBytes(btcTx),
         ethereum.Value.fromFixedBytes(evidence),
       ],
     );
@@ -521,6 +528,29 @@ export class CompensationManager extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  getWithdrawCompensationFee(claimId: Bytes): BigInt {
+    let result = super.call(
+      "getWithdrawCompensationFee",
+      "getWithdrawCompensationFee(bytes32):(uint256)",
+      [ethereum.Value.fromFixedBytes(claimId)],
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getWithdrawCompensationFee(claimId: Bytes): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getWithdrawCompensationFee",
+      "getWithdrawCompensationFee(bytes32):(uint256)",
+      [ethereum.Value.fromFixedBytes(claimId)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   owner(): Address {
     let result = super.call("owner", "owner():(address)", []);
 
@@ -529,6 +559,29 @@ export class CompensationManager extends ethereum.SmartContract {
 
   try_owner(): ethereum.CallResult<Address> {
     let result = super.tryCall("owner", "owner():(address)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  signatureValidationService(): Address {
+    let result = super.call(
+      "signatureValidationService",
+      "signatureValidationService():(address)",
+      [],
+    );
+
+    return result[0].toAddress();
+  }
+
+  try_signatureValidationService(): ethereum.CallResult<Address> {
+    let result = super.tryCall(
+      "signatureValidationService",
+      "signatureValidationService():(address)",
+      [],
+    );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
@@ -652,12 +705,8 @@ export class ClaimFailedArbitrationCompensationCall__Inputs {
     this._call = call;
   }
 
-  get btcTx(): Bytes {
-    return this._call.inputValues[0].value.toBytes();
-  }
-
   get evidence(): Bytes {
-    return this._call.inputValues[1].value.toBytes();
+    return this._call.inputValues[0].value.toBytes();
   }
 }
 
@@ -694,12 +743,8 @@ export class ClaimIllegalSignatureCompensationCall__Inputs {
     return this._call.inputValues[0].value.toAddress();
   }
 
-  get btcTx(): Bytes {
-    return this._call.inputValues[1].value.toBytes();
-  }
-
   get evidence(): Bytes {
-    return this._call.inputValues[2].value.toBytes();
+    return this._call.inputValues[1].value.toBytes();
   }
 }
 
@@ -776,6 +821,10 @@ export class InitializeCall__Inputs {
 
   get _arbitratorManager(): Address {
     return this._call.inputValues[2].value.toAddress();
+  }
+
+  get _signatureValidationService(): Address {
+    return this._call.inputValues[3].value.toAddress();
   }
 }
 
@@ -869,6 +918,36 @@ export class SetConfigManagerCall__Outputs {
   _call: SetConfigManagerCall;
 
   constructor(call: SetConfigManagerCall) {
+    this._call = call;
+  }
+}
+
+export class SetSignatureValidationServiceCall extends ethereum.Call {
+  get inputs(): SetSignatureValidationServiceCall__Inputs {
+    return new SetSignatureValidationServiceCall__Inputs(this);
+  }
+
+  get outputs(): SetSignatureValidationServiceCall__Outputs {
+    return new SetSignatureValidationServiceCall__Outputs(this);
+  }
+}
+
+export class SetSignatureValidationServiceCall__Inputs {
+  _call: SetSignatureValidationServiceCall;
+
+  constructor(call: SetSignatureValidationServiceCall) {
+    this._call = call;
+  }
+
+  get _signatureValidationService(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+}
+
+export class SetSignatureValidationServiceCall__Outputs {
+  _call: SetSignatureValidationServiceCall;
+
+  constructor(call: SetSignatureValidationServiceCall) {
     this._call = call;
   }
 }

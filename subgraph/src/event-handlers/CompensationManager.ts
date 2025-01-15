@@ -50,7 +50,7 @@ function contractClaimTypeToString(claimType: i32): string {
     case 2:
       return "FailedArbitration";
     case 3:
-      return "ArbitratorFee";
+      return "ArbiterFee";
     default:
       log.error(`Unknown compensation claim type: ${claimType}`, []);
       return "Unknown";

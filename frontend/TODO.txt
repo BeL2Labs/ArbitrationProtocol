@@ -1,44 +1,12 @@
-===> Target release date: dec 30
+- Arbiter dashboard: ability to visualize on going busy transactions, and history or transactions, dates and profits made.
+  - use tabs
+  - find TransactionCompleted transactions for this arbiter (subgraph), and get dates and amounts there.
 
-- illegal signature request: user must provide btc tx hash -> we get raw tx (don't submit the btctx from Transaction!)
-- failed zkp verification (illegal signature):  
-  - (aria) it seems the rawData not contain the witness
-  - transaction.btcTx lacks signatures. This is the unsigned tx. The signed tx must be retrieved from the loan app somehow...
+- Paginations for arbiters, transactions (remote) + remote search
 
-- (zehua) We just had a voice conversation, and there were some issues with how to obtain the InputIndex. 
-    In cases of evil, there may be multiple inputs. 
+------------------------------------------
 
-    The correct way to determine the InputIndex is as follows:
-    1. get the UTXO from the contract, which is a transaction hash (tx hash)
-    2. check Utxo hash's position in the TxIn of the current BTC transaction which you want to call zkp verify
-    3. If it’s the first input, the index is 0; if it’s the second input, the index is 1, and so on. 
-
-------- AFTER DEC 30 RELEASE ------
-
-- transactions list submit signature: should check if the current btc address is the same as the arbiter operator or transaction one?
-
-P2:
-- Bug: edit arbiter staking: reopen the dialog after a max stake red error: the "Stake value should be lower than 50 ELA. Now 72.5 ELA" is still displayed
-- arbiter registration: hide "operator" (self by default)
-- "Install Metamask" should look like a real button
-- Transaction list still seems to reload every time the page is entered.
-- @benjaminpiette user cannot know the public key of the unisat btc wallet, maybe we should add "Import " button here?
-  - (in edit arbiter dialog)
-- Add a footer:
-      BeL2 Website
-      BeL2 github
-      BeL2 twitter
-      BeL2 lending app
-      Elastos website (Elastos.info) 
-      Need help? Join TG (direct to Elastos Telegram) 
-
-- Transaction list:
-  - Submit arbitration:
-    - There is a data that need to be signed, you should call the wallet to sign it
-    - Pending feature completion by xiaobin
-
-- Finish to replace headless UI components with https://ui.shadcn.com/
-  - Compensation details dialog
+TO BE CLARIFIED FIRST:
 
 - Email service for arbiters:
   - "Arbiter can register an email for the arbitration notification, we need a background script to check the events"
@@ -46,17 +14,57 @@ P2:
   - need to create a backend
   - we already have bel2.org belayer2.org in zoho mail
 
+------------------------------------------
+
+P2:
+
+
+------------------------------------------
+
+P2 (blocked):
+
+- Submit compensation request when transaction is completed = M8 error (no active).
+    - button should not have been shown (See "How to show compensation request buttons" below)
+
+- How to show compensation request buttons:
+  Conditions:
+  - claimIllegalSignatureCompensation：the dapp don't request arbitration, but the utxo is spent by alice and arbitrator.
+  - claimFailedArbitrationCompensation: the dapp requested arbitration, and arbitrator submitted signature, but the transaction can not spend
+  Details:
+  - how to know if "dapp requested arbitration"? transaction status == "Arbitrated" ?
+  - how to know a signature was submitted?
+  - how to know the utxo is spent by alice? By the way, who is alice on the arbiter portal, i don't know alice?
+  - how to know the transaction cannot spend?
+    "only the dapp knows whether the transaction can spend or not. I think dapp should choose"
+      => so the arbiter portal cannot decide to show buttons or not
+  Answers (Aria):
+  - status == active --> not request arbitration
+  - status == arbitrated --> requested arbitration but signature not submitted
+  - status == submitted --> signature submitted
+  Answer (sjun):
+  - always show the buttons, after arbitration
+  BEN:
+  - Unclear, we cannot just show all the buttons... need refinement after the releaase
+
+------------------------------------------
+
+P3:
+
+- Bug: edit arbiter staking: reopen the dialog after a max stake red error: the "Stake value should be lower than 50 ELA. Now 72.5 ELA" is still displayed
+
+- arbiter registration: hide "operator" (self by default)
+
 - Ability to unregister dapp: 
   - TBD: from dapps list of from my dashboard?
 
-- Subgraph sucks! (backward compatibility in case of event change, missing params in events, inability to call methods...).
-  - We should consider using subgraph only to LIST items (arbiters, transactions) but with minimal information,
-    for example information we need for search queries (pagination, search tx id...)
-  - Everything else should be handled by multicalls from the client app.
+- (zehua) There are some issues with how to obtain the InputIndex (for illegal signature compensation). 
+    - In cases of evil, there may be multiple inputs. 
+    - The correct way to determine the InputIndex is as follows:
+        1. get the UTXO from the contract, which is a transaction hash (tx hash)
+        2. check Utxo hash's position in the TxIn of the current BTC transaction which you want to call zkp verify
+        3. If it’s the first input, the index is 0; if it’s the second input, the index is 1, and so on. 
 
-
-
------- HELPER INFO ------
+------------------------------------------ HELPER INFO ------------------------------------------
 
 staging contract is deployed : {
     "ERC721_ADDRESS": "0x8e286664c6B8811015F936592Dd654e94Af3F494",

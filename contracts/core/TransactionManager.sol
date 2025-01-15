@@ -152,8 +152,8 @@ contract TransactionManager is
     function uploadUTXOs(
         bytes32 id,
         DataTypes.UTXO[] calldata utxos) external {
-        // Validate UTXO input
-        if (utxos.length == 0) revert(Errors.INVALID_UTXO);
+        // Validate UTXO input, only one UTXO is allowed
+        if (utxos.length != 1) revert(Errors.INVALID_UTXO);
 
         DataTypes.Transaction storage transaction = transactions[id];
         if (transaction.status != DataTypes.TransactionStatus.Active) {
@@ -295,13 +295,15 @@ contract TransactionManager is
     /**
      * @notice Request arbitration for a transaction
      * @param id Transaction ID
-     * @param btcTx Bitcoin transaction data
+     * @param signData Bitcoin transaction sign data
+     * @param signDataType the signData type
      * @param script Bitcoin transaction script
      * @param timeoutCompensationReceiver Address to receive timeout compensation
      */
     function requestArbitration(
         bytes32 id,
-        bytes calldata btcTx,
+        bytes calldata signData,
+        DataTypes.SignDataType signDataType,
         bytes calldata script,
         address timeoutCompensationReceiver
     ) external override nonReentrant {
@@ -326,8 +328,13 @@ contract TransactionManager is
             revert(Errors.REQUEST_ARBITRATION_OUTTIME);
         }
 
+        // Only support witness type now
+        if (signDataType != DataTypes.SignDataType.Witness) {
+            revert(Errors.INVALID_SIGN_DATA_TYPE);
+        }
+
         // Parse and validate Bitcoin transaction
-        BTCUtils.BTCTransaction memory parsedTx = BTCUtils.parseBTCTransaction(btcTx);
+        BTCUtils.BTCTransaction memory parsedTx = BTCUtils.parseWitnessSignData(signData);
         if(parsedTx.inputs.length != transaction.utxos.length) {
             revert(Errors.INVALID_TRANSACTION);
         }
@@ -338,19 +345,18 @@ contract TransactionManager is
             }
         }
 
-        // Calculate transaction hash with empty input scripts
-        bytes32 txHash = sha256(BTCUtils.serializeBTCTransaction(parsedTx));
+        bytes32 signHash = sha256(abi.encodePacked(sha256(signData)));
 
         transaction.status = DataTypes.TransactionStatus.Arbitrated;
-        transaction.btcTx = btcTx;
-        transaction.btcTxHash = txHash;
+        transaction.btcTx = signData;
+        transaction.btcTxHash = signHash;
         transaction.timeoutCompensationReceiver = timeoutCompensationReceiver;
         transaction.script = script;
         transaction.requestArbitrationTime = block.timestamp;
         // Store txHash to id mapping
-        txHashToId[txHash] = id;
+        txHashToId[signHash] = id;
 
-        emit ArbitrationRequested(id, msg.sender, transaction.arbitrator, btcTx, script, timeoutCompensationReceiver);
+        emit ArbitrationRequested(id, msg.sender, transaction.arbitrator, signData, script, timeoutCompensationReceiver);
     }
 
     /**
@@ -376,6 +382,10 @@ contract TransactionManager is
             revert(Errors.NOT_AUTHORIZED);
         }
 
+        if (!BTCUtils.IsValidDERSignature(btcTxSignature)) {
+            revert(Errors.INVALID_DER_SIGNATURE);
+        }
+
         transaction.status = DataTypes.TransactionStatus.Submitted;
         transaction.signature = btcTxSignature;
         arbitratorManager.frozenArbitrator(transaction.arbitrator);
@@ -399,6 +409,18 @@ contract TransactionManager is
      */
     function getTransaction(bytes32 txHash) external view override returns (DataTypes.Transaction memory) {
         return transactions[txHashToId[txHash]];
+    }
+
+    function getTransactionStatus(bytes32 id) external view override returns (DataTypes.TransactionStatus status) {
+        DataTypes.Transaction memory transaction = transactions[id];
+        status = transaction.status;
+        if (status == DataTypes.TransactionStatus.Active && transaction.deadline < block.timestamp) {
+            status = DataTypes.TransactionStatus.Expired;
+        }
+        if (status == DataTypes.TransactionStatus.Arbitrated && isSubmitArbitrationOutTime(transaction)) {
+            status = DataTypes.TransactionStatus.Expired;
+        }
+        return status;
     }
 
     /**

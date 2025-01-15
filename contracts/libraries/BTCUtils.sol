@@ -445,4 +445,112 @@ library BTCUtils {
         }
         return bytes32(temp);
     }
+
+    /**
+     * @notice Parse Bitcoin witness sign data
+     * @param signData sign data bytes
+     * @return transaction Parsed transaction data
+     */
+    function parseWitnessSignData(bytes calldata signData) internal pure returns (BTCTransaction memory transaction) {
+        uint256 offset = 0;
+        uint256 txLength = signData.length;
+
+        // Parse version (4 bytes)
+        if (offset + VERSION_SIZE > txLength) revert (Errors.INVALID_BTC_TX);
+        transaction.version = littleEndianToUint32(signData, offset);
+        offset += VERSION_SIZE;
+
+        // skip hashPrevouts
+        if (offset + 32 > txLength) revert (Errors.INVALID_BTC_TX);
+        offset += 32;
+
+        // skip hashSequence
+        if (offset + 32 > txLength) revert (Errors.INVALID_BTC_TX);
+        offset += 32;
+
+        transaction.inputs = new BTCInput[](1);
+        // Parse txid (32 bytes)
+        if (offset + 32 > txLength) revert (Errors.INVALID_BTC_TX);
+        transaction.inputs[0].txid = reverseTxid(bytes32(signData[offset:offset + 32]));
+        offset += 32;
+
+        // Parse vout (4 bytes)
+        if (offset + 4 > txLength) revert (Errors.INVALID_BTC_TX);
+        transaction.inputs[0].vout = littleEndianToUint32(signData, offset);
+        offset += 4;
+
+        // Parse scriptSig
+        (uint256 scriptLength, uint256 scriptLengthSize) = parseVarInt(signData, offset);
+        offset += scriptLengthSize;
+        if (offset + scriptLength > txLength) revert (Errors.INVALID_BTC_TX);
+        transaction.inputs[0].scriptSig = signData[offset:offset + scriptLength];
+        offset += scriptLength;
+
+        // skip amount
+        if (offset + 8 > txLength) revert (Errors.INVALID_BTC_TX);
+        offset += 8;
+
+        // Parse sequence (4 bytes)
+        if (offset + 4 > txLength) revert (Errors.INVALID_BTC_TX);
+        transaction.inputs[0].sequence = littleEndianToUint32(signData, offset);
+        offset += 4;
+
+        // skip hashOutputs
+        if (offset + 32 > txLength) revert (Errors.INVALID_BTC_TX);
+        offset += 32;
+
+        // Parse locktime (4 bytes)
+        if (offset + 4 > txLength) revert (Errors.INVALID_BTC_TX);
+        transaction.locktime = uint32(bytes4(signData[offset:offset + 4]));
+        offset += 4;
+
+        // last 4 bytes is hash type
+        if (offset + 4 != txLength) revert (Errors.INVALID_BTC_TX);
+    }
+
+    function IsValidDERSignature(bytes calldata signature) internal pure returns (bool) {
+        // Minimum length for a DER signature is 8 bytes
+        // 0x30 + length + 0x02 + r_length + r + 0x02 + s_length + s
+        if (signature.length < 8) return false;
+
+        // Check sequence format (0x30)
+        if (uint8(signature[0]) != 0x30) return false;
+
+        // Check total length matches
+        uint256 totalLen = uint8(signature[1]);
+        if (totalLen + 2 != signature.length) return false;
+
+        // Position for R value
+        uint256 rPos = 2;
+        // Check R marker (0x02)
+        if (uint8(signature[rPos]) != 0x02) return false;
+
+        // Get R length
+        uint256 rLen = uint8(signature[rPos + 1]);
+        // R value cannot be zero length
+        if (rLen == 0) return false;
+        // Check if R length is valid
+        if (rLen > 33 || rPos + 2 + rLen >= signature.length) return false;
+        // Check R padding
+        if (rLen > 1 && uint8(signature[rPos + 2]) == 0x00 && uint8(signature[rPos + 3]) < 0x80) return false;
+
+        // Position for S value
+        uint256 sPos = rPos + 2 + rLen;
+        // Check S marker (0x02)
+        if (uint8(signature[sPos]) != 0x02) return false;
+
+        // Get S length
+        uint256 sLen = uint8(signature[sPos + 1]);
+        // S value cannot be zero length
+        if (sLen == 0) return false;
+        // Check if S length is valid
+        if (sLen > 33 || sPos + 2 + sLen > signature.length) return false;
+        // Check S padding
+        if (sLen > 1 && uint8(signature[sPos + 2]) == 0x00 && uint8(signature[sPos + 3]) < 0x80) return false;
+
+        // Total length check
+        if (totalLen != (2 + rLen + 2 + sLen)) return false;
+
+        return true;
+    }
 }

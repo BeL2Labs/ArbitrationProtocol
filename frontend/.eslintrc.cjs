@@ -35,6 +35,7 @@ module.exports = {
     "no-async-promise-executor": "error",
     "no-promise-executor-return": "error",
     "no-non-null-assertion": "off",
+    "react-hooks/exhaustive-deps": "error",
 
     // TS specific
     "@typescript-eslint/no-misused-promises": [

@@ -36,6 +36,8 @@ library Errors {
     string constant UINT32_INSUFFICIENT_LENGHT = "U5";
     string constant UINT64_INSUFFICIENT_LENGHT = "U6";
     string constant REQUEST_ARBITRATION_OUTTIME = "U7";
+    string constant INVALID_SIGN_DATA_TYPE = "U8";
+    string constant INVALID_DER_SIGNATURE = "U9";
 
     // Arbitrator related errors (A0-A9, S0-S9)
     string constant ARBITRATOR_ALREADY_REGISTERED = "A1";

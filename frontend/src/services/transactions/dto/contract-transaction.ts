@@ -19,4 +19,5 @@ export type ContractTransaction = {
   timeoutCompensationReceiver: string;    // Timeout compensation receiver address
   utxos: UTXO[];                         // Array of UTXOs associated with the transaction
   script: string;                         // Bitcoin transaction script
+  requestArbitrationTime: string;
 }

@@ -5,7 +5,6 @@ interface ICompensationManager {
     // Submit illegal signature compensation claim
     function claimIllegalSignatureCompensation(
         address arbitrator,
-        bytes calldata btcTx,
         bytes32 evidence
     ) external returns (bytes32 claimId);
 
@@ -16,7 +15,6 @@ interface ICompensationManager {
     
     // Submit failed arbitration compensation claim
     function claimFailedArbitrationCompensation(
-        bytes calldata btcTx,
         bytes32 evidence
     ) external returns (bytes32 claimId);
 
@@ -37,7 +35,8 @@ interface ICompensationManager {
 
     // Withdraw compensation
     function withdrawCompensation(bytes32 claimId) external payable;
-    
+    // Query withdrawal fee
+    function getWithdrawCompensationFee(bytes32 claimId) external view returns (uint256);
     // Query claimable compensation amount
     function getClaimableAmount(
         bytes32 claimId
@@ -47,7 +46,8 @@ interface ICompensationManager {
     function initialize(
         address _zkService,
         address _configManager,
-        address _arbitratorManager
+        address _arbitratorManager,
+        address _signatureValidationService
     ) external;
 
     // Setter methods for critical interfaces
@@ -55,6 +55,7 @@ interface ICompensationManager {
     function setTransactionManager(address _transactionManager) external;
     function setConfigManager(address _configManager) external;
     function setArbitratorManager(address _arbitratorManager) external;
+    function setSignatureValidationService(address _signatureValidationService) external;
 
     // Events
     event CompensationClaimed(
@@ -79,4 +80,5 @@ interface ICompensationManager {
     event TransactionManagerUpdated(address indexed newTransactionManager);
     event ConfigManagerUpdated(address indexed newConfigManager);
     event ArbitratorManagerUpdated(address indexed newArbitratorManager);
+    event SignatureValidationServiceUpdated(address indexed newSignatureValidationService);
 }

@@ -1,5 +1,7 @@
+import { IconTooltip } from '@/components/base/IconTooltip';
 import { FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { tooltips } from '@/config/tooltips';
 import { useActiveEVMChainConfig } from '@/services/chains/hooks/useActiveEVMChainConfig';
 import { useEVMBalance } from '@/services/evm/hooks/useEVMBalance';
 import { FC, useMemo } from 'react';
@@ -27,7 +29,7 @@ export const StakeCoinForm: FC<{
         name="coinAmount"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Amount {balanceInfo}</FormLabel>
+            <FormLabel>Amount {balanceInfo} <IconTooltip title="Staked coin amount" tooltip={tooltips.arbiterCoinStake} iconClassName='ml-1' iconSize={12} /></FormLabel>
             <Input type='number' step="1" {...field} />
             <FormMessage />
           </FormItem>

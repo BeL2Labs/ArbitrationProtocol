@@ -20,6 +20,12 @@ library DataTypes {
         Submitted
     }
 
+    enum SignDataType {
+        NoWitness,
+        Witness,
+        Taproot
+    }
+
     /**
      * @notice Unspent Transaction Output (UTXO) structure
      * @dev Represents a Bitcoin UTXO with its key identifying information
@@ -60,7 +66,7 @@ library DataTypes {
         uint256 startTime;
         uint256 deadline;
         bytes btcTx;               // Unsigned Bitcoin transaction
-        bytes32 btcTxHash;         // Hash of the Bitcoin transaction with empty input scripts
+        bytes32 btcTxHash;         // double sha256 of the signData
         TransactionStatus status;
         uint256 depositedFee;
         bytes signature;           // Arbitrator's signature
@@ -74,7 +80,7 @@ library DataTypes {
     struct ZKVerification {
         uint256 status;
         bytes pubKey;
-        bytes32 txHash;
+        bytes32 txHash; // sign hash of the raw data
         bytes signature;
         bool verified;
         UTXO[] utxos;

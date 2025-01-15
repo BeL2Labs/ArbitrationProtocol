@@ -35,7 +35,7 @@ export class ArbitrationRequested__Params {
     return this._event.parameters[2].value.toAddress();
   }
 
-  get btcTx(): Bytes {
+  get signData(): Bytes {
     return this._event.parameters[3].value.toBytes();
   }
 
@@ -697,6 +697,29 @@ export class TransactionManager extends ethereum.SmartContract {
     );
   }
 
+  getTransactionStatus(id: Bytes): i32 {
+    let result = super.call(
+      "getTransactionStatus",
+      "getTransactionStatus(bytes32):(uint8)",
+      [ethereum.Value.fromFixedBytes(id)],
+    );
+
+    return result[0].toI32();
+  }
+
+  try_getTransactionStatus(id: Bytes): ethereum.CallResult<i32> {
+    let result = super.tryCall(
+      "getTransactionStatus",
+      "getTransactionStatus(bytes32):(uint8)",
+      [ethereum.Value.fromFixedBytes(id)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toI32());
+  }
+
   isAbleCompletedTransaction(id: Bytes): boolean {
     let result = super.call(
       "isAbleCompletedTransaction",
@@ -1066,16 +1089,20 @@ export class RequestArbitrationCall__Inputs {
     return this._call.inputValues[0].value.toBytes();
   }
 
-  get btcTx(): Bytes {
+  get signData(): Bytes {
     return this._call.inputValues[1].value.toBytes();
   }
 
+  get signDataType(): i32 {
+    return this._call.inputValues[2].value.toI32();
+  }
+
   get script(): Bytes {
-    return this._call.inputValues[2].value.toBytes();
+    return this._call.inputValues[3].value.toBytes();
   }
 
   get timeoutCompensationReceiver(): Address {
-    return this._call.inputValues[3].value.toAddress();
+    return this._call.inputValues[4].value.toAddress();
   }
 }
 

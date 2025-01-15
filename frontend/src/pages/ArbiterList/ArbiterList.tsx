@@ -32,6 +32,7 @@ export default function ArbiterList() {
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'stake', direction: 'desc' });
   const navigate = useNavigate();
   const { isSmallDevice } = useScreenSize();
+  const [showOperatorInfo, setShowOperatorInfo] = useState(false);
 
   const handleSort = (key: SortConfig['key']) => {
     setSortConfig(prev => ({
@@ -52,7 +53,7 @@ export default function ArbiterList() {
       case "address":
         return filtered?.sort((a, b) => a.address.localeCompare(b.address) * directionFactor);
       case "stake":
-        return filtered?.sort((a, b) => Number(a.getTotalValue().minus(b.getTotalValue())) * directionFactor);
+        return filtered?.sort((a, b) => Number(a.totalValue.minus(b.totalValue)) * directionFactor);
       case "currentFeeRate":
         return filtered?.sort((a, b) => Number(a.currentFeeRate - b.currentFeeRate) * directionFactor);
       default:
@@ -101,7 +102,7 @@ export default function ArbiterList() {
       {loading && <Loading />}
       {!loading && <>
         {viewMode === 'list' && <ListView arbiters={arbiters} sortConfig={sortConfig} handleSort={handleSort} />}
-        {viewMode === 'grid' && <GridView arbiters={arbiters} />}
+        {viewMode === 'grid' && <GridView arbiters={arbiters} showOperatorInfo={showOperatorInfo} onOperatorVisibilityChange={setShowOperatorInfo} />}
       </>}
     </PageContainer>
   );

@@ -29,6 +29,7 @@ function App() {
                 <Route path="/" element={<ArbiterList />} />
                 <Route path="/arbiters" element={<ArbiterList />} />
                 <Route path="/dashboard" element={<ArbiterDashboard />} />
+                <Route path="/transactions/:transactionId" element={<TransactionList />} />
                 <Route path="/transactions" element={<TransactionList />} />
                 <Route path="/compensations" element={<CompensationList />} />
                 <Route path="/dapps" element={<DAppList />} />

@@ -12,7 +12,7 @@ export const ChildTooltip: FC<{
     return children;
 
   return (
-    <HoverCard>
+    <HoverCard openDelay={200} closeDelay={100}>
       <HoverCardTrigger>
         {children}
       </HoverCardTrigger>

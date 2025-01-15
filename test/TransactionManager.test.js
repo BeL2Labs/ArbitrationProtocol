@@ -43,12 +43,15 @@ describe("TransactionManager", function () {
             owner.address   // Temporary NFT info contract address
         ], { initializer: 'initialize' });
 
+        const MockSignatureValidationService = await ethers.getContractFactory("MockSignatureValidationService");
+        const validationService = await MockSignatureValidationService.deploy();
         // Deploy CompensationManager
         const CompensationManager = await ethers.getContractFactory("CompensationManager");
         compensationManager = await upgrades.deployProxy(CompensationManager, [
             owner.address, // Mock ZkService not needed for this test
             configManager.address,
-            arbitratorManager.address
+            arbitratorManager.address,
+            validationService.address 
         ], { initializer: 'initialize' });
 
         // Deploy TransactionManager
@@ -228,6 +231,51 @@ describe("TransactionManager", function () {
             await transactionManager.connect(dapp).completeTransaction(transactionId);
             await expect(transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos))
                 .to.be.revertedWith("T2");
+        });
+    });
+
+    describe("Transaction Request Arbitration", async function () {
+        beforeEach(async function () {
+            const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
+
+            const registerTx = await transactionManager.connect(dapp).registerTransaction(
+                arbitrator.address,
+                deadline,
+                compensationReceiver.address,
+                { value: ethers.utils.parseEther("0.1") }
+            );
+
+            const receipt = await registerTx.wait();
+            const event = receipt.events.find(e => e.event === "TransactionRegistered");
+            transactionId = event.args[0];
+            console.log("Transaction ID:", transactionId);
+
+            const utxos = [
+                {
+                    txHash: "0x0c07be21efcb2dd82f24892270b40f44f57686896082c6fb373d3c66722189e2",
+                    index: 0,
+                    script: ethers.utils.randomBytes(20),
+                    amount: ethers.utils.parseEther("1")
+                }
+            ];
+            await transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos);
+        });
+
+        it ("Should request arbitration successfully", async function () {
+            const signData = "0x02000000e5cd49421a525ae552acc8abd1d126108317aa517d96cd8550895d10486819da8cb9012517c817fead650287d61bdd9c68803b6bf9c64133dcab3e65b5a50cb9e2892172663c3d37fbc68260898676f5440fb4702289242fd82dcbef21be070c00000000fd0a0163210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac6763210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad2102b32f28976aa0be56a9de7cb7764c31c62a8d844244d9a5ecbe348e97e85475dfac676303b60040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ada8205a0737e8cbcfa24dcc118b0ab1e6d98bee17c57daa8a1686024159aae707ed6f876703bd0040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac686868692900000000000000000000c19695b1d2324599c15f4b3b47c0379b9a0c8b10512fc69cc93abf09f8afa3fe0000000001000000";
+            const signHash = "0x3b07965292e50272b6ee3ba2c89fea4c6f626e8ad01a25dd509f97b53d88d581";
+            await expect(transactionManager.connect(dapp).requestArbitration(
+                transactionId, signData, 1, "0xab2348", dapp.address))
+                .emit(transactionManager, "ArbitrationRequested");
+            
+            const transaction = await transactionManager.getTransactionById(transactionId);
+            expect(transaction.status).to.equal(2);
+            expect(transaction.arbitrator).to.equal(arbitrator.address);
+            expect(transaction.btcTx).to.equal(signData);
+            expect(transaction.btcTxHash).to.equal(signHash);
+            expect(transaction.timeoutCompensationReceiver).to.equal(dapp.address);
+
+            expect(await transactionManager.txHashToId(signHash)).to.equal(transactionId);
         });
     });
 
