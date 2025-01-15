@@ -23,7 +23,7 @@ export const escMainnetProd: ChainConfig = {
     nftInfo: "0x0a218CC87C48BA26D60f438860710f6c0D4AA050",
     bPoSNFT: "0x8e286664c6B8811015F936592Dd654e94Af3F494",
     zkpService: "0x8B1755c8cEA289025f8f0669028095c4F81021f7",
-    signatureValidation: null,
+    signatureValidation: "0x2dfBa540CC298147FA190a594E501D3ef3EDE571",
     multicall3: "0x174BCCBfe2523af4af7791B963F52EEb81d0E92f"
   },
   tokens: [
