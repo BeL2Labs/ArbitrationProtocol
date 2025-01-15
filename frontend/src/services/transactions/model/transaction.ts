@@ -27,6 +27,17 @@ export class Transaction implements Omit<TransactionDTO, "startTime" | "deadline
 
   public btcTxHash?: string; // Only when fetched from contract
 
+  /**
+   * So it's  abit tricky here. There is a transaction.status in the contract which is static,
+   * and identical to what is returned by the subgraph. But, there is also getTransactionStatus(),
+   * which can return a different status, in case of time based conditions such as current block time (not write
+   * operation). So, UI needs to adjust the status sometimes using static, sometimes dynamic status.
+   * 
+   * transaction.status = contract.transaction.status
+   * transaction.dynamicStatus = contract.getTransactionStatus()
+   */
+  public dynamicStatus: TransactionStatus;
+
   public static fromContractTransaction(contractTransaction: ContractTransaction, txId: string): Transaction {
     if (contractTransaction?.dapp === zeroAddress)
       return undefined;
@@ -34,6 +45,7 @@ export class Transaction implements Omit<TransactionDTO, "startTime" | "deadline
     const transaction = new Transaction();
 
     transaction.id = txId;
+    transaction.status = this.fromContractStatus(contractTransaction.status);
     transaction.btcTxHash = isNullBitcoinTxId(contractTransaction.btcTxHash?.slice(2)) ? undefined : contractTransaction.btcTxHash?.slice(2);
     transaction.compensationReceiver = contractTransaction.compensationReceiver;
     transaction.timeoutCompensationReceiver = contractTransaction.timeoutCompensationReceiver;

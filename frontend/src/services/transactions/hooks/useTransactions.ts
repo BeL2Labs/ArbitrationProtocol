@@ -21,7 +21,7 @@ export const useTransactions = () => {
         const statuses = await fetchTransactionStatuses(contractTransactions?.map(tx => tx.id));
         // Update dynamic status of each transaction with latest dynamic contract value (not stored)
         for (const tx of contractTransactions) {
-          tx.status = statuses?.find(s => s.id === tx.id)?.status || "Unknown";
+          tx.dynamicStatus = statuses?.find(s => s.id === tx.id)?.status || "Unknown";
         }
       }
 

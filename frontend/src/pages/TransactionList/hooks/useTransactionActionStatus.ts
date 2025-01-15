@@ -18,6 +18,7 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
 
   const canSubmitArbitration = useMemo(() => {
     return transaction && (
+      // Note: important to use stored status here, not dynamic status.
       transaction.status === "Arbitrated" &&
       isSameEVMAddress(transaction.arbiter, evmAccount) &&
       moment().isBefore(transaction.deadline) &&
@@ -32,6 +33,7 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
    */
   const canRequestTimeoutCompensation = useMemo(() => {
     return transaction && (
+      // Note: important to use stored status here, not dynamic status.
       transaction.status === "Arbitrated" &&
       isSameEVMAddress(transaction.timeoutCompensationReceiver, evmAccount) &&
       // Follow the logic of transactionManager.isSubmitArbitrationOutTime()
@@ -47,6 +49,7 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
    */
   const canRequestFailedArbitrationCompensation = useMemo(() => {
     return transaction && (
+      // Note: important to use stored status here, not dynamic status.
       transaction.status === "Arbitrated" &&
       isSameEVMAddress(transaction.timeoutCompensationReceiver, evmAccount)
     );
@@ -58,6 +61,7 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
    */
   const canRequestIllegalSignatureCompensation = useMemo(() => {
     return transaction && (
+      // Note: important to use stored status here, not dynamic status.
       transaction.status !== "Arbitrated" && transaction.status !== "Completed" &&
       isSameEVMAddress(transaction.compensationReceiver, evmAccount)
     );
@@ -75,6 +79,8 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
   const canCloseTransaction = useMemo(() => {
     if (!transaction)
       return false;
+
+    // Note: important to use stored status here, not dynamic status.
 
     const condition1 = isSameEVMAddress(transaction.arbiter, evmAccount) && transaction.status === "Active" && moment().isAfter(transaction.deadline);
 
