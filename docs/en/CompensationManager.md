@@ -1,79 +1,175 @@
-# Compensation Manager
+# Compensation Manager (CompensationManager)
 
 ## Overview
-CompensationManager is a core component in the arbitration protocol responsible for handling and distributing various types of compensation claims. It provides three different compensation mechanisms to address potential anomalies during the arbitration process.
+CompensationManager is responsible for handling various compensation claims in the protocol, including illegal signature compensation, timeout compensation, failed arbitration compensation, and arbitrator fee compensation. It works in coordination with other contracts such as ArbitratorManager, TransactionManager, and ConfigManager.
+
+## Core Functions
+
+### Compensation Claims
+
+```solidity
+function claimIllegalSignatureCompensation(
+    address arbitrator,
+    bytes32 evidence
+) external returns (bytes32 claimId);
+```
+Claim compensation for illegal signature:
+- `arbitrator`: Arbitrator address
+- `evidence`: zkProof evidence hash
+- Returns: Compensation claim ID
+
+```solidity
+function claimTimeoutCompensation(
+    bytes32 id
+) external returns (bytes32 claimId);
+```
+Claim timeout compensation:
+- `id`: Transaction ID
+- Returns: Compensation claim ID
+
+```solidity
+function claimFailedArbitrationCompensation(
+    bytes32 evidence
+) external returns (bytes32 claimId);
+```
+Claim compensation for failed arbitration:
+- `evidence`: zkProof evidence hash
+- Returns: Compensation claim ID
+
+```solidity
+function claimArbitratorFee(
+    bytes32 txId
+) external returns (bytes32 claimId);
+```
+Claim arbitrator fee compensation:
+- `txId`: Transaction ID
+- Requirements:
+  - Transaction must exist
+  - Caller must be the transaction's arbitrator
+  - Arbitrator must have submitted valid signature
+  - Lock period must have passed
+  - Transaction not completed
+- Returns: Compensation claim ID
+
+### Compensation Withdrawal
+
+```solidity
+function withdrawCompensation(bytes32 claimId) external payable;
+```
+Withdraw compensation:
+- `claimId`: Compensation claim ID
+- Requirements:
+  - Compensation not withdrawn
+  - Available compensation amount
+  - Compensation receiver address not zero
+
+### Query Functions
+
+```solidity
+function getClaimableAmount(
+    bytes32 claimId
+) external view returns (uint256);
+```
+Query claimable compensation amount:
+- `claimId`: Compensation claim ID
+- Returns: Claimable compensation amount
+
+### Admin Configuration
+
+```solidity
+function initialize(
+    address _zkService,
+    address _configManager,
+    address _arbitratorManager,
+    address _signatureValidationService
+) external;
+```
+Initialize compensation manager:
+- `_zkService`: Transaction and signature ZK service address, for validating illegal signature compensation
+- `_configManager`: Config manager address
+- `_arbitratorManager`: Arbitrator manager address
+- `_signatureValidationService`: Signature validation ZK service address, for validating failed arbitration compensation
+
+```solidity
+function setZkService(address _zkService) external;
+function setTransactionManager(address _transactionManager) external;
+function setConfigManager(address _configManager) external;
+function setArbitratorManager(address _arbitratorManager) external;
+function setSignatureValidationService(address _signatureValidationService) external;
+```
+Set key interface addresses
+
+### Events
+
+```solidity
+// Compensation claim events
+event CompensationClaimed(
+    bytes32 indexed claimId,
+    address indexed claimer,
+    address indexed arbitrator,
+    uint256 ethAmount,
+    uint256[] nftTokenIds,
+    uint256 totalAmount,
+    address receivedCompensationAddress,
+    uint8 claimType
+);
+
+// Compensation withdrawal events
+event CompensationWithdrawn(
+    bytes32 indexed claimId,
+    address indexed claimer,
+    address indexed receivedCompensationAddress,
+    uint256 ethAmount,
+    uint256[] nftTokenIds,
+    uint256 systemFee,
+    uint256 excessPaymenttoClaimer
+);
+
+// Admin configuration events
+event ZkServiceUpdated(address indexed newZkService);
+event TransactionManagerUpdated(address indexed newTransactionManager);
+event ConfigManagerUpdated(address indexed newConfigManager);
+event ArbitratorManagerUpdated(address indexed newArbitratorManager);
+event SignatureValidationServiceUpdated(address indexed newSignatureValidationService);
+```
+
+### Data Structures
+
+```solidity
+struct CompensationClaim {
+    address claimer;              // Claimer address
+    address arbitrator;           // Arbitrator address
+    uint256 ethAmount;           // ETH compensation amount
+    address nftContract;         // NFT contract address
+    uint256[] nftTokenIds;       // NFT token ID list
+    uint256 totalAmount;         // Total compensation amount
+    bool withdrawn;              // Whether withdrawn
+    CompensationType claimType;  // Compensation type
+    address receivedCompensationAddress;  // Compensation receiver address
+}
+
+enum CompensationType {
+    IllegalSignature,   // Illegal signature
+    Timeout,           // Timeout
+    FailedArbitration, // Failed arbitration
+    ArbitratorFee      // Arbitrator fee
+}
+```
 
 ## Features
 - Illegal Signature Compensation Management
 - Timeout Compensation Management
 - Failed Arbitration Compensation Management
+- Arbitrator Fee Compensation Management
 - Compensation Calculation and Distribution
 - Compensation Claim Status Tracking
-
-## Compensation Types
-
-### 1. Illegal Signature Compensation
-When an arbitrator submits an illegal or incorrect signature:
-```solidity
-function claimIllegalSignatureCompensation(
-    address arbitrator,
-    bytes calldata btcTx,
-    bytes32 calldata evidence
-) external returns (bytes32 claimId);
-```
-
-Parameter Explanation:
-- arbitrator: Address of the arbitrator who submitted the illegal signature
-- btcTx: Related Bitcoin transaction content
-- evidence: Evidence proving the signature is illegal
-- Return Value: Unique identifier for the compensation claim
-
-### 2. Timeout Compensation
-When an arbitrator fails to complete arbitration within the specified time:
-```solidity
-function claimTimeoutCompensation(
-    bytes32 txId
-) external returns (bytes32 claimId);
-```
-
-Parameter Explanation:
-- txId: ID of the timed-out transaction
-- Return Value: Unique identifier for the compensation claim
-
-### 3. Failed Arbitration Compensation
-When an arbitration result is erroneous or disputed:
-```solidity
-function claimFailedArbitrationCompensation(
-    bytes32 txId,
-    bytes32 calldata evidence
-) external returns (bytes32 claimId);
-```
-
-Parameter Explanation:
-- txId: ID of the transaction with an error
-- evidence: Evidence proving the arbitration error
-- Return Value: Unique identifier for the compensation claim
-
-## Compensation Management
-
-### 1. Compensation Withdrawal
-Users can withdraw approved compensation:
-```solidity
-function withdrawCompensation(bytes32 claimId) external;
-```
-
-### 2. Compensation Query
-Query the amount of compensation that can be claimed:
-```solidity
-function getClaimableAmount(bytes32 claimId) external view returns (uint256);
-```
 
 ## Workflow
 
 ### 1. Illegal Signature Compensation Process
 1. Detect illegal signature submission by the arbitrator
 2. Prepare evidence (e.g., proof of signature verification failure)
-3. Submit a compensation claim with the arbitrator's address, transaction content, and evidence
+3. Submit a compensation claim with the arbitrator's address and evidence
 4. Wait for claim review
 5. Withdraw compensation after approval
 
@@ -90,30 +186,12 @@ function getClaimableAmount(bytes32 claimId) external view returns (uint256);
 4. Wait for claim review
 5. Withdraw compensation after approval
 
-## Event System
-```solidity
-event CompensationClaimed(
-    bytes32 indexed claimId,
-    address indexed claimer,
-    bytes32 indexed txId,
-    uint256 amount
-);
-
-event CompensationWithdrawn(
-    bytes32 indexed claimId,
-    address indexed recipient,
-    uint256 amount
-);
-```
-
-## Error Handling
-The contract throws errors in the following cases:
-- Invalid Transaction ID (InvalidTransactionId)
-- Duplicate Claim (DuplicateClaim)
-- Invalid Evidence (InvalidEvidence)
-- Zero Compensation (ZeroCompensation)
-- Unauthorized Withdrawal (UnauthorizedWithdrawal)
-- Compensation Already Withdrawn (CompensationAlreadyWithdrawn)
+### 4. Arbitrator Fee Compensation Process
+1. Arbitrator submits valid signature
+2. Lock period passes
+3. Transaction not completed
+4. Submit an arbitrator fee compensation claim
+5. Withdraw compensation after verification
 
 ## Security Considerations
 1. Evidence verification mechanism to prevent false claims
@@ -140,7 +218,6 @@ The contract throws errors in the following cases:
 ### Example 1: Apply for Illegal Signature Compensation
 ```javascript
 // 1. Prepare evidence
-const btcTx = "0x..."; // Bitcoin transaction content
 const evidence = ethers.utils.keccak256(
     ethers.utils.defaultAbiCoder.encode(
         ["bytes", "bytes"],
@@ -151,7 +228,6 @@ const evidence = ethers.utils.keccak256(
 // 2. Submit compensation claim
 const claimId = await compensationManager.claimIllegalSignatureCompensation(
     arbitratorAddress,
-    btcTx,
     evidence
 );
 
@@ -190,12 +266,25 @@ const evidence = ethers.utils.keccak256(
 
 // 2. Submit compensation claim
 const claimId = await compensationManager.claimFailedArbitrationCompensation(
-    txId,
     evidence
 );
 
 // 3. Query and withdraw compensation
 const amount = await compensationManager.getClaimableAmount(claimId);
+if (amount > 0) {
+    await compensationManager.withdrawCompensation(claimId);
+}
+```
+
+### Example 4: Apply for Arbitrator Fee Compensation
+```javascript
+// 1. Submit arbitrator fee compensation claim
+const claimId = await compensationManager.claimArbitratorFee(txId);
+
+// 2. Query compensation amount
+const amount = await compensationManager.getClaimableAmount(claimId);
+
+// 3. Withdraw compensation
 if (amount > 0) {
     await compensationManager.withdrawCompensation(claimId);
 }

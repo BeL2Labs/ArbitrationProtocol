@@ -1,5 +1,5 @@
 import { ethereum } from "@graphprotocol/graph-ts";
-import { DAppAuthorized, DAppDeregistered, DAppRegistered, DAppSuspended } from "../../generated/DAppRegistryManager/DAppRegistry";
+import { DAppAuthorized, DAppDeregistered, DAppRegistered, DAppSuspended } from "../../generated/DAppRegistry/DAppRegistry";
 import { DApp } from "../../generated/schema";
 
 export function handleDAppAuthorized(event: DAppAuthorized): void {

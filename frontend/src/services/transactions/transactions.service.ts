@@ -28,7 +28,7 @@ export const fetchTransactions = async (chain: ChainConfig, start: number, limit
           orderBy: createdAt,
           orderDirection: desc
         ) { 
-          id txId dapp arbiter startTime deadline btcTx btcTxHash requestArbitrationTime
+          id txId dapp arbiter startTime deadline requestArbitrationTime
           status depositedFee signature compensationReceiver timeoutCompensationReceiver
         }
       }`;
@@ -60,8 +60,6 @@ export const fetchTransactions = async (chain: ChainConfig, start: number, limit
 
     const transactions = pageTransactions.slice(start, start + limit);
 
-    console.log("Fetched transactions:", transactions);
-
     return {
       transactions: transactions.map(a => dtoToClass(a, Transaction)),
       total
@@ -78,7 +76,7 @@ export const fetchTransactions = async (chain: ChainConfig, start: number, limit
 export const transactionStatusLabelTitle = (transaction: Transaction): string => {
   switch (transaction.status) {
     case "Arbitrated":
-      return "Arbitration requested";
+      return "Arbitration req.";
     default:
       return transaction.status;
   }

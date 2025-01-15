@@ -14,7 +14,7 @@ export const StatusLabel: FC<{
     none: ''
   }
 
-  return <span className={`px-2 py-1 rounded text-sm ${colorStyles[color]}`}>
+  return <span className={`px-2 py-1 rounded text-sm font-normal ${colorStyles[color]}`}>
     {title}
   </span>
 }

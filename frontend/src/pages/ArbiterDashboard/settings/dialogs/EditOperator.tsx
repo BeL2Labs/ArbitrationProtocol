@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useWalletContext } from "@/contexts/WalletContext/WalletContext";
 import { useArbiterOperatorUpdate } from "@/services/arbiters/hooks/contract/useArbiterOperatorUpdate";
 import { ArbiterInfo } from "@/services/arbiters/model/arbiter-info";
 import { isValidBitcoinAddress, isValidBitcoinPublicKey } from "@/services/btc/btc";
+import { useBitcoinWalletAction } from "@/services/btc/hooks/useBitcoinWalletAction";
 import { useResetFormOnOpen } from "@/services/ui/hooks/useResetFormOnOpen";
 import { useToasts } from "@/services/ui/hooks/useToasts";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +24,8 @@ export const EditOperatorDialog: FC<{
 }> = ({ arbiter, isOpen, onContractUpdated, onHandleClose, ...rest }) => {
   const { isPending, updateOperatorInfo } = useArbiterOperatorUpdate();
   const { successToast } = useToasts();
+  const { bitcoinAccount } = useWalletContext();
+  const { getPublicKey } = useBitcoinWalletAction();
 
   const formSchema = useMemo(() => z.object({
     operatorEVMAddress: z.string().refine((value) => isAddress(value), "Not a valid EVM address"),
@@ -54,6 +58,16 @@ export const EditOperatorDialog: FC<{
       onHandleClose();
     }
   }, [updateOperatorInfo, successToast, arbiter, onContractUpdated, onHandleClose]);
+
+  const handleImportOperatorFromWallet = useCallback(async () => {
+    const pubKey = await getPublicKey();
+
+    form.setValue("operatorBTCAddress", bitcoinAccount);
+    form.setValue("operatorBTCPubKey", pubKey);
+
+    // Revalidate the form
+    void form.trigger();
+  }, [bitcoinAccount, getPublicKey, form]);
 
   if (!arbiter)
     return null;
@@ -101,6 +115,9 @@ export const EditOperatorDialog: FC<{
               )} />
 
             <DialogFooter className="mt-6">
+              <EnsureWalletNetwork continuesTo='Import from wallet' btcAccountNeeded>
+                <Button type="button" onClick={handleImportOperatorFromWallet}>Import from wallet</Button>
+              </EnsureWalletNetwork>
               <EnsureWalletNetwork continuesTo="Update" evmConnectedNeeded>
                 <Button type="submit" className={!form.formState.isValid && "opacity-30"} disabled={isPending}>
                   Update

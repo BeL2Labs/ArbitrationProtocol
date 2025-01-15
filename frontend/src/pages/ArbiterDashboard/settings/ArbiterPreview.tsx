@@ -24,7 +24,7 @@ const InfoRow: FC<{
 }> = ({ title, value }) => {
   return <div className="p-4 space-y-2">
     <div className="text-sm text-gray-500">{title}</div>
-    <div className="font-mono">{value}</div>
+    <div className="font-normal">{value}</div>
   </div>
 }
 
@@ -70,7 +70,7 @@ export const ArbiterPreview: FC<{
           </EnsureWalletNetwork>
         </div>
         <InfoRow title="Stake Amount" value={`
-          ${arbiter.getTotalValue().toString()} ${activeChain?.nativeCurrency.symbol}
+          ${arbiter.totalValue.toString()} ${activeChain?.nativeCurrency.symbol}
           (${arbiter.ethAmount.toString()} ${activeChain?.nativeCurrency.symbol} in native coins, ${arbiter.nftValue.toString()} ${activeChain?.nativeCurrency.symbol} in NFTs)
           `} />
       </div>

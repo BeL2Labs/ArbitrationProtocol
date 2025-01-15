@@ -8,22 +8,13 @@ import { tooltips } from '@/config/tooltips';
 import { useCompensations } from '@/services/compensations/hooks/useCompensations';
 import { CompensationClaim } from '@/services/compensations/model/compensation-claim';
 import { RefreshCwIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { CompensationDetailsDialog } from './CompensationDetailsDialog';
+import { useEffect, useState } from 'react';
 import { CompensationRow } from './CompensationRow';
-
-// TODO
-const compensationTypeMap = {
-  0: 'Illegal Signature',
-  1: 'Timeout Penalty'
-};
+import { CompensationDetailsDialog } from './dialogs/CompensationDetailsDialog';
 
 export default function CompensationList() {
   const { refreshCompensations, compensations } = useCompensations();
-  const [selectedCompensation, setSelectedCompensation] = useState<CompensationClaim | null>(null);
-  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
-
-  const loading = useMemo(() => !compensations, [compensations]);
+  const [selectedCompensation, setSelectedCompensation] = useState<CompensationClaim>();
 
   // Refresh list when page loads
   useEffect(() => {
@@ -74,8 +65,9 @@ export default function CompensationList() {
               <CompensationRow
                 key={compensation.id}
                 compensation={compensation}
-                index={index}
-                setSelectedCompensation={setSelectedCompensation}
+                onShowCompensationDetails={() => {
+                  setSelectedCompensation(compensation);
+                }}
               />
             ))}
           </TableBody>
@@ -84,8 +76,8 @@ export default function CompensationList() {
 
       <CompensationDetailsDialog
         compensation={selectedCompensation}
-        isOpen={isDetailsDialogOpen}
-        onClose={() => setIsDetailsDialogOpen(false)} />
+        isOpen={!!selectedCompensation}
+        onHandleClose={() => setSelectedCompensation(undefined)} />
     </PageContainer>
   );
 }

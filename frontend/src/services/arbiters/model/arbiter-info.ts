@@ -1,3 +1,4 @@
+import { isEVMNullAddress } from "@/services/evm/evm";
 import { ArbiterInfo as ArbiterInfoDTO } from "@/services/subgraph/dto/arbiter-info";
 import { tokenToReadableValue } from "@/services/tokens/tokens";
 import BigNumber from "bignumber.js";
@@ -6,6 +7,9 @@ import moment, { Moment } from "moment";
 import { zeroAddress } from "viem";
 import { ContractArbiterInfo } from "../dto/contract-arbiter-info";
 
+/**
+ * class-transformer is used for SUBGRAPH dtos, not contract ones.
+ */
 export class ArbiterInfo implements Omit<ArbiterInfoDTO, "ethAmount" | "createdAt" | "currentFeeRate" | "pendingFeeRate" | "isActive"> {
   @Expose() public id: string;
   @Expose() public address: string;
@@ -23,25 +27,20 @@ export class ArbiterInfo implements Omit<ArbiterInfoDTO, "ethAmount" | "createdA
   @Expose() public revenueEvmAddress: string;
   @Expose() public revenueBtcAddress: string;
   @Expose() public revenueBtcPubKey: string;
-  @Expose() private isActive: boolean;
+  @Expose() public isActive: boolean;
+  @Expose() @Transform(({ value }) => value && new Date(value * 1000)) public lastSubmittedWorkTime: Date;
+
+  /**
+   * From contract calls only
+   */
+  public totalValue: BigNumber; // Total stake, human readable amount, ethAmount + nftvalue.
 
   public isPaused(): boolean {
     return this.paused;
   }
 
-  /**
-   * Layer on top of the raw isActive field because subgraph isActive value is wrong when the arbiter
-   * status is not changed in the contract but time passed, so the current time < deadline condition is unchecked.
-   */
   public getIsActive(): boolean {
-    if (this.isActive && moment().isSameOrAfter(this.getDeadlineDate()))
-      return false;
-
     return this.isActive;
-  }
-
-  public setRawIsActive(rawIsActive: boolean) {
-    this.isActive = rawIsActive;
   }
 
   public getDeadlineDate(): Moment {
@@ -59,10 +58,6 @@ export class ArbiterInfo implements Omit<ArbiterInfoDTO, "ethAmount" | "createdA
     this.nftValue = value;
   }
 
-  public getTotalValue(): BigNumber {
-    return this.ethAmount.plus(this.nftValue || 0);
-  }
-
   public static fromContractArbiterInfo(contractInfo: ContractArbiterInfo): ArbiterInfo {
     if (contractInfo?.arbitrator === zeroAddress)
       return undefined;
@@ -76,13 +71,14 @@ export class ArbiterInfo implements Omit<ArbiterInfoDTO, "ethAmount" | "createdA
     arbiter.paused = contractInfo.paused;
     arbiter.deadline = Number(contractInfo.deadLine);
     arbiter.currentFeeRate = Number(contractInfo.currentFeeRate);
-    arbiter.activeTransactionId = contractInfo.activeTransactionId;
+    arbiter.activeTransactionId = !isEVMNullAddress(contractInfo.activeTransactionId) ? contractInfo.activeTransactionId : null;
     arbiter.operatorEvmAddress = contractInfo.operator;
     arbiter.operatorBtcAddress = contractInfo.operatorBtcAddress;
     arbiter.operatorBtcPubKey = contractInfo.operatorBtcPubKey?.slice(2);
     arbiter.revenueEvmAddress = contractInfo.revenueETHAddress;
     arbiter.revenueBtcAddress = contractInfo.revenueBtcAddress;
     arbiter.revenueBtcPubKey = contractInfo.revenueBtcPubKey?.slice(2);
+    arbiter.lastSubmittedWorkTime = contractInfo.lastSubmittedWorkTime ? new Date(Number(contractInfo.lastSubmittedWorkTime * 1000n)) : null;
 
     return arbiter;
   }

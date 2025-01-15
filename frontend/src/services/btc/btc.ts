@@ -46,7 +46,7 @@ export const btcToEVMHexBytes = (btcHexBytes: string): string => {
 }
 
 export const isNullBitcoinTxId = (txId: string): boolean => {
-  return !txId || txId === BTC_ZERO_64;
+  return !txId || txId == BTC_ZERO_64;
 }
 
 export const isValidBtcTransactionHash = (hash: string): boolean => {

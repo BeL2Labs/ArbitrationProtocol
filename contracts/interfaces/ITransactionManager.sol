@@ -23,7 +23,8 @@ interface ITransactionManager {
     // Request arbitration
     function requestArbitration(
         bytes32 id,
-        bytes calldata btcTx,
+        bytes calldata signData,
+        DataTypes.SignDataType signDataType,
         bytes calldata script,
         address timeoutCompensationReceiver
     ) external;
@@ -37,6 +38,7 @@ interface ITransactionManager {
     // Query transaction
     function getTransactionById(bytes32 id) external view returns (DataTypes.Transaction memory);
     function getTransaction(bytes32 txHash) external view returns (DataTypes.Transaction memory);
+    function getTransactionStatus(bytes32 id) external view returns (DataTypes.TransactionStatus status);
 
     function txHashToId(bytes32 txHash) external view returns (bytes32);
 
@@ -67,7 +69,7 @@ interface ITransactionManager {
         bytes32 indexed txId,
         address indexed dapp,
         address arbitrator,
-        bytes btcTx,
+        bytes signData,
         bytes script,
         address timeoutCompensationReceiver);
     event ArbitrationSubmitted(

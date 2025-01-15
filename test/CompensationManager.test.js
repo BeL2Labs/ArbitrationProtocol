@@ -5,6 +5,7 @@ const {sleep} = require("../scripts/helper");
 
 describe("CompensationManager", function () {
     let zkService;
+    let validationService;
     let compensationManager;
     let transactionManager;
     let configManager;
@@ -22,12 +23,12 @@ describe("CompensationManager", function () {
     let transactionId;
     const duration = 30 * 24 * 60 * 60; // 30days
 
-    const VALID_BTC_TX = "0x0200000000010153d6c3d859dfa233045771e55cea4e14b409c1393fa4917fb64f364b69ddf8fd00000000000000000001ec280000000000001976a9143d9ec353ad9df31924ffdb63027af35f135a4ae088ac054730440220287e9e41c54b48c30e46ea442aa80ab793dac56d3816dbb2a5ea465f0c6e26e1022079aed874e9774b23c98ad9a60b38f37918591d50af83f49b92e63b9ce74fdedf014730440220724b11c130ca4f290b8b09276b1d7c80248dfb8b0a9457843d3def3215998bb802202a7363e6dcd6025aba032859bc137e20c598cdca0cd90b22d4101e0c24b5b94901010100fd0a01632103cb0ee3eb3e9cdfdfdd6a5b276f7e480153caa491c590f8ac4a15dbde0442e6eaad2102005ec91740e2a7d8c06060a0ff7777630767d296160dc502e56eb2b6bb83d8a7ac67632103cb0ee3eb3e9cdfdfdd6a5b276f7e480153caa491c590f8ac4a15dbde0442e6eaad2102b1a82d3c01657ffa2b2b3433896386ac3fcad4cd04cffc74a90cba4c4bd8addeac676303ab0440b2752102005ec91740e2a7d8c06060a0ff7777630767d296160dc502e56eb2b6bb83d8a7ada8205a0737e8cbcfa24dcc118b0ab1e6d98bee17c57daa8a1686024159aae707ed6f876703b20440b2752103cb0ee3eb3e9cdfdfdd6a5b276f7e480153caa491c590f8ac4a15dbde0442e6eaac68686800000000";
-    const VALID_SIGNATURE = "0x30440220287e9e41c54b48c30e46ea442aa80ab793dac56d3816dbb2a5ea465f0c6e26e1022079aed874e9774b23c98ad9a60b38f37918591d50af83f49b92e63b9ce74fdedf01";
-    const VALID_TX_HASH = "0x5a521d5d7e40351fe68dd12c84a84ea67aacbedd88894c1a518429d43e05b905";
+    const VALID_BTC_TX = "0x02000000e5cd49421a525ae552acc8abd1d126108317aa517d96cd8550895d10486819da8cb9012517c817fead650287d61bdd9c68803b6bf9c64133dcab3e65b5a50cb9e2892172663c3d37fbc68260898676f5440fb4702289242fd82dcbef21be070c00000000fd0a0163210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac6763210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad2102b32f28976aa0be56a9de7cb7764c31c62a8d844244d9a5ecbe348e97e85475dfac676303b60040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ada8205a0737e8cbcfa24dcc118b0ab1e6d98bee17c57daa8a1686024159aae707ed6f876703bd0040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac686868692900000000000000000000c19695b1d2324599c15f4b3b47c0379b9a0c8b10512fc69cc93abf09f8afa3fe0000000001000000";
+    const VALID_SIGNATURE = "0x30440220287e9e41c54b48c30e46ea442aa80ab793dac56d3816dbb2a5ea465f0c6e26e1022079aed874e9774b23c98ad9a60b38f37918591d50af83f49b92e63b9ce74fdedf";
+    const VALID_TX_HASH = "0x3b07965292e50272b6ee3ba2c89fea4c6f626e8ad01a25dd509f97b53d88d581";
     const VALID_PUB_KEY = "0x02b1a82d3c01657ffa2b2b3433896386ac3fcad4cd04cffc74a90cba4c4bd8adde";
     const VALID_UTXOS = [{
-        txHash: "0xfdf8dd694b364fb67f91a43f39c109b4144eea5ce571570433a2df59d8c3d653",
+        txHash: "0x0c07be21efcb2dd82f24892270b40f44f57686896082c6fb373d3c66722189e2",
         index: 0,
         script: "0x0020d473100bd1a04e1ea90ad3e5411e6b4b75ca5d96b57781fc09bc79f135b24531",
         amount: 10816
@@ -40,6 +41,7 @@ describe("CompensationManager", function () {
 
         // Deploy mock contracts
         const MockZkService = await ethers.getContractFactory("MockZkService");
+        const MockSignatureValidationService = await ethers.getContractFactory("MockSignatureValidationService");
         const MockNFT = await ethers.getContractFactory("MockNFT");
         const MockNFTInfo = await ethers.getContractFactory("MockNFTInfo");
         const ConfigManager = await ethers.getContractFactory("ConfigManager");
@@ -50,6 +52,7 @@ describe("CompensationManager", function () {
 
         // Deploy contracts
         zkService = await MockZkService.deploy();
+        validationService = await MockSignatureValidationService.deploy();
         mockNFT = await MockNFT.deploy();
         mockNFTInfo = await MockNFTInfo.deploy();
         configManager = await upgrades.deployProxy(ConfigManager, [], { initializer: 'initialize' });
@@ -63,7 +66,8 @@ describe("CompensationManager", function () {
         compensationManager = await upgrades.deployProxy(CompensationManager, [
             zkService.address,
             configManager.address,
-            arbitratorManager.address
+            arbitratorManager.address,
+            validationService.address
         ], { initializer: 'initialize' });
 
         transactionManager = await upgrades.deployProxy(TransactionManager, [
@@ -138,7 +142,6 @@ describe("CompensationManager", function () {
             // Claim compensation
             const claimTx = await compensationManager.connect(dapp).claimIllegalSignatureCompensation(
                 arbitrator.address,
-                VALID_BTC_TX,  // Pass the BTC transaction
                 VALID_EVIDENCE
             );
             
@@ -178,7 +181,6 @@ describe("CompensationManager", function () {
 
             await expect(compensationManager.connect(dapp).claimIllegalSignatureCompensation(
                 arbitrator.address,
-                VALID_BTC_TX,  // Pass the BTC transaction
                 VALID_EVIDENCE
             )).to.be.revertedWith("U0");
         });
@@ -194,7 +196,6 @@ describe("CompensationManager", function () {
             );
             await expect(compensationManager.connect(dapp).claimIllegalSignatureCompensation(
                 arbitrator.address,
-                VALID_BTC_TX,  // Pass the BTC transaction
                 VALID_EVIDENCE
             )).to.be.revertedWith("M7");
         });
@@ -203,6 +204,7 @@ describe("CompensationManager", function () {
             await transactionManager.connect(dapp).requestArbitration(
                 transactionId,
                 VALID_BTC_TX,
+                1,
                 "0xab2348",
                 user.address
             );
@@ -221,7 +223,6 @@ describe("CompensationManager", function () {
 
             await expect(compensationManager.connect(dapp).claimIllegalSignatureCompensation(
                 arbitrator.address,
-                VALID_BTC_TX,  // Pass the BTC transaction
                 VALID_EVIDENCE
             )).to.be.revertedWith("M8");
         });
@@ -238,7 +239,6 @@ describe("CompensationManager", function () {
 
             await expect(compensationManager.connect(dapp).claimIllegalSignatureCompensation(
                 arbitrator.address,
-                VALID_BTC_TX,  // Pass the BTC transaction
                 VALID_EVIDENCE
             )).to.be.revertedWith("M6");
         });
@@ -248,19 +248,22 @@ describe("CompensationManager", function () {
             await transactionManager.connect(dapp).requestArbitration(
                 transactionId,
                 VALID_BTC_TX,
+                1,
                 "0xab2348",
                 timeoutReceiver.address
             );
         });
 
         it("should succeed with invalid verification data", async function () {
-            await zkService.setInvalidVerification(
-                VALID_EVIDENCE,
-                0,
-                VALID_PUB_KEY,
+            const valid_evidence = ethers.utils.solidityKeccak256(
+                ["bytes32", "uint8", "bytes", "bytes"],
+                [VALID_TX_HASH, 0, VALID_SIGNATURE, VALID_PUB_KEY]
+            );
+            await validationService.submitFailedData(
                 VALID_TX_HASH,
+                0,
                 VALID_SIGNATURE,
-                VALID_UTXOS
+                VALID_PUB_KEY
             );
             await transactionManager.connect(arbitrator).submitArbitration(
                 transactionId,
@@ -268,12 +271,11 @@ describe("CompensationManager", function () {
 
             const claimId = ethers.utils.solidityKeccak256(
                 ["bytes32", "address", "address", "uint8"],
-                [VALID_EVIDENCE, arbitrator.address, compensationReceiver.address, 2]
+                [valid_evidence, arbitrator.address, compensationReceiver.address, 2]
               );
 
             await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                VALID_BTC_TX,  // Pass the BTC transaction
-                VALID_EVIDENCE
+                valid_evidence
             )).to.emit(compensationManager, "CompensationClaimed").withArgs(
                 claimId,
                 dapp.address,
@@ -300,53 +302,40 @@ describe("CompensationManager", function () {
             expect(compensationClaim.receivedCompensationAddress).to.equal(compensationReceiver.address);
         });
 
-        it("should revert with zk proof failed", async function () {
-            await zkService.setInvalidVerification(
-                VALID_EVIDENCE,
-                1,
-                VALID_PUB_KEY,
-                VALID_TX_HASH,
-                VALID_SIGNATURE,
-                VALID_UTXOS
-            );
-            await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                VALID_BTC_TX,  // Pass the BTC transaction
-                VALID_EVIDENCE
-            )).to.be.revertedWith("M6");
-        });
-
         it("should revert with signature not submitted", async function () {
-            await zkService.setInvalidVerification(
-                VALID_EVIDENCE,
-                0,
-                VALID_PUB_KEY,
+            const valid_evidence = ethers.utils.solidityKeccak256(
+                ["bytes32", "uint8", "bytes", "bytes"],
+                [VALID_TX_HASH, 0, VALID_SIGNATURE, VALID_PUB_KEY]
+            );
+            await validationService.submitFailedData(
                 VALID_TX_HASH,
+                0,
                 VALID_SIGNATURE,
-                VALID_UTXOS
+                VALID_PUB_KEY
             );
             await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                VALID_BTC_TX,  // Pass the BTC transaction
-                VALID_EVIDENCE
+                valid_evidence
             )).to.be.revertedWith("S5");
         });
 
         it("should revert with signature mismatch", async function () {
-            const signature = "0x30440220785b0fafc9a705952850455098820dd16eb1401c8cb4c743a836414679eeaeef022059e625a5cbb5f5508c30b1764c4d11a2b1d7d6676250a33da77b2c48a52eb1e901";
+            const signature = "0x30440220785b0fafc9a705952850455098820dd16eb1401c8cb4c743a836414679eeaeef022059e625a5cbb5f5508c30b1764c4d11a2b1d7d6676250a33da77b2c48a52eb1e9";
             await transactionManager.connect(arbitrator).submitArbitration(
                 transactionId,
-                signature);
+                VALID_SIGNATURE);
 
-            await zkService.setInvalidVerification(
-                VALID_EVIDENCE,
-                0,
-                VALID_PUB_KEY,
+            const valid_evidence = ethers.utils.solidityKeccak256(
+                ["bytes32", "uint8", "bytes", "bytes"],
+                [VALID_TX_HASH, 0, signature, VALID_PUB_KEY]
+            );
+            await validationService.submitFailedData(
                 VALID_TX_HASH,
-                VALID_SIGNATURE,
-                VALID_UTXOS
+                0,
+                signature,
+                VALID_PUB_KEY
             );
             await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                VALID_BTC_TX,  // Pass the BTC transaction
-                VALID_EVIDENCE
+                valid_evidence
             )).to.be.revertedWith("S6");
         });
 
@@ -356,44 +345,39 @@ describe("CompensationManager", function () {
                 transactionId,
                 VALID_SIGNATURE);
 
-            await zkService.setInvalidVerification(
-                VALID_EVIDENCE,
-                0,
-                pubkey,
+            const valid_evidence = ethers.utils.solidityKeccak256(
+                ["bytes32", "uint8", "bytes", "bytes"],
+                [VALID_TX_HASH, 0, VALID_SIGNATURE, pubkey]
+            );
+            await validationService.submitFailedData(
                 VALID_TX_HASH,
+                0,
                 VALID_SIGNATURE,
-                VALID_UTXOS
+                pubkey
             );
             await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                VALID_BTC_TX,  // Pass the BTC transaction
-                VALID_EVIDENCE
+                valid_evidence
             )).to.be.revertedWith("M7");
         });
 
-        it("should revert with invalid utxos", async function () {
+        it("should revert with verified", async function () {
             await transactionManager.connect(arbitrator).submitArbitration(
                 transactionId,
                 VALID_SIGNATURE);
 
-            const utxos = [{
-                txHash: "0xfdf8dd694b364fb67f91a43f39c109b4144eea5ce571570433a2df59d8c3d653",
-                index: 0,
-                script: "0x0020d473100bd1a04e1ea90ad3e5411e6b4b75ca5d96b57781fc09bc79f135b24531",
-                amount: 10000
-            }];
-
-            await zkService.setInvalidVerification(
-                VALID_EVIDENCE,
-                0,
-                VALID_PUB_KEY,
+            const valid_evidence = ethers.utils.solidityKeccak256(
+                ["bytes32", "uint8", "bytes", "bytes"],
+                [VALID_TX_HASH, 0, VALID_SIGNATURE, VALID_PUB_KEY]
+            );
+            await validationService.submit(
                 VALID_TX_HASH,
+                0,
                 VALID_SIGNATURE,
-                utxos
+                VALID_PUB_KEY
             );
             await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                VALID_BTC_TX,  // Pass the BTC transaction
-                VALID_EVIDENCE
-            )).to.be.revertedWith("U0");
+                valid_evidence
+            )).to.be.revertedWith("S7");
         });
     });
 
@@ -403,6 +387,7 @@ describe("CompensationManager", function () {
             await transactionManager.connect(dapp).requestArbitration(
                 transactionId,
                 VALID_BTC_TX,
+                1,
                 "0xab2348",
                 timeoutReceiver.address
             );
@@ -475,27 +460,29 @@ describe("CompensationManager", function () {
             await transactionManager.connect(dapp).requestArbitration(
                 transactionId,
                 VALID_BTC_TX,
+                1,
                 "0xab2348",
                 timeoutReceiver.address
             );
-            await zkService.setInvalidVerification(
-                VALID_EVIDENCE,
-                0,
-                VALID_PUB_KEY,
+            const valid_evidence = ethers.utils.solidityKeccak256(
+                ["bytes32", "uint8", "bytes", "bytes"],
+                [VALID_TX_HASH, 0, VALID_SIGNATURE, VALID_PUB_KEY]
+            );
+            await validationService.submitFailedData(
                 VALID_TX_HASH,
+                0,
                 VALID_SIGNATURE,
-                VALID_UTXOS
+                VALID_PUB_KEY
             );
             await transactionManager.connect(arbitrator).submitArbitration(
                 transactionId,
                 VALID_SIGNATURE);
             await compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                VALID_BTC_TX,  // Pass the BTC transaction
-                VALID_EVIDENCE
+                valid_evidence
             );
             claimId = ethers.utils.solidityKeccak256(
                 ["bytes32", "address", "address", "uint8"],
-                [VALID_EVIDENCE, arbitrator.address, compensationReceiver.address, 2]
+                [valid_evidence, arbitrator.address, compensationReceiver.address, 2]
               );
             const feeRate = await configManager.getSystemCompensationFeeRate();
             withdrawFee = STAKE_AMOUNT.mul(feeRate).div(10000);
@@ -549,6 +536,7 @@ describe("CompensationManager", function () {
             await transactionManager.connect(dapp).requestArbitration(
                 transactionId,
                 VALID_BTC_TX,
+                1,
                 "0xab2348",
                 timeoutReceiver.address
             );

@@ -16,7 +16,7 @@ contract MockZkService is IZkService {
     function setValidVerification(
         bytes32 evidence,
         bytes memory pubKey,
-        bytes32 txHash,
+        bytes32 signHash,
         bytes memory signature,
         DataTypes.UTXO[] calldata utxos
     ) external {
@@ -24,7 +24,7 @@ contract MockZkService is IZkService {
         verification.status = 0;
         verification.verified = true;
         verification.pubKey = pubKey;
-        verification.txHash = txHash;
+        verification.txHash = signHash;
         verification.signature = signature;
         delete verification.utxos;
         for (uint256 i = 0; i < utxos.length; i++) {
@@ -39,14 +39,14 @@ contract MockZkService is IZkService {
         bytes32 evidence,
         uint256 status,
         bytes memory pubKey,
-        bytes32 txHash,
+        bytes32 signHash,
         bytes memory signature,
         DataTypes.UTXO[] calldata utxos
     ) external {
         DataTypes.ZKVerification storage verification = _verifications[evidence];
         verification.verified = false;
         verification.pubKey = pubKey;
-        verification.txHash = txHash;
+        verification.txHash = signHash;
         verification.signature = signature;
         verification.status = status;
         delete verification.utxos;

@@ -1,6 +1,7 @@
 import { ethereum } from "@graphprotocol/graph-ts";
 import { ArbitrationRequested, ArbitrationSubmitted, OwnershipTransferred, TransactionCompleted, TransactionRegistered } from "../../generated/TransactionManager/TransactionManager";
 import { Transaction } from "../../generated/schema";
+import { recomputeArbitratorIsActive } from "./ArbitratorManager";
 
 export function handleTransactionRegistered(event: TransactionRegistered): void {
   const transaction = getTransaction(event.block, event.params.id.toHexString());
@@ -12,6 +13,8 @@ export function handleTransactionRegistered(event: TransactionRegistered): void 
   transaction.depositedFee = event.params.depositFee;
   transaction.compensationReceiver = event.params.compensationReceiver.toHexString();
   transaction.save();
+
+  recomputeArbitratorIsActive(transaction.arbiter, event.block);
 }
 
 export function handleArbitrationRequested(event: ArbitrationRequested): void {
@@ -22,12 +25,9 @@ export function handleArbitrationRequested(event: ArbitrationRequested): void {
   transaction.script = event.params.script.toHexString();
   transaction.timeoutCompensationReceiver = event.params.timeoutCompensationReceiver.toHexString();
   transaction.requestArbitrationTime = event.block.timestamp.toI32();
-
-  // BTC tx
-  if (event.params.btcTx)
-    transaction.btcTx = event.params.btcTx.toHexString().slice(2);
-
   transaction.save();
+
+  recomputeArbitratorIsActive(transaction.arbiter, event.block);
 }
 
 export function handleArbitrationSubmitted(event: ArbitrationSubmitted): void {
@@ -35,6 +35,8 @@ export function handleArbitrationSubmitted(event: ArbitrationSubmitted): void {
   transaction.dapp = event.params.dapp.toHexString();
   transaction.status = "Completed";
   transaction.save();
+
+  recomputeArbitratorIsActive(transaction.arbiter, event.block);
 }
 
 export function handleOwnershipTransferred(event: OwnershipTransferred): void {
@@ -45,6 +47,8 @@ export function handleTransactionCompleted(event: TransactionCompleted): void {
   const transaction = getTransaction(event.block, event.params.txId.toHexString());
   transaction.status = "Completed";
   transaction.save();
+
+  recomputeArbitratorIsActive(transaction.arbiter, event.block);
 }
 
 /**

@@ -1,7 +1,7 @@
-# ConfigManager
+# Configuration Manager (ConfigManager)
 
 ## Overview
-ConfigManager is the configuration management center of the arbitration protocol, responsible for managing and maintaining various parameter configurations within the protocol. It provides a centralized configuration management interface to ensure that all components of the protocol can correctly access and update configuration information.
+ConfigManager is responsible for managing various configuration parameters of the BeLayer2 arbitration protocol, including staking requirements, time limits, and fee rates. All configuration changes must be executed by the contract owner.
 
 ## Core Functions
 
@@ -12,10 +12,9 @@ function setMinStake(uint256 amount) external;
 function setMaxStake(uint256 amount) external;
 function setMinStakeLockedTime(uint256 time) external;
 ```
-Functions to manage staking parameters:
-- Set minimum stake amount
-- Set maximum stake amount
-- Set minimum duration for stake locking
+- `setMinStake`: Set minimum stake amount (default: 1 ETH)
+- `setMaxStake`: Set maximum stake amount (default: 100 ETH)
+- `setMinStakeLockedTime`: Set minimum stake lock time (default: 7 days)
 
 ### Time Related Configurations
 
@@ -25,10 +24,10 @@ function setMaxTransactionDuration(uint256 duration) external;
 function setArbitrationTimeout(uint256 timeout) external;
 function getArbitrationTimeout() external view returns (uint256);
 ```
-Functions to manage time-related parameters:
-- Set minimum transaction duration
-- Set maximum transaction duration
-- Set/get arbitration timeout period
+- `setMinTransactionDuration`: Set minimum transaction duration (default: 1 day)
+- `setMaxTransactionDuration`: Set maximum transaction duration (default: 30 days)
+- `setArbitrationTimeout`: Set arbitration timeout, the deadline for submitting signatures (default: 24 hours)
+- `getArbitrationTimeout`: Get current arbitration timeout
 
 ### Fee Related Configurations
 
@@ -36,38 +35,32 @@ Functions to manage time-related parameters:
 function setTransactionMinFeeRate(uint256 rate) external;
 function setSystemFeeRate(uint256 rate) external;
 function getSystemFeeRate() external view returns (uint256);
+function setSystemCompensationFeeRate(uint256 rate) external;
+function getSystemCompensationFeeRate() external view returns (uint256);
 ```
-Functions to manage fee-related parameters:
-- Set minimum transaction fee rate
-- Set/get system fee rate
+- `setTransactionMinFeeRate`: Set minimum transaction fee rate (default: 1%, expressed in basis points, 100 = 1%)
+- `setSystemFeeRate`: Set system fee rate (default: 5%, expressed in basis points, 500 = 5%)
+- `getSystemFeeRate`: Get current system fee rate
+- `setSystemCompensationFeeRate`: Set system compensation fee rate (default: 2%, expressed in basis points, 200 = 2%)
+- `getSystemCompensationFeeRate`: Get current system compensation fee rate
 
-### Arbitrator Related Configurations
+### Arbitration Related Configurations
 
 ```solidity
 function setArbitrationFrozenPeriod(uint256 period) external;
 function getArbitrationFrozenPeriod() external view returns (uint256);
 ```
-Functions to manage arbitrator-specific parameters:
-- Set/get arbitration frozen period
+- `setArbitrationFrozenPeriod`: Set arbitration frozen period, the time after transaction completion during which arbitrators cannot accept or exit (default: 30 minutes)
+- `getArbitrationFrozenPeriod`: Get current arbitration frozen period
 
-### System Fee Collector Management
+### System Fee Collector Configuration
 
 ```solidity
 function setSystemFeeCollector(address collector) external;
 function getSystemFeeCollector() external view returns (address);
 ```
-Functions to manage system fee collection:
-- Set the address that collects system fees
-- Get the current fee collector address
-
-### System Compensation Fee Rate
-
-```solidity
-function getSystemCompensationFeeRate() external view returns (uint256);
-function setSystemCompensationFeeRate(uint256 rate) external;
-```
-Functions to manage compensation fee rates:
-- Set/get system compensation fee rate
+- `setSystemFeeCollector`: Set system fee collector address
+- `getSystemFeeCollector`: Get current system fee collector address
 
 ### General Configuration Management
 
@@ -76,17 +69,48 @@ function getConfig(bytes32 key) external view returns (uint256);
 function getAllConfigs() external view returns (bytes32[] memory keys, uint256[] memory values);
 function setConfigs(bytes32[] calldata keys, uint256[] calldata values) external;
 ```
-Generic configuration management functions:
-- Get a specific configuration value by key
-- Get all configuration key-value pairs
-- Set multiple configurations at once
+- `getConfig`: Get specific configuration value by key
+- `getAllConfigs`: Get all configuration key-value pairs
+- `setConfigs`: Batch set multiple configuration items
 
-## Events
+### Configuration Key Constants
 
 ```solidity
-event ConfigUpdated(bytes32 indexed key, uint256 oldValue, uint256 newValue);
+bytes32 public constant MIN_STAKE = keccak256("MIN_STAKE");
+bytes32 public constant MAX_STAKE = keccak256("MAX_STAKE");
+bytes32 public constant MIN_STAKE_LOCKED_TIME = keccak256("MIN_STAKE_LOCKED_TIME");
+bytes32 public constant MIN_TRANSACTION_DURATION = keccak256("MIN_TRANSACTION_DURATION");
+bytes32 public constant MAX_TRANSACTION_DURATION = keccak256("MAX_TRANSACTION_DURATION");
+bytes32 public constant TRANSACTION_MIN_FEE_RATE = keccak256("TRANSACTION_MIN_FEE_RATE");
+bytes32 public constant ARBITRATION_TIMEOUT = keccak256("ARBITRATION_TIMEOUT");
+bytes32 public constant ARBITRATION_FROZEN_PERIOD = keccak256("arbitrationFrozenPeriod");
+bytes32 public constant SYSTEM_FEE_RATE = keccak256("systemFeeRate");
+bytes32 public constant SYSTEM_COMPENSATION_FEE_RATE = keccak256("SYSTEM_COMPENSATION_FEE_RATE");
+bytes32 public constant SYSTEM_FEE_COLLECTOR = keccak256("SYSTEM_FEE_COLLECTOR");
 ```
-Emitted when any configuration value is updated.
+
+### Events
+
+```solidity
+event ConfigUpdated(
+    bytes32 indexed key,  // Configuration key
+    uint256 oldValue,     // Old value
+    uint256 newValue      // New value
+);
+```
+
+## Default Configuration Values
+
+- Minimum stake amount: 1 ETH
+- Maximum stake amount: 100 ETH
+- Minimum stake lock time: 7 days
+- Minimum transaction duration: 1 day
+- Maximum transaction duration: 30 days
+- Minimum transaction fee rate: 1% (100 basis points)
+- Arbitration timeout: 24 hours
+- Arbitration frozen period: 30 minutes
+- System fee rate: 5% (500 basis points)
+- System compensation fee rate: 2% (200 basis points)
 
 ## Security Considerations
 

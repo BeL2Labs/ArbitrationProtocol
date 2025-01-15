@@ -1,4 +1,5 @@
 import { BitcoinWalletChooserContext } from "@/components/dialogs/BitcoinWalletChooser/BitcoinWalletChooser";
+import { Button } from "@/components/ui/button";
 import { useEVMContext } from "@/contexts/EVMContext/EVMContext";
 import { useWalletContext } from "@/contexts/WalletContext/WalletContext";
 import { useBitcoinAddressSupported } from "@/services/btc/hooks/useBitcoinAddressSupported";
@@ -61,9 +62,9 @@ export const EnsureWalletNetwork: FC<{
   }, [enqueueSnackbar]);
 
   if (!window.ethereum) {
-    return <button onClick={handleInstallMetaMask} /* fullWidth={fullWidth} */>
+    return <Button onClick={handleInstallMetaMask}>
       Install MetaMask
-    </button>
+    </Button>
   }
 
   if (btcAccountNeeded) {
@@ -116,11 +117,6 @@ export const EnsureWalletNetwork: FC<{
       onClick={handleUnsupportedNetwork}
       fullWidth={fullWidth} />
   }
-
-  /*
-  <Button variant="contained" onClick={handleInstallMetaMask} size="small">
-    INSTALL METAMASK
-  </Button> */
 
   return (
     <>{children}</>

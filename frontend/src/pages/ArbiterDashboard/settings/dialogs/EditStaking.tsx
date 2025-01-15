@@ -83,7 +83,7 @@ export const EditStakingDialog: FC<{
   // Temporary limitation of maximum staking amount
   const watchedCoinAmount = parseFloat(`${form.watch("coinAmount")}`); // Sometimes returned as number, sometimes string...
   const stakeAmount = useMemo(() => {
-    let amount = arbiter.getTotalValue().toNumber();
+    let amount = arbiter.totalValue.toNumber();
 
     if (stakeType === "coin")
       amount += watchedCoinAmount;

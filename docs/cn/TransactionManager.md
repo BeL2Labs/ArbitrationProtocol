@@ -1,26 +1,35 @@
 # 交易管理器 (TransactionManager)
 
 ## 概述
-TransactionManager 是仲裁协议中负责管理跨链交易生命周期的核心组件。它负责交易的注册、仲裁请求处理、签名提交等关键功能，并与补偿系统紧密集成以处理异常情况。
+TransactionManager 是仲裁协议中负责管理跨链交易生命周期的核心组件。它负责交易的注册、UTXO上传、仲裁请求处理、签名提交等关键功能，并与补偿系统紧密集成以处理异常情况。
 
 ## 核心功能
 
-### 交易注册与管理
+### 1. 交易注册与管理
 
 ```solidity
 function registerTransaction(
-    DataTypes.UTXO[] calldata utxos,
     address arbitrator,
     uint256 deadline,
     address compensationReceiver
 ) external payable returns (bytes32 id);
 ```
 注册新的交易。
-- `utxos`: 交易的UTXO数据数组
 - `arbitrator`: 选定的仲裁人地址
 - `deadline`: 交易截止时间戳
 - `compensationReceiver`: 补偿接收地址
+- `msg.value`: 必须等于所需的注册费用
 - 返回值: 唯一交易ID
+
+```solidity
+function uploadUTXOs(
+    bytes32 id,
+    DataTypes.UTXO[] calldata utxos
+) external;
+```
+上传交易的UTXO数据，每个交易只能上传一次。
+- `id`: 交易ID
+- `utxos`: UTXO数据数组
 
 ```solidity
 function completeTransaction(bytes32 id) external;
@@ -28,23 +37,30 @@ function completeTransaction(bytes32 id) external;
 标记交易为已完成。
 
 ```solidity
+function completeTransactionWithSlash(bytes32 id, address receivedCompensationAddress) external;
+```
+标记交易为已完成并处罚仲裁人, 并将补偿发送给指定地址。仅限CompensationManager调用
+
+```solidity
 function isAbleCompletedTransaction(bytes32 id) external view returns (bool);
 ```
 检查交易是否可以完成。
 
-### 仲裁功能
+### 2. 仲裁功能
 
 ```solidity
 function requestArbitration(
     bytes32 id,
-    bytes calldata btcTx,
+    bytes calldata signData,
+    DataTypes.SignDataType signDataType,
     bytes calldata script,
     address timeoutCompensationReceiver
 ) external;
 ```
-请求交易仲裁。
+请求交易仲裁。必须先上传UTXO数据。
 - `id`: 交易ID
-- `btcTx`: 比特币交易数据
+- `signData`: 待签名数据
+- `signDataType`: 签名数据类型，目前仅支持Witness
 - `script`: 交易脚本数据
 - `timeoutCompensationReceiver`: 超时补偿接收地址
 
@@ -54,11 +70,11 @@ function submitArbitration(
     bytes calldata btcTxSignature
 ) external;
 ```
-提交仲裁结果和签名。
+提交仲裁结果和签名, 仅限仲裁人调用。
 - `id`: 交易ID
-- `btcTxSignature`: 比特币交易签名
+- `btcTxSignature`: 对signData的签名
 
-### 查询功能
+### 3. 查询功能
 
 ```solidity
 function getTransactionById(bytes32 id) external view returns (DataTypes.Transaction memory);
@@ -74,7 +90,7 @@ function getRegisterTransactionFee(uint256 deadline, address arbitrator) externa
 ```
 计算注册交易所需的费用。
 
-### 费用管理
+### 4. 费用管理
 
 ```solidity
 function transferArbitrationFee(
@@ -82,19 +98,18 @@ function transferArbitrationFee(
 ) external returns (uint256 arbitratorFee, uint256 systemFee);
 ```
 转移仲裁费用给仲裁人和系统。
-- 仅可由补偿管理器调用
+- 仅可由CompensationManager调用
 - 返回仲裁人费用和系统费用金额
 
-### 初始化和配置
+### 5. 初始化和配置
 
 ```solidity
-function initialize(address _arbitratorManager, address _dappRegistry, address _configManager) external;
-function initCompensationManager(address _compensationManager) external;
+function initialize(address _arbitratorManager, address _dappRegistry, address _configManager, address _compensationManager) external;
 function setArbitratorManager(address _arbitratorManager) external;
 ```
 系统初始化和配置功能。
 
-## 事件
+## 事件系统
 
 ```solidity
 event TransactionRegistered(
@@ -102,156 +117,132 @@ event TransactionRegistered(
     address indexed dapp,
     address indexed arbitrator,
     uint256 deadline,
-    uint256 depositFee
+    uint256 depositFee,
+    address compensationReceiver
 );
-event TransactionCompleted(address indexed dapp, bytes32 indexed txId);
-event ArbitrationRequested(address indexed dapp, bytes32 indexed txId, bytes btcTx, bytes script, address arbitrator);
-event ArbitrationSubmitted(address indexed dapp, bytes32 indexed txId);
-event TransactionCreated(bytes32 indexed id, address indexed sender, address indexed arbitrator);
-event TransactionCancelled(bytes32 indexed id);
-event CompensationManagerInitialized(address indexed compensationManager);
-event SetArbitratorManager(address indexed arbitratorManager);
-```
-交易生命周期各阶段触发的事件。
 
-## 补偿机制
+event UTXOsUploaded(
+    bytes32 indexed txId,
+    address indexed dapp
+);
 
-### 1. 非法签名补偿
-当发现仲裁人提交了非法签名时：
-```solidity
-function claimIllegalSignatureCompensation(
+event TransactionCompleted(
+    bytes32 indexed txId,
+    address indexed dapp
+);
+
+event ArbitrationRequested(
+    bytes32 indexed txId,
+    address indexed dapp,
     address arbitrator,
-    bytes calldata btcTx,
-    bytes32 calldata evidence
-) external returns (bytes32 claimId);
+    bytes signData,
+    bytes script,
+    address timeoutCompensationReceiver
+);
+
+event ArbitrationSubmitted(
+    bytes32 indexed txId,
+    address indexed dapp,
+    address indexed arbitrator,
+    bytes btcTxSignature
+);
+
+event SetArbitratorManager(
+    address indexed arbitratorManager
+);
 ```
-
-### 2. 超时补偿
-当仲裁人未在截止时间前提交签名：
-```solidity
-function claimTimeoutCompensation(
-    bytes32 txId
-) external returns (bytes32 claimId);
-```
-
-### 3. 错误仲裁补偿
-当仲裁结果出现错误时：
-```solidity
-function claimFailedArbitrationCompensation(
-    bytes32 txId,
-    bytes32 calldata evidence
-) external returns (bytes32 claimId);
-```
-
-## 作恶处理机制
-
-### 作恶类型
-
-1. **恶意转移资产**
-   - 现象：仲裁人与某一方勾结，直接签名将锁定的 BTC 转走
-   - 受害者：注册交易时指定的 compensationReceiver
-   - 处理：受害者可申请获得质押资产补偿
-
-2. **仲裁不作为/错误仲裁**
-   - 现象：
-     * 未及时签名仲裁交易
-     * 签署了错误的仲裁交易
-     * 签署了虚假的仲裁交易
-   - 受害者：请求仲裁时指定的 timeoutCompensationReceiver
-   - 处理：受害者可申请获得质押资产补偿
-
-### 补偿优先级
-
-在某些情况下，两种作恶类型可能同时发生，例如：
-- 仲裁人签署了一个错误的仲裁交易
-- 该交易既无法帮助任何一方，又构成了对资产的非法处置
-
-处理原则：
-1. 请求仲裁在先，timeoutCompensationReceiver 具有优先获得补偿的权利
-2. 只有在 timeoutCompensationReceiver 放弃或未在规定时间内申请补偿的情况下，compensationReceiver 才能申请补偿
 
 ## 工作流程
 
 ### 1. 正常流程
 1. DApp注册交易
-   - 提供交易ID和仲裁人信息
+   - 选择仲裁人并设置截止时间
    - 支付必要的费用
    - 设置补偿接收地址
+   - 获得交易ID
 
-2. 请求仲裁
-   - 提供待签名的比特币交易
+2. 上传UTXO数据
+   - 提供交易相关的UTXO信息
+   - 只能上传一次
+
+3. 请求仲裁
+   - 提供待签名数据和脚本
+   - 指定签名数据类型
    - 设置超时补偿接收地址
 
-3. 仲裁人签名流程
+4. 仲裁人签名
    - 验证交易内容
    - 生成签名
    - 提交签名
 
-4. 完成交易
+5. 完成交易
+   - 正常完成或带惩罚完成
    - 更新状态
-   - 释放资金
+   - 处理费用分配
 
 ### 2. 异常处理流程
 1. 仲裁人超时
    - 通过补偿管理器申请超时补偿
-   - 补偿发送到指定的接收地址
+   - 补偿发送到指定的补偿接收地址
 
 2. 非法签名
    - 通过补偿管理器申请非法签名补偿
-   - 提供比特币交易和证据
-   - 补偿发送到注册时指定的接收地址
-
-3. 错误仲裁
-   - 通过补偿管理器申请错误仲裁补偿
    - 提供证据
-   - 补偿发送到指定地址
+   - 补偿发送到请求仲裁时指定的超时补偿接收地址
 
-## 事件系统
-```solidity
-event TransactionRegistered(address indexed dapp, bytes32 indexed txId);
-event TransactionCompleted(address indexed dapp, bytes32 indexed txId);
-event ArbitrationRequested(address indexed dapp, bytes32 indexed txId);
-event ArbitrationSubmitted(address indexed dapp, bytes32 indexed txId);
-```
+3. 错误签名
+   - 通过补偿管理器申请错误签名补偿
+   - 提供证据
+   - 补偿发送到注册时指定的补偿接收地址
 
 ## 使用示例
 
 ### 示例 1: DApp 注册交易
 ```javascript
-// 1. 准备交易信息
-const txId = ethers.utils.keccak256(btcTxHash);
-const arbitrator = "0x..."; // 选定的仲裁人地址
+// 1. 计算所需费用
 const deadline = Math.floor(Date.now() / 1000) + 24 * 3600; // 24小时后
-const compensationReceiver = userWalletAddress;
+const fee = await transactionManager.getRegisterTransactionFee(
+    deadline,
+    arbitratorAddress
+);
 
 // 2. 注册交易
-await transactionManager.registerTransaction(
-    txId,
-    arbitrator,
+const tx = await transactionManager.registerTransaction(
+    arbitratorAddress,
     deadline,
     compensationReceiver,
-    { value: requiredFee }
+    { value: fee }
 );
+const receipt = await tx.wait();
+
+// 3. 获取交易ID
+const txId = receipt.events.find(e => e.event === 'TransactionRegistered').args.id;
+
+// 4. 上传UTXO数据
+await transactionManager.uploadUTXOs(txId, utxos);
 ```
 
 ### 示例 2: 请求仲裁签名
 ```javascript
-// 1. 准备比特币交易
-const btcTx = "0x..."; // 序列化的比特币交易
-const timeoutCompensationReceiver = userWalletAddress;
+// 1. 准备签名数据
+const signData = "0x..."; // 待签名数据
+const script = "0x..."; // 脚本数据
+const signDataType = 0; // 签名数据类型
 
 // 2. 请求仲裁
 await transactionManager.requestArbitration(
     txId,
-    btcTx,
+    signData,
+    signDataType,
+    script,
     timeoutCompensationReceiver
 );
 ```
 
 ### 示例 3: 仲裁人提交签名
 ```javascript
-// 1. 签名比特币交易
-const signature = await bitcoinWallet.sign(btcTx);
+// 1. 生成签名
+const signature = "0x..."; // 比特币交易签名
 
 // 2. 提交签名
 await transactionManager.submitArbitration(
@@ -260,49 +251,36 @@ await transactionManager.submitArbitration(
 );
 ```
 
-### 示例 4: 申请补偿
-```javascript
-// 1. 申请非法签名补偿
-const evidence = "0x..."; // 证据哈希
-await compensationManager.claimIllegalSignatureCompensation(
-    arbitrator,
-    btcTx,
-    evidence
-);
-
-// 2. 申请错误仲裁补偿
-await compensationManager.claimFailedArbitrationCompensation(
-    txId,
-    evidence
-);
-```
-
 ## 错误处理
 合约会在以下情况抛出错误：
-- 交易已存在（TransactionExists）
-- 交易不存在（TransactionNotFound）
-- 仲裁人未授权（UnauthorizedArbitrator）
-- 费用不足（InsufficientFee）
-- 交易已过期（TransactionExpired）
-- 状态错误（InvalidStatus）
+- 交易已存在
+- 交易不存在
+- UTXO已上传
+- 仲裁人未授权
+- 费用不足
+- 交易已过期
+- 状态错误
+- 权限不足
 
 ## 安全考虑
 1. 交易ID使用密码学安全的哈希
-2. 多层补偿机制保护用户权益
-3. 截止时间机制防止交易无限期挂起
-4. 费用机制防止垃圾交易
-5. 状态检查防止重复操作
+2. UTXO数据只能上传一次
+3. 多层补偿机制保护用户权益
+4. 截止时间机制防止交易无限期挂起
+5. 费用机制防止垃圾交易
+6. 状态检查防止重复操作
 
 ## 与其他组件的交互
-1. DAppRegistry：验证DApp注册状态
-2. ArbitratorManager：验证仲裁人状态和权限
-3. CompensationManager：处理补偿申请
-4. ConfigManager：获取系统配置参数
+1. ArbitratorManager：验证仲裁人状态和权限
+2. DAppRegistry：验证DApp注册状态
+3. ConfigManager：获取系统配置参数
+4. CompensationManager：处理补偿和惩罚
 
 ## 最佳实践
-1. 设置合理的截止时间
-2. 正确配置补偿接收地址
-3. 在请求仲裁前验证比特币交易的正确性
-4. 及时处理超时和错误情况
-5. 保持交易状态的及时更新
-6. 在申请补偿时提供充分的证据
+1. 注册交易前计算准确的费用
+2. 及时上传UTXO数据
+3. 设置合理的截止时间
+4. 正确配置补偿接收地址
+5. 在请求仲裁前验证签名数据的正确性
+6. 及时处理超时和错误情况
+7. 保持交易状态的及时更新

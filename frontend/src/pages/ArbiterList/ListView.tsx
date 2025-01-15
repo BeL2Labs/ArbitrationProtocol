@@ -1,5 +1,6 @@
 import { CopyField } from "@/components/base/CopyField";
 import { StatusLabel } from "@/components/base/StatusLabel";
+import { TokenWithValue } from "@/components/base/TokenWithValue";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { arbiterStatusLabelColor, arbiterStatusLabelTitle } from "@/services/arbiters/arbiters.service";
@@ -10,7 +11,7 @@ import { ChevronDownIcon, ChevronUpDownIcon, ChevronUpIcon } from '@heroicons/re
 import { ChevronsUpDown } from "lucide-react";
 import { FC } from "react";
 import { SortConfig } from "./ArbiterList";
-import { TokenWithValue } from "@/components/base/TokenWithValue";
+import { SecondaryArbiterStatusLabel } from "./components/SecondaryArbiterStatusLabel";
 
 export const ListView: FC<{
   arbiters: ArbiterInfo[];
@@ -55,7 +56,7 @@ export const ListView: FC<{
       <TableBody>
         {arbiters?.map(arbiter => (
           <TableRow key={arbiter.address}>
-            <TableCell className="whitespace-nowrap font-mono text-sm">
+            <TableCell className="whitespace-nowrap text-sm">
               {formatAddress(arbiter.address)}
               <CopyField value={arbiter.address} />
             </TableCell>
@@ -65,7 +66,7 @@ export const ListView: FC<{
             </TableCell>
             <TableCell className="whitespace-nowrap">
               <div className="text-sm">
-                <TokenWithValue amount={arbiter.getTotalValue()} token={activeChain?.nativeCurrency} />
+                <TokenWithValue amount={arbiter.totalValue} token={activeChain?.nativeCurrency} />
               </div>
             </TableCell>
             <TableCell className="whitespace-nowrap gap-1 flex">
@@ -73,7 +74,7 @@ export const ListView: FC<{
                 title={arbiterStatusLabelTitle(arbiter)}
                 color={arbiterStatusLabelColor(arbiter)}
               />
-              {arbiter.activeTransactionId && <StatusLabel title="Working" color="yellow" />}
+              <SecondaryArbiterStatusLabel arbiter={arbiter} />
             </TableCell>
           </TableRow>
         ))}
@@ -89,7 +90,7 @@ const OperatorInfo: FC<{ arbiter: ArbiterInfo }> = ({ arbiter }) => {
         <div className="flex justify-between items-center w-full">
           <span className="text-gray-600">EVM Address</span>
           <div className="flex items-center">
-            <span className="font-mono">{formatAddress(arbiter.operatorEvmAddress)}</span>
+            <span>{formatAddress(arbiter.operatorEvmAddress)}</span>
             <ChevronsUpDown className="h-3 w-3" />
           </div>
         </div>
@@ -97,11 +98,11 @@ const OperatorInfo: FC<{ arbiter: ArbiterInfo }> = ({ arbiter }) => {
       <CollapsibleContent className="pr-3 w-72">
         <div className="flex justify-between items-center">
           <span className="text-gray-600">BTC Address</span>
-          <span className="font-mono">{formatAddress(arbiter.operatorBtcAddress)}</span>
+          <span>{formatAddress(arbiter.operatorBtcAddress)}</span>
         </div>
         <div className="flex justify-between items-center mt-1">
           <span className="text-gray-600">BTC Pub Key</span>
-          <span className="font-mono">{formatAddress(arbiter.operatorBtcPubKey)}</span>
+          <span>{formatAddress(arbiter.operatorBtcPubKey)}</span>
         </div>
       </CollapsibleContent>
     </Collapsible>

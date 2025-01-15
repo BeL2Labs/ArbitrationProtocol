@@ -24,7 +24,7 @@ export const useTransaction = (transactionId: string) => {
     if (!contractTransaction)
       return undefined;
 
-    const transaction = Transaction.fromContractTransaction(contractTransaction);
+    const transaction = Transaction.fromContractTransaction(contractTransaction, transactionId);
 
     console.log("Fetched transaction from contract:", transaction);
 
