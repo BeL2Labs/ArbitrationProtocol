@@ -6,7 +6,7 @@ const subgraphEndpoint = hasCustomLocalSubgraphEndpoint ? import.meta.env.VITE_A
 
 export const escMainnetProd: ChainConfig = {
   name: "Elastos Smart Chain",
-  rpcs: ["https://api2.elastos.net/esc"],
+  rpcs: ["https://api2.elastos.cc/esc"],
   explorers: ["https://esc.elastos.io"],
   chainId: 20n,
   networkMode: "mainnet",
