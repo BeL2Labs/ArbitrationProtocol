@@ -252,7 +252,7 @@ contract TransactionManager is
 
     function _completeTransaction(bytes32 id, DataTypes.Transaction storage transaction) internal returns(uint256, uint256) {
         // Get arbitrator info and calculate duration-based fee
-        (uint256 finalArbitratorFee, uint256 systemFee) = transferCompletedTransactionFee(transaction);
+        (uint256 finalArbitratorFee, uint256 systemFee) = transferCompletedTransactionFee(id,transaction);
         
         // Release arbitrator from working status
         arbitratorManager.releaseArbitrator(transaction.arbitrator, id);
@@ -263,7 +263,7 @@ contract TransactionManager is
         return (finalArbitratorFee, systemFee);
     }
     
-    function transferCompletedTransactionFee(DataTypes.Transaction memory transaction) internal returns(uint256, uint256) {
+    function transferCompletedTransactionFee(bytes32 id, DataTypes.Transaction memory transaction) internal returns(uint256, uint256) {
         // Get arbitrator info and calculate duration-based fee
         DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.arbitrator);
 
@@ -292,6 +292,7 @@ contract TransactionManager is
             (bool success3, ) = transaction.depositedFeeRefundAddress.call{value: remainingBalance}("");
             if (!success3) revert(Errors.TRANSFER_FAILED);
         }
+        emit DepositFeeTransfer(id, arbitratorInfo.revenueETHAddress, arbitratorFee, systemFee, remainingBalance);
         return (finalArbitratorFee, systemFee);
     }
 
