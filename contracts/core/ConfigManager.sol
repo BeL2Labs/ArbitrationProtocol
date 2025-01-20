@@ -26,6 +26,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
     bytes32 public constant SYSTEM_FEE_RATE = keccak256("systemFeeRate");
     bytes32 public constant SYSTEM_COMPENSATION_FEE_RATE = keccak256("SYSTEM_COMPENSATION_FEE_RATE");
     bytes32 public constant SYSTEM_FEE_COLLECTOR = keccak256("SYSTEM_FEE_COLLECTOR");
+    bytes32 public constant ARBITRATION_BTC_FEE_RATE = keccak256("ARBITRATION_BTC_FEE_RATE");
 
     ///@custom:oz-upgrades-unsafe-allow constructor
     constructor() { _disableInitializers(); }
@@ -47,6 +48,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
         configs[ARBITRATION_FROZEN_PERIOD] = 30 minutes;//The freezing period after the end of the transaction, during which transaction cannot be accepted or exited
         configs[SYSTEM_FEE_RATE] = 500; // 5% in basis points
         configs[SYSTEM_COMPENSATION_FEE_RATE] = 200; // 2% in basis points
+        configs[ARBITRATION_BTC_FEE_RATE] = 100;// 0.1% in basis points
     }
 
     /**
@@ -258,6 +260,24 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
      */
     function getArbitrationTimeout() external view returns (uint256) {
         return configs[ARBITRATION_TIMEOUT];
+    }
+
+    /**
+     * @notice Set arbitration BTC fee rate
+     * @param feeRate Fee rate in basis points
+     */
+    function setArbitrationBTCFeeRate(uint256 feeRate) external onlyOwner {
+        uint256 oldValue = configs[ARBITRATION_BTC_FEE_RATE];
+        configs[ARBITRATION_BTC_FEE_RATE] = feeRate;
+        emit ConfigUpdated(ARBITRATION_BTC_FEE_RATE, oldValue, feeRate);
+    }
+
+    /**
+     * @notice Get arbitration BTC fee rate
+     * @return Fee rate in basis points
+     */
+    function getArbitrationBTCFeeRate() external view returns (uint256) {
+        return configs[ARBITRATION_BTC_FEE_RATE];
     }
 
     // Add a gap for future storage variables
