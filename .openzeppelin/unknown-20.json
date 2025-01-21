@@ -24776,7 +24776,7 @@
             "label": "dappStatus",
             "offset": 0,
             "slot": "0",
-            "type": "t_mapping(t_address,t_enum(DAppStatus)13260)",
+            "type": "t_mapping(t_address,t_enum(DAppStatus)13947)",
             "contract": "DAppRegistry",
             "src": "contracts/core/DAppRegistry.sol:16"
           },
@@ -24792,7 +24792,7 @@
             "label": "configManager",
             "offset": 0,
             "slot": "2",
-            "type": "t_contract(IConfigManager)11198",
+            "type": "t_contract(IConfigManager)11299",
             "contract": "DAppRegistry",
             "src": "contracts/core/DAppRegistry.sol:25"
           },
@@ -24814,11 +24814,11 @@
             "label": "uint256[50]",
             "numberOfBytes": "1600"
           },
-          "t_contract(IConfigManager)11198": {
+          "t_contract(IConfigManager)11299": {
             "label": "contract IConfigManager",
             "numberOfBytes": "20"
           },
-          "t_enum(DAppStatus)13260": {
+          "t_enum(DAppStatus)13947": {
             "label": "enum DataTypes.DAppStatus",
             "members": [
               "None",
@@ -24833,7 +24833,7 @@
             "label": "mapping(address => address)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_enum(DAppStatus)13260)": {
+          "t_mapping(t_address,t_enum(DAppStatus)13947)": {
             "label": "mapping(address => enum DataTypes.DAppStatus)",
             "numberOfBytes": "32"
           },
@@ -33969,6 +33969,222 @@
           },
           "t_address": {
             "label": "address"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "6a927bc9b821351b8b4f049b8a196aa6afeaf702ded61218793eb7c5dfd3b876": {
+      "address": "0x6e5b584904136BcfE08493EABDD536f5F2a51352",
+      "txHash": "0xe126a77e01897f55acea0c43bd291f8f67f7a2071905cc248e857b1152f3dd46",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "dappStatus",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_address,t_enum(DAppStatus)14135)",
+            "contract": "DAppRegistry",
+            "src": "contracts/core/DAppRegistry.sol:16"
+          },
+          {
+            "label": "dappOwner",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "DAppRegistry",
+            "src": "contracts/core/DAppRegistry.sol:19"
+          },
+          {
+            "label": "configManager",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_contract(IConfigManager)11463",
+            "contract": "DAppRegistry",
+            "src": "contracts/core/DAppRegistry.sol:25"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "DAppRegistry",
+            "src": "contracts/core/DAppRegistry.sol:162"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_contract(IConfigManager)11463": {
+            "label": "contract IConfigManager",
+            "numberOfBytes": "20"
+          },
+          "t_enum(DAppStatus)14135": {
+            "label": "enum DataTypes.DAppStatus",
+            "members": [
+              "None",
+              "Pending",
+              "Active",
+              "Suspended",
+              "Terminated"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_enum(DAppStatus)14135)": {
+            "label": "mapping(address => enum DataTypes.DAppStatus)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "2b1d33489bcd2cf052d904e8e9d688edbef6d168794498a17f446fb77a180f6c": {
+      "address": "0xE7866050F6d9Ed98d655455BE49F636E65Df5B03",
+      "txHash": "0x928aa5f84ac9473134b8d1c24bd6a338753eb4ddaf4056d26fb556b5fad3549c",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "dappStatus",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_address,t_enum(DAppStatus)1093)",
+            "contract": "DAppRegistry",
+            "src": "contracts/core/DAppRegistry.sol:16"
+          },
+          {
+            "label": "dappOwner",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "DAppRegistry",
+            "src": "contracts/core/DAppRegistry.sol:19"
+          },
+          {
+            "label": "configManager",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_contract(IConfigManager)995",
+            "contract": "DAppRegistry",
+            "src": "contracts/core/DAppRegistry.sol:25"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "DAppRegistry",
+            "src": "contracts/core/DAppRegistry.sol:162"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_contract(IConfigManager)995": {
+            "label": "contract IConfigManager",
+            "numberOfBytes": "20"
+          },
+          "t_enum(DAppStatus)1093": {
+            "label": "enum DataTypes.DAppStatus",
+            "members": [
+              "None",
+              "Pending",
+              "Active",
+              "Suspended",
+              "Terminated"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_enum(DAppStatus)1093)": {
+            "label": "mapping(address => enum DataTypes.DAppStatus)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
           },
           "t_uint64": {
             "label": "uint64"
