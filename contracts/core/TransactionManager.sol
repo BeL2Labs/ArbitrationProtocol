@@ -392,7 +392,7 @@ contract TransactionManager is
         // Store signData
         transactionSignData[signHash] = signData;
 
-        emit ArbitrationRequested(id, msg.sender, transaction.arbitrator, signData, script, timeoutCompensationReceiver);
+        emit ArbitrationRequested(id, msg.sender, transaction.arbitrator, rawData, script, timeoutCompensationReceiver);
     }
 
     /**
@@ -520,5 +520,5 @@ contract TransactionManager is
     }
 
     // Add a gap for future storage variables
-    uint256[50] private __gap;
+    uint256[48] private __gap;
 }
