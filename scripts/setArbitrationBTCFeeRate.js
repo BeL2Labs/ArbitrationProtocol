@@ -17,7 +17,7 @@ async function setArbitrationBTCFeeRate() {
     const configManager = ConfigManager.attach(contractAddress);
 
     // Set fee rate
-    const feeRate = 100; // 1% in basis points
+    const feeRate = 1000;//0.1%
     const tx = await configManager.setArbitrationBTCFeeRate(feeRate);
     console.log("Transaction hash:", tx.hash);
 

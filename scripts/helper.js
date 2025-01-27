@@ -1,14 +1,18 @@
 const fs = require('fs')
 const path = require('path')
+const ISWriteConfig = false
 
 const writeConfig = async (toFile, key, value) => {
+    if (ISWriteConfig === false) {
+        return;
+    }
     let fromFullFile = getPath(toFile);
-    if (fs.existsSync(fromFullFile) == false) {
+    if (fs.existsSync(fromFullFile) === false) {
         fs.writeFileSync(fromFullFile, "{}", { encoding: 'utf8' }, err => {})
     }
 
     let contentText = fs.readFileSync(fromFullFile,'utf-8');
-    if (contentText == "") {
+    if (contentText === "") {
         contentText = "{}";
     }
     let data = JSON.parse(contentText);

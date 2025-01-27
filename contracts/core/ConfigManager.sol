@@ -48,7 +48,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
         configs[ARBITRATION_FROZEN_PERIOD] = 30 minutes;//The freezing period after the end of the transaction, during which transaction cannot be accepted or exited
         configs[SYSTEM_FEE_RATE] = 500; // 5% in basis points
         configs[SYSTEM_COMPENSATION_FEE_RATE] = 200; // 2% in basis points
-        configs[ARBITRATION_BTC_FEE_RATE] = 100;// 0.1% in basis points
+        configs[ARBITRATION_BTC_FEE_RATE] = 1000;// 0.1% in basis points
     }
 
     /**
