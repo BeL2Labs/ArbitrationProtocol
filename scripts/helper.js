@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const ISWriteConfig = false
+const ISWriteConfig = true
 
 const writeConfig = async (toFile, key, value) => {
     if (ISWriteConfig === false) {
