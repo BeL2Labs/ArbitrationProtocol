@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./Errors.sol";
-import "./BytesLib.sol";
+import "../libraries/Errors.sol";
+import "../libraries/BytesLib.sol";
+import "../interfaces/IBTCUtils.sol";
 
-/**
- * @title BTCUtils
- * @notice Utility library for parsing and handling Bitcoin transactions
- */
-library BTCUtils {
+contract BTCUtils is IBTCUtils {
+    using BytesLib for bytes;
+
     // Bitcoin transaction version is 4 bytes
     uint256 constant VERSION_SIZE = 4;
     // Segwit marker
@@ -21,32 +20,12 @@ library BTCUtils {
     uint8 constant SIGHASH_SINGLE = 0x03;
     uint8 constant SIGHASH_ANYONECANPAY = 0x80;
 
-    struct BTCInput {
-        bytes32 txid;        // Previous transaction hash
-        uint32 vout;        // Output index in previous transaction
-        bytes scriptSig;    // Input script
-        uint32 sequence;    // Sequence number
-    }
-
-    struct BTCOutput {
-        uint64 value;       // Amount in satoshis
-        bytes scriptPubKey; // Output script
-    }
-
-    struct BTCTransaction {
-        uint32 version;     // Transaction version
-        BTCInput[] inputs;  // Transaction inputs
-        BTCOutput[] outputs; // Transaction outputs
-        uint32 locktime;    // Transaction locktime
-        bool hasWitness;    // Whether the transaction has witness data
-    }
-
     /**
      * @notice Parse Bitcoin transaction, handling both legacy and witness formats
      * @param txBytes Raw transaction bytes
      * @return transaction Parsed transaction data
      */
-    function parseBTCTransaction(bytes calldata txBytes) internal pure returns (BTCTransaction memory transaction) {
+    function parseBTCTransaction(bytes calldata txBytes) external pure override returns (BTCTransaction memory transaction) {
         uint256 offset = 0;
         uint256 txLength = txBytes.length;
 
@@ -386,7 +365,7 @@ library BTCUtils {
         if (offset + 4 != txLength) revert (Errors.INVALID_BTC_TX);
     }
 
-    function IsValidDERSignature(bytes calldata signature) internal pure returns (bool) {
+    function IsValidDERSignature(bytes calldata signature) external pure returns (bool) {
         // Minimum length for a DER signature is 8 bytes
         // 0x30 + length + 0x02 + r_length + r + 0x02 + s_length + s
         if (signature.length < 8) return false;
@@ -450,21 +429,21 @@ library BTCUtils {
      * @param btcTx Bitcoin transaction data
      * @param inputIndex Index of the input to generate sign data for
      * @param amount Amount of the input
-     * @param sighashFlag Signature hash flag (SIGHASH_ALL = 0x01, SIGHASH_NONE = 0x02, SIGHASH_SINGLE = 0x03, SIGHASH_ANYONECANPAY = 0x80)
+     * @param sigHashFlag Signature hash flag (SIGHASH_ALL = 0x01, SIGHASH_NONE = 0x02, SIGHASH_SINGLE = 0x03, SIGHASH_ANYONECANPAY = 0x80)
      * @return bytes The generated sign data
      */
     function generateWitnessSignData(
         BTCTransaction memory btcTx,
-        uint256 inputIndex,
+        uint32 inputIndex,
         bytes memory script,
         uint64 amount,
-        uint32 sighashFlag
-    ) internal pure returns (bytes memory) {
+        uint8 sigHashFlag
+    ) external pure returns (bytes memory) {
         if (inputIndex >= btcTx.inputs.length) revert(Errors.INVALID_INPUT_INDEX);
 
         // Handle different sighash flags
-        bool anyoneCanPay = (sighashFlag & SIGHASH_ANYONECANPAY) == SIGHASH_ANYONECANPAY;
-        uint32 baseSighashType = sighashFlag & 0x1f;
+        bool anyoneCanPay = (sigHashFlag & SIGHASH_ANYONECANPAY) == SIGHASH_ANYONECANPAY;
+        uint32 baseSighashType = sigHashFlag & 0x1f;
 
         // Calculate total size
         uint256 totalSize = 4; // version
@@ -555,7 +534,7 @@ library BTCUtils {
         offset = BytesLib.writeUint32LE(btcTx.locktime, signData, offset);
 
         // Write sighash type
-        offset = BytesLib.writeUint32LE(sighashFlag, signData, offset);
+        offset = BytesLib.writeUint32LE(sigHashFlag, signData, offset);
 
         require(offset == signData.length, "Invalid sign data length");
 

@@ -7,13 +7,11 @@ import "../interfaces/ITransactionManager.sol";
 import "../interfaces/IArbitratorManager.sol";
 import "../interfaces/IDAppRegistry.sol";
 import "../interfaces/IConfigManager.sol";
+import "../interfaces/IBTCUtils.sol";
 import "../interfaces/IBtcAddress.sol";
 import "../core/ConfigManager.sol";
 import "../libraries/DataTypes.sol";
 import "../libraries/Errors.sol";
-import "../libraries/BTCUtils.sol";
-import "../libraries/BytesLib.sol";
-import "hardhat/console.sol";
 
 /**
  * @title TransactionManager
@@ -31,7 +29,8 @@ contract TransactionManager is
     // Contract references
     IArbitratorManager public arbitratorManager;
     IDAppRegistry public dappRegistry;
-    ConfigManager public configManager;
+    IConfigManager public configManager;
+    IBTCUtils public btcUtils;
 
     // Transaction storage
     mapping(bytes32 => DataTypes.Transaction) public transactions;
@@ -50,7 +49,10 @@ contract TransactionManager is
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(
+        address _btcUtils
+    ) {
+        btcUtils = IBTCUtils(_btcUtils);
         _disableInitializers();
     }
 
@@ -112,8 +114,8 @@ contract TransactionManager is
         if (deadline <= block.timestamp)
             revert(Errors.INVALID_DEADLINE);
         uint256 duration = deadline - block.timestamp;
-        if (duration < configManager.getConfig(configManager.MIN_TRANSACTION_DURATION()) ||
-            duration > configManager.getConfig(configManager.MAX_TRANSACTION_DURATION())) {
+        if (duration < configManager.getConfig(ConfigManagerKeys.MIN_TRANSACTION_DURATION) ||
+            duration > configManager.getConfig(ConfigManagerKeys.MAX_TRANSACTION_DURATION)) {
             revert(Errors.INVALID_DURATION);
         }
 
@@ -279,7 +281,7 @@ contract TransactionManager is
         }
 
         // Calculate system fee from arbitrator's fee and get fee collector
-        uint256 systemFee = (arbitratorFee * configManager.getConfig(configManager.SYSTEM_FEE_RATE())) / 10000;
+        uint256 systemFee = (arbitratorFee * configManager.getConfig(ConfigManagerKeys.SYSTEM_FEE_RATE)) / 10000;
         uint256 finalArbitratorFee = arbitratorFee - systemFee;
         address feeCollector = configManager.getSystemFeeCollector();
 
@@ -348,7 +350,7 @@ contract TransactionManager is
          }
 
         // Parse and validate Bitcoin transaction
-         BTCUtils.BTCTransaction memory parsedTx = BTCUtils.parseBTCTransaction(data.rawData);
+         IBTCUtils.BTCTransaction memory parsedTx = btcUtils.parseBTCTransaction(data.rawData);
          if(parsedTx.inputs.length != transaction.btcInfo.utxos.length) {
              revert(Errors.INVALID_TRANSACTION);
          }
@@ -361,7 +363,7 @@ contract TransactionManager is
 
          // Generate sign data and sign hash
          uint256 amount = transaction.btcInfo.utxos[0].amount;
-         bytes memory signData = BTCUtils.generateWitnessSignData(
+         bytes memory signData = btcUtils.generateWitnessSignData(
              parsedTx, 0, data.script, uint64(amount), data.signHashFlag);
 
          bytes32 signHash = sha256(abi.encodePacked(sha256(signData)));
@@ -421,7 +423,7 @@ contract TransactionManager is
             revert(Errors.NOT_AUTHORIZED);
         }
 
-        if (!BTCUtils.IsValidDERSignature(btcTxSignature)) {
+        if (!btcUtils.IsValidDERSignature(btcTxSignature)) {
             revert(Errors.INVALID_DER_SIGNATURE);
         }
 
@@ -489,8 +491,8 @@ contract TransactionManager is
     function getRegisterTransactionFee(uint256 deadline, address arbitrator) external view returns (uint256 fee) {
         // Calculate the duration from now to the deadline
         uint256 duration = deadline > block.timestamp ? deadline - block.timestamp : 0;
-        if (duration < configManager.getConfig(configManager.MIN_TRANSACTION_DURATION()) ||
-            duration > configManager.getConfig(configManager.MAX_TRANSACTION_DURATION())) {
+        if (duration < configManager.getConfig(ConfigManagerKeys.MIN_TRANSACTION_DURATION) ||
+            duration > configManager.getConfig(ConfigManagerKeys.MAX_TRANSACTION_DURATION)) {
             revert(Errors.INVALID_DURATION);
         }
 
