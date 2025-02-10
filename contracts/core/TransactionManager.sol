@@ -139,14 +139,14 @@ contract TransactionManager is
 
         // Store transaction
         DataTypes.Transaction storage transaction = transactions[id];
-        transaction.dapp = msg.sender;
-        transaction.arbitrator = arbitrator;
-        transaction.startTime = block.timestamp;
-        transaction.deadline = deadline;
-        transaction.status = DataTypes.TransactionStatus.Active;
-        transaction.depositedFee = msg.value;
-        transaction.compensationReceiver = compensationReceiver;
-        transaction.depositedFeeRefundAddress = refundAddress;
+        transaction.basicInfo.dapp = msg.sender;
+        transaction.basicInfo.arbitrator = arbitrator;
+        transaction.statusInfo.startTime = block.timestamp;
+        transaction.statusInfo.deadline = deadline;
+        transaction.statusInfo.status = DataTypes.TransactionStatus.Active;
+        transaction.basicInfo.depositedFee = msg.value;
+        transaction.basicInfo.compensationReceiver = compensationReceiver;
+        transaction.basicInfo.depositedFeeRefundAddress = refundAddress;
 
         emit TransactionRegistered(id, msg.sender, arbitrator, deadline, msg.value, compensationReceiver);
         return id;
@@ -164,20 +164,20 @@ contract TransactionManager is
         if (utxos.length != 1) revert(Errors.INVALID_UTXO);
 
         DataTypes.Transaction storage transaction = transactions[id];
-        if (transaction.status != DataTypes.TransactionStatus.Active) {
+        if (transaction.statusInfo.status != DataTypes.TransactionStatus.Active) {
             revert(Errors.INVALID_TRANSACTION_STATUS);
         }
 
-        if (msg.sender != transaction.dapp) {
+        if (msg.sender != transaction.basicInfo.dapp) {
             revert(Errors.NOT_AUTHORIZED);
         }
 
-        if (transaction.utxos.length != 0) {
+        if (transaction.btcInfo.utxos.length != 0) {
             revert(Errors.UTXO_ALREADY_UPLOADED);
         }
 
         for (uint i = 0; i < utxos.length; i++) {
-            transaction.utxos.push(utxos[i]);
+            transaction.btcInfo.utxos.push(utxos[i]);
         }
 
         emit UTXOsUploaded(id, msg.sender);
@@ -193,7 +193,7 @@ contract TransactionManager is
             revert(Errors.CANNOT_COMPLETE_TRANSACTION);
         }
 
-        if (msg.sender != transaction.dapp) {
+        if (msg.sender != transaction.basicInfo.dapp) {
             revert(Errors.NOT_AUTHORIZED);
         }
 
@@ -202,13 +202,13 @@ contract TransactionManager is
 
     function isAbleCompletedTransaction(bytes32 id) external view returns (bool) {
         DataTypes.Transaction memory transaction = transactions[id];
-        if(transaction.status == DataTypes.TransactionStatus.Active) {
+        if(transaction.statusInfo.status == DataTypes.TransactionStatus.Active) {
             return true;
-        } else if (transaction.status == DataTypes.TransactionStatus.Arbitrated) {
+        } else if (transaction.statusInfo.status == DataTypes.TransactionStatus.Arbitrated) {
             if(isSubmitArbitrationOutTime(transaction)) {
                 return true;
             }
-        } else if (transaction.status == DataTypes.TransactionStatus.Submitted) {
+        } else if (transaction.statusInfo.status == DataTypes.TransactionStatus.Submitted) {
             return true;
         }
 
@@ -216,11 +216,11 @@ contract TransactionManager is
     }
 
     function isSubmitArbitrationOutTime(DataTypes.Transaction memory transaction ) internal view returns (bool) {
-        if (block.timestamp > transaction.deadline) {
+        if (block.timestamp > transaction.statusInfo.deadline) {
             return true;
         }
         uint256 configTime = configManager.getArbitrationTimeout();
-        return block.timestamp > transaction.requestArbitrationTime + configTime;
+        return block.timestamp > transaction.statusInfo.requestArbitrationTime + configTime;
     }
 
         /**
@@ -235,7 +235,7 @@ contract TransactionManager is
     ) external onlyCompensationManager {
         DataTypes.Transaction storage transaction = transactions[id];
 
-        if (transaction.status == DataTypes.TransactionStatus.Completed) {
+        if (transaction.statusInfo.status == DataTypes.TransactionStatus.Completed) {
             revert(Errors.INVALID_TRANSACTION_STATUS);
         }
         // Validate received compensation address
@@ -243,16 +243,16 @@ contract TransactionManager is
             revert(Errors.ZERO_ADDRESS);
         }
         // Update transaction status to Completed
-        transaction.status = DataTypes.TransactionStatus.Completed;
+        transaction.statusInfo.status = DataTypes.TransactionStatus.Completed;
         // Transfer deposited fee to compensation address
-        (bool success, ) = payable(receivedCompensationAddress).call{value: transaction.depositedFee}("");
+        (bool success, ) = payable(receivedCompensationAddress).call{value: transaction.basicInfo.depositedFee}("");
         if (!success) {
             revert(Errors.TRANSFER_FAILED);
         }
         // Release arbitrator from working status
-        arbitratorManager.releaseArbitrator(transaction.arbitrator, id);
+        arbitratorManager.releaseArbitrator(transaction.basicInfo.arbitrator, id);
 
-        emit TransactionCompleted(id, transaction.dapp);
+        emit TransactionCompleted(id, transaction.basicInfo.dapp);
     }
 
     function _completeTransaction(bytes32 id, DataTypes.Transaction storage transaction) internal returns(uint256, uint256) {
@@ -260,22 +260,22 @@ contract TransactionManager is
         (uint256 finalArbitratorFee, uint256 systemFee) = transferCompletedTransactionFee(id,transaction);
         
         // Release arbitrator from working status
-        arbitratorManager.releaseArbitrator(transaction.arbitrator, id);
+        arbitratorManager.releaseArbitrator(transaction.basicInfo.arbitrator, id);
 
-        transaction.status = DataTypes.TransactionStatus.Completed;
-        emit TransactionCompleted(id, transaction.dapp);
+        transaction.statusInfo.status = DataTypes.TransactionStatus.Completed;
+        emit TransactionCompleted(id, transaction.basicInfo.dapp);
 
         return (finalArbitratorFee, systemFee);
     }
     
     function transferCompletedTransactionFee(bytes32 id, DataTypes.Transaction memory transaction) internal returns(uint256, uint256) {
         // Get arbitrator info and calculate duration-based fee
-        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.arbitrator);
+        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.basicInfo.arbitrator);
 
-        uint256 duration = block.timestamp > transaction.deadline ? transaction.deadline - transaction.startTime : block.timestamp - transaction.startTime;
-        uint256 arbitratorFee = _getFee(transaction.arbitrator, arbitratorInfo.currentFeeRate, duration);
-        if (arbitratorFee > transaction.depositedFee) {
-            arbitratorFee = transaction.depositedFee;
+        uint256 duration = block.timestamp > transaction.statusInfo.deadline ? transaction.statusInfo.deadline - transaction.statusInfo.startTime : block.timestamp - transaction.statusInfo.startTime;
+        uint256 arbitratorFee = _getFee(transaction.basicInfo.arbitrator, arbitratorInfo.currentFeeRate, duration);
+        if (arbitratorFee > transaction.basicInfo.depositedFee) {
+            arbitratorFee = transaction.basicInfo.depositedFee;
         }
 
         // Calculate system fee from arbitrator's fee and get fee collector
@@ -292,9 +292,9 @@ contract TransactionManager is
         if (!success2) revert(Errors.TRANSFER_FAILED);
 
         // Refund remaining balance to DApp
-        uint256 remainingBalance = transaction.depositedFee - arbitratorFee;
+        uint256 remainingBalance = transaction.basicInfo.depositedFee - arbitratorFee;
         if (remainingBalance > 0) {
-            (bool success3, ) = transaction.depositedFeeRefundAddress.call{value: remainingBalance}("");
+            (bool success3, ) = transaction.basicInfo.depositedFeeRefundAddress.call{value: remainingBalance}("");
             if (!success3) revert(Errors.TRANSFER_FAILED);
         }
         emit DepositFeeTransfer(id, arbitratorInfo.revenueETHAddress, arbitratorFee, systemFee, remainingBalance);
@@ -302,97 +302,100 @@ contract TransactionManager is
     }
 
     /**
-     * @notice Request arbitration for a transaction
-     * @param id Transaction ID
-     * @param rawData Bitcoin transaction raw data
-     * @param signDataType Bitcoin transaction sign data type, only support witness
-     * @param signHashFlag the signhash flag
-     * @param script Bitcoin transaction script
-     * @param timeoutCompensationReceiver Address to receive timeout compensation
+     * @notice Handles arbitration request and validates Bitcoin transaction
+     * @dev This method will:
+     * - Validate transaction status and caller permissions
+     * - Parse and verify Bitcoin transaction inputs against UTXOs
+     * - Generate witness signature data and transaction hash
+     * - Verify output scripts contain arbitrator's Bitcoin address
+     * - Update transaction status to Arbitrated
+     *
+     * @param data Arbitration data structure containing:
+     *   - id: Transaction ID
+     *   - rawData: Raw Bitcoin transaction data
+     *   - signDataType: Signature data type (currently only witness supported)
+     *   - signHashFlag: Signature hash flag
+     *   - script: Bitcoin transaction script
+     *   - timeoutCompensationReceiver: Timeout compensation recipient address
      */
     function requestArbitration(
-        bytes32 id,
-        bytes calldata rawData,
-        DataTypes.SignDataType signDataType,
-        uint8 signHashFlag,
-        bytes calldata script,
-        address timeoutCompensationReceiver
+       DataTypes.ArbitrationData calldata data
     ) external override nonReentrant {
-        if (timeoutCompensationReceiver == address(0)) {
+        if (data.timeoutCompensationReceiver == address(0)) {
             revert(Errors.ZERO_ADDRESS);
         }
 
-        DataTypes.Transaction storage transaction = transactions[id];
+        DataTypes.Transaction storage transaction = transactions[data.id];
 
-        // Validate transaction status and ownership
-        if (transaction.status != DataTypes.TransactionStatus.Active) {
-            revert(Errors.INVALID_TRANSACTION_STATUS);
-        }
-        if (msg.sender != transaction.dapp) {
-            revert(Errors.NOT_AUTHORIZED);
-        }
-        if (transaction.utxos.length == 0) {
-            revert(Errors.UTXO_NOT_UPLOADED);
-        }
+         // Validate transaction status and ownership
+         if (transaction.statusInfo.status != DataTypes.TransactionStatus.Active) {
+             revert(Errors.INVALID_TRANSACTION_STATUS);
+         }
+         if (msg.sender != transaction.basicInfo.dapp) {
+             revert(Errors.NOT_AUTHORIZED);
+         }
+         if (transaction.btcInfo.utxos.length == 0) {
+             revert(Errors.UTXO_NOT_UPLOADED);
+         }
 
-        if (block.timestamp + configManager.getArbitrationTimeout() > transaction.deadline) {
-            revert(Errors.REQUEST_ARBITRATION_OUTTIME);
-        }
+         if (block.timestamp + configManager.getArbitrationTimeout() > transaction.statusInfo.deadline) {
+             revert(Errors.REQUEST_ARBITRATION_OUTTIME);
+         }
 
         // Only support witness type now
-        if (signDataType != DataTypes.SignDataType.Witness) {
-            revert(Errors.INVALID_SIGN_DATA_TYPE);
-        }
+         if (data.signDataType != DataTypes.SignDataType.Witness) {
+             revert(Errors.INVALID_SIGN_DATA_TYPE);
+         }
 
         // Parse and validate Bitcoin transaction
-        BTCUtils.BTCTransaction memory parsedTx = BTCUtils.parseBTCTransaction(rawData);
-        if(parsedTx.inputs.length != transaction.utxos.length) {
-            revert(Errors.INVALID_TRANSACTION);
-        }
-        for(uint i = 0; i < parsedTx.inputs.length; i++) {
-            if(parsedTx.inputs[i].txid != transaction.utxos[i].txHash
-                || parsedTx.inputs[i].vout != transaction.utxos[i].index) {
-                revert(Errors.INVALID_TRANSACTION);
-            }
-        }
+         BTCUtils.BTCTransaction memory parsedTx = BTCUtils.parseBTCTransaction(data.rawData);
+         if(parsedTx.inputs.length != transaction.btcInfo.utxos.length) {
+             revert(Errors.INVALID_TRANSACTION);
+         }
+         for(uint i = 0; i < parsedTx.inputs.length; i++) {
+             if(parsedTx.inputs[i].txid != transaction.btcInfo.utxos[i].txHash
+                 || parsedTx.inputs[i].vout != transaction.btcInfo.utxos[i].index) {
+                 revert(Errors.INVALID_TRANSACTION);
+             }
+         }
 
-        // Generate sign data and sign hash
-        uint256 amount = transaction.utxos[0].amount;
-        bytes memory signData = BTCUtils.generateWitnessSignData(
-            parsedTx, 0, script, uint64(amount), signHashFlag);
+         // Generate sign data and sign hash
+         uint256 amount = transaction.btcInfo.utxos[0].amount;
+         bytes memory signData = BTCUtils.generateWitnessSignData(
+             parsedTx, 0, data.script, uint64(amount), data.signHashFlag);
 
-        bytes32 signHash = sha256(abi.encodePacked(sha256(signData)));
+         bytes32 signHash = sha256(abi.encodePacked(sha256(signData)));
 
-        // Check output script is sent to arbitrator's address
-        bool isOutputOfArbitrator = false;
-        string memory arbitratorAddress = arbitratorManager.getArbitratorInfo(transaction.arbitrator).revenueBtcAddress;
-        for (uint i = 0; i < parsedTx.outputs.length; i++) {
-            bytes memory decodedScript = btcAddressParser.DecodeBtcAddressToScript(arbitratorAddress);
-            isOutputOfArbitrator = keccak256(parsedTx.outputs[i].scriptPubKey) == keccak256(decodedScript);
-            if (isOutputOfArbitrator) {
-                uint fee = amount * configManager.getArbitrationBTCFeeRate() / 10000;
-                if (parsedTx.outputs[i].value < fee) {
-                    revert(Errors.INVALID_OUTPUT_AMOUNT);
-                }
-                break;
-            }
-        }
-        if (!isOutputOfArbitrator) {
-            revert(Errors.INVALID_OUTPUT_SCRIPT);
-        }
+         // Check output script is sent to arbitrator's address
+         bool isOutputOfArbitrator = false;
+         string memory arbitratorAddress = arbitratorManager.getArbitratorInfo(transaction.basicInfo.arbitrator).revenueBtcAddress;
+         for (uint i = 0; i < parsedTx.outputs.length; i++) {
+             bytes memory decodedScript = btcAddressParser.DecodeBtcAddressToScript(arbitratorAddress);
+             isOutputOfArbitrator = keccak256(parsedTx.outputs[i].scriptPubKey) == keccak256(decodedScript);
+             if (isOutputOfArbitrator) {
+                 uint fee = amount * configManager.getArbitrationBTCFeeRate() / 10000;
+                 if (parsedTx.outputs[i].value < fee) {
+                     revert(Errors.INVALID_OUTPUT_AMOUNT);
+                 }
+                 break;
+             }
+         }
+         if (!isOutputOfArbitrator) {
+             revert(Errors.INVALID_OUTPUT_SCRIPT);
+         }
 
-        transaction.status = DataTypes.TransactionStatus.Arbitrated;
-        transaction.btcTx = rawData;
-        transaction.btcTxHash = signHash;
-        transaction.timeoutCompensationReceiver = timeoutCompensationReceiver;
-        transaction.script = script;
-        transaction.requestArbitrationTime = block.timestamp;
-        // Store txHash to id mapping
-        txHashToId[signHash] = id;
-        // Store signData
-        transactionSignData[signHash] = signData;
+         transaction.statusInfo.status = DataTypes.TransactionStatus.Arbitrated;
+         transaction.btcInfo.btcTx = data.rawData;
+         transaction.btcInfo.btcTxHash = signHash;
+         transaction.basicInfo.timeoutCompensationReceiver = data.timeoutCompensationReceiver;
+         transaction.btcInfo.script = data.script;
+         transaction.statusInfo.requestArbitrationTime = block.timestamp;
+//         Store txHash to id mapping
+         txHashToId[signHash] = data.id;
+         // Store signData
+         transactionSignData[signHash] = signData;
 
-        emit ArbitrationRequested(id, msg.sender, transaction.arbitrator, rawData, script, timeoutCompensationReceiver);
+        emit ArbitrationRequested(data.id, transaction.basicInfo.dapp, transaction.basicInfo.arbitrator, data.rawData, data.script, data.timeoutCompensationReceiver);
     }
 
     /**
@@ -406,7 +409,7 @@ contract TransactionManager is
     ) external {
         DataTypes.Transaction storage transaction = transactions[id];
 
-        if (transaction.status != DataTypes.TransactionStatus.Arbitrated) {
+        if (transaction.statusInfo.status != DataTypes.TransactionStatus.Arbitrated) {
             revert(Errors.INVALID_TRANSACTION_STATUS);
         }
 
@@ -414,7 +417,7 @@ contract TransactionManager is
             revert(Errors.SUBMITTED_SIGNATURES_OUTTIME);
         }
 
-        if (!arbitratorManager.isOperatorOf(transaction.arbitrator, msg.sender)) {
+        if (!arbitratorManager.isOperatorOf(transaction.basicInfo.arbitrator, msg.sender)) {
             revert(Errors.NOT_AUTHORIZED);
         }
 
@@ -422,11 +425,11 @@ contract TransactionManager is
             revert(Errors.INVALID_DER_SIGNATURE);
         }
 
-        transaction.status = DataTypes.TransactionStatus.Submitted;
-        transaction.signature = btcTxSignature;
-        arbitratorManager.frozenArbitrator(transaction.arbitrator);
+        transaction.statusInfo.status = DataTypes.TransactionStatus.Submitted;
+        transaction.btcInfo.signature = btcTxSignature;
+        arbitratorManager.frozenArbitrator(transaction.basicInfo.arbitrator);
 
-        emit ArbitrationSubmitted(id, transaction.dapp, msg.sender, btcTxSignature);
+        emit ArbitrationSubmitted(id, transaction.basicInfo.dapp, msg.sender, btcTxSignature);
     }
 
     /**
@@ -449,8 +452,8 @@ contract TransactionManager is
 
     function getTransactionStatus(bytes32 id) external view override returns (DataTypes.TransactionStatus status) {
         DataTypes.Transaction memory transaction = transactions[id];
-        status = transaction.status;
-        if (status == DataTypes.TransactionStatus.Active && transaction.deadline < block.timestamp) {
+        status = transaction.statusInfo.status;
+        if (status == DataTypes.TransactionStatus.Active && transaction.statusInfo.deadline < block.timestamp) {
             status = DataTypes.TransactionStatus.Expired;
         }
         if (status == DataTypes.TransactionStatus.Arbitrated && isSubmitArbitrationOutTime(transaction)) {
@@ -470,8 +473,8 @@ contract TransactionManager is
         bytes32 id
     ) external override onlyCompensationManager returns (uint256 arbitratorFee, uint256 systemFee) {
         DataTypes.Transaction storage transaction = transactions[id];
-        if ((transaction.status == DataTypes.TransactionStatus.Active && block.timestamp > transaction.deadline)
-            || (transaction.status == DataTypes.TransactionStatus.Submitted && !arbitratorManager.isFrozenStatus(transaction.arbitrator))) {
+        if ((transaction.statusInfo.status == DataTypes.TransactionStatus.Active && block.timestamp > transaction.statusInfo.deadline)
+            || (transaction.statusInfo.status == DataTypes.TransactionStatus.Submitted && !arbitratorManager.isFrozenStatus(transaction.basicInfo.arbitrator))) {
             return _completeTransaction(id, transaction);
         } else {
             revert(Errors.INVALID_TRANSACTION_STATUS);

@@ -21,6 +21,7 @@ contract MockBtcAddress is IBtcAddress {
     }
 
     function EncodeSegWitAddress(bytes memory script, string memory network) external view returns(string memory) {
+        network = network;
         return script_to_btc_address[script];
     }    
 }

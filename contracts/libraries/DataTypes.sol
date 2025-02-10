@@ -60,22 +60,34 @@ library DataTypes {
         uint256 lastSubmittedWorkTime; // Last submitted work time
     }
 
-    struct Transaction {
+    struct TransactionBasicInfo {
         address dapp;
         address arbitrator;
+        uint256 depositedFee;
+        address compensationReceiver;
+        address timeoutCompensationReceiver;
+        address depositedFeeRefundAddress;
+    }
+
+    struct TransactionBTCInfo {
+        bytes btcTx;
+        bytes32 btcTxHash;
+        bytes script;
+        UTXO[] utxos;
+        bytes signature;
+    }
+
+    struct TransactionStatusInfo {
+        TransactionStatus status;
         uint256 startTime;
         uint256 deadline;
-        bytes btcTx;               // Unsigned Bitcoin transaction
-        bytes32 btcTxHash;         // double sha256 of the signData
-        TransactionStatus status;
-        uint256 depositedFee;
-        bytes signature;           // Arbitrator's signature
-        address compensationReceiver;           // Compensation receiver address
-        address timeoutCompensationReceiver;    // Timeout compensation receiver address
-        UTXO[] utxos;                         // Array of UTXOs associated with the transaction
-        bytes script;                         // Bitcoin transaction script
         uint256 requestArbitrationTime;
-        address depositedFeeRefundAddress; // Refund address for deposited fee
+    }
+
+    struct Transaction {
+        TransactionBasicInfo basicInfo;
+        TransactionBTCInfo btcInfo;
+        TransactionStatusInfo statusInfo;
     }
 
     struct ZKVerification {
@@ -87,4 +99,12 @@ library DataTypes {
         UTXO[] utxos;
     }
 
+    struct ArbitrationData {
+        bytes32 id;
+        bytes rawData;
+        DataTypes.SignDataType signDataType;
+        uint8 signHashFlag;
+        bytes script;
+        address timeoutCompensationReceiver;
+    }
 }

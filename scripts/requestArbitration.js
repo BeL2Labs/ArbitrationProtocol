@@ -24,15 +24,18 @@ async function main() {
         // Log transaction details
         console.log("Transaction ID for Arbitration:", transactionId);
 
+        // 构造仲裁请求数据结构
+        const arbitrationData = {
+            id: transactionId,
+            rawData: btcTx,
+            signDataType: 0, // 对应SignDataType.Witness
+            signHashFlag: 0, // Default hash flag
+            script: "", // Default unlock script
+            timeoutCompensationReceiver: timeoutCompensationReceiver
+        };
+
         // Call requestArbitration
-        const tx = await transactionManager.requestArbitration(
-            transactionId,
-            btcTx,
-            timeoutCompensationReceiver,
-            {
-                gasLimit: 500000 // Hardcoded gas limit
-            }
-        );
+        const tx = await transactionManager.requestArbitration(arbitrationData);
 
         // Wait for the transaction to be mined
         const receipt = await tx.wait();

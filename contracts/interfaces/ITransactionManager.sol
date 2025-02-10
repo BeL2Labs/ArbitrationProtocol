@@ -23,12 +23,7 @@ interface ITransactionManager {
     function isAbleCompletedTransaction(bytes32 id) external view returns (bool);
     // Request arbitration
     function requestArbitration(
-        bytes32 id,
-        bytes calldata rawData,
-        DataTypes.SignDataType signDataType,
-        uint8 signHashFlag,
-        bytes calldata script,
-        address timeoutCompensationReceiver
+       DataTypes.ArbitrationData calldata data
     ) external;
     
     // Submit arbitration result

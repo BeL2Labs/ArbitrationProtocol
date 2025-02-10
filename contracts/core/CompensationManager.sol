@@ -116,12 +116,12 @@ contract CompensationManager is
         }
 
         DataTypes.Transaction memory transaction = transactionManager.getTransactionById(arbitratorInfo.activeTransactionId);
-        if (transaction.status != DataTypes.TransactionStatus.Active) {
+        if (transaction.statusInfo.status != DataTypes.TransactionStatus.Active) {
             revert (Errors.NO_ACTIVE_TRANSACTION);
         }
 
         // Generate claim ID
-        claimId = keccak256(abi.encodePacked(evidence, arbitrator, transaction.compensationReceiver, CompensationType.IllegalSignature));
+        claimId = keccak256(abi.encodePacked(evidence, arbitrator, transaction.basicInfo.compensationReceiver, CompensationType.IllegalSignature));
         if (claims[claimId].claimer != address(0)) {
             revert (Errors.COMPENSATION_ALREADY_CLAIMED);
         }
@@ -152,7 +152,7 @@ contract CompensationManager is
         }
 
         // Validate UTXO consistency
-        _validateUTXOConsistency(verification.utxos, transaction.utxos);
+        _validateUTXOConsistency(verification.utxos, transaction.btcInfo.utxos);
 
         // Validate stake
         uint256 stakeAmount = arbitratorManager.getAvailableStake(arbitrator);
@@ -170,12 +170,12 @@ contract CompensationManager is
             totalAmount: stakeAmount,
             withdrawn: false,
             claimType: CompensationType.IllegalSignature,
-            receivedCompensationAddress: transaction.compensationReceiver
+            receivedCompensationAddress: transaction.basicInfo.compensationReceiver
         });
 
         // Update arbitrator status and complete transaction
         arbitratorManager.terminateArbitratorWithSlash(arbitrator);
-        transactionManager.completeTransactionWithSlash(arbitratorInfo.activeTransactionId, transaction.compensationReceiver);
+        transactionManager.completeTransactionWithSlash(arbitratorInfo.activeTransactionId, transaction.basicInfo.compensationReceiver);
         // Emit compensation claimed event
         emit CompensationClaimed(
             claimId,
@@ -184,7 +184,7 @@ contract CompensationManager is
             arbitratorInfo.ethAmount,
             arbitratorInfo.nftTokenIds,
             stakeAmount,
-            transaction.compensationReceiver,
+            transaction.basicInfo.compensationReceiver,
             uint8(CompensationType.IllegalSignature)
         );
     }
@@ -194,45 +194,45 @@ contract CompensationManager is
         DataTypes.Transaction memory transaction = transactionManager.getTransactionById(id);
 
         // Generate claim ID
-        claimId = keccak256(abi.encodePacked(id, transaction.arbitrator, transaction.timeoutCompensationReceiver, CompensationType.Timeout));
+        claimId = keccak256(abi.encodePacked(id, transaction.basicInfo.arbitrator, transaction.basicInfo.timeoutCompensationReceiver, CompensationType.Timeout));
         if (claims[claimId].claimer != address(0)) {
             revert (Errors.COMPENSATION_ALREADY_CLAIMED);
         }
 
-        if (transaction.status != DataTypes.TransactionStatus.Arbitrated) revert (Errors.TRANSACTION_NOT_IN_ARBITRATED);
+        if (transaction.statusInfo.status != DataTypes.TransactionStatus.Arbitrated) revert (Errors.TRANSACTION_NOT_IN_ARBITRATED);
 
         uint256 configTime = configManager.getArbitrationTimeout();
-        if (transaction.requestArbitrationTime + configTime > block.timestamp) revert (Errors.DEADLINE_NOT_REACHED);
+        if (transaction.statusInfo.requestArbitrationTime + configTime > block.timestamp) revert (Errors.DEADLINE_NOT_REACHED);
 
         // Get arbitrator's stake amount
-        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.arbitrator);
-        uint256 stakeAmount = arbitratorManager.getAvailableStake(transaction.arbitrator);
+        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.basicInfo.arbitrator);
+        uint256 stakeAmount = arbitratorManager.getAvailableStake(transaction.basicInfo.arbitrator);
         if (stakeAmount == 0) revert (Errors.NO_STAKE_AVAILABLE);
 
         // Create compensation claim
         claims[claimId] = CompensationClaim({
             claimer: msg.sender,
-            arbitrator: transaction.arbitrator,
+            arbitrator: transaction.basicInfo.arbitrator,
             ethAmount: arbitratorInfo.ethAmount,
             nftContract: arbitratorInfo.nftContract,
             nftTokenIds: arbitratorInfo.nftTokenIds,
             totalAmount: stakeAmount,
             withdrawn: false,
             claimType: CompensationType.Timeout,
-            receivedCompensationAddress: transaction.timeoutCompensationReceiver
+            receivedCompensationAddress: transaction.basicInfo.timeoutCompensationReceiver
         });
 
         // Update arbitrator status
-        arbitratorManager.terminateArbitratorWithSlash(transaction.arbitrator);
-        transactionManager.completeTransactionWithSlash(arbitratorInfo.activeTransactionId, transaction.timeoutCompensationReceiver);
+        arbitratorManager.terminateArbitratorWithSlash(transaction.basicInfo.arbitrator);
+        transactionManager.completeTransactionWithSlash(arbitratorInfo.activeTransactionId, transaction.basicInfo.timeoutCompensationReceiver);
         emit CompensationClaimed(
             claimId,
             msg.sender,
-            transaction.arbitrator,
+            transaction.basicInfo.arbitrator,
             arbitratorInfo.ethAmount,
             arbitratorInfo.nftTokenIds,
             stakeAmount,
-            transaction.timeoutCompensationReceiver,
+            transaction.basicInfo.timeoutCompensationReceiver,
             uint8(CompensationType.Timeout));
     }
 
@@ -252,22 +252,22 @@ contract CompensationManager is
 
         // Get transaction details
         DataTypes.Transaction memory transaction = transactionManager.getTransaction(msghash);
-        if (transaction.dapp == address(0) || transaction.arbitrator == address(0)) {
+        if (transaction.basicInfo.dapp == address(0) || transaction.basicInfo.arbitrator == address(0)) {
             revert (Errors.NO_ACTIVE_TRANSACTION);
         }
 
         // Generate claim ID
-        claimId = keccak256(abi.encodePacked(evidence, transaction.arbitrator, transaction.compensationReceiver, CompensationType.FailedArbitration));
+        claimId = keccak256(abi.encodePacked(evidence, transaction.basicInfo.arbitrator, transaction.basicInfo.compensationReceiver, CompensationType.FailedArbitration));
         if (claims[claimId].claimer != address(0)) {
             revert (Errors.COMPENSATION_ALREADY_CLAIMED);
         }
 
-        if (transaction.signature.length == 0) revert (Errors.SIGNATURE_NOT_SUBMITTED);
+        if (transaction.btcInfo.signature.length == 0) revert (Errors.SIGNATURE_NOT_SUBMITTED);
 
         // Get transaction signature and verify
-        if (keccak256(transaction.signature) != keccak256(signature)) revert (Errors.SIGNATURE_MISMATCH);
+        if (keccak256(transaction.btcInfo.signature) != keccak256(signature)) revert (Errors.SIGNATURE_MISMATCH);
 
-        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.arbitrator);
+        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.basicInfo.arbitrator);
 
         // Validate public key
         if (keccak256(pubkey) != keccak256(arbitratorInfo.operatorBtcPubKey)) {
@@ -275,46 +275,46 @@ contract CompensationManager is
         }
 
         // Get arbitrator's stake amount
-        uint256 stakeAmount = arbitratorManager.getAvailableStake(transaction.arbitrator);
+        uint256 stakeAmount = arbitratorManager.getAvailableStake(transaction.basicInfo.arbitrator);
         if (stakeAmount == 0) revert (Errors.NO_STAKE_AVAILABLE);
 
         // Create compensation claim
         claims[claimId] = CompensationClaim({
             claimer: msg.sender,
-            arbitrator: transaction.arbitrator,
+            arbitrator: transaction.basicInfo.arbitrator,
             ethAmount: arbitratorInfo.ethAmount,
             nftContract: arbitratorInfo.nftContract,
             nftTokenIds: arbitratorInfo.nftTokenIds,
             totalAmount: stakeAmount,
             withdrawn: false,
             claimType: CompensationType.FailedArbitration,
-            receivedCompensationAddress: transaction.compensationReceiver
+            receivedCompensationAddress: transaction.basicInfo.compensationReceiver
         });
 
         // Update arbitrator status
-        arbitratorManager.terminateArbitratorWithSlash(transaction.arbitrator);
-        transactionManager.completeTransactionWithSlash(arbitratorInfo.activeTransactionId, transaction.compensationReceiver);
+        arbitratorManager.terminateArbitratorWithSlash(transaction.basicInfo.arbitrator);
+        transactionManager.completeTransactionWithSlash(arbitratorInfo.activeTransactionId, transaction.basicInfo.compensationReceiver);
         emit CompensationClaimed(
             claimId,
             msg.sender,
-            transaction.arbitrator,
+            transaction.basicInfo.arbitrator,
             arbitratorInfo.ethAmount,
             arbitratorInfo.nftTokenIds,
             stakeAmount,
-            transaction.compensationReceiver,
+            transaction.basicInfo.compensationReceiver,
             uint8(CompensationType.FailedArbitration));
     }
 
     function claimArbitratorFee(bytes32 txId) external override returns (bytes32) {
         // Get transaction details
         DataTypes.Transaction memory transaction = transactionManager.getTransactionById(txId);
-        if (transaction.arbitrator != msg.sender) revert (Errors.NOT_TRANSACTION_ARBITRATOR);
+        if (transaction.basicInfo.arbitrator != msg.sender) revert (Errors.NOT_TRANSACTION_ARBITRATOR);
         // Transfer fees and terminate transaction
         (uint256 arbitratorFee, ) = transactionManager.transferArbitrationFee(txId);
 
-        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.arbitrator);
+        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.basicInfo.arbitrator);
         // Generate claim ID
-        bytes32 claimId = keccak256(abi.encodePacked(txId, transaction.arbitrator, arbitratorInfo.revenueETHAddress, CompensationType.ArbitratorFee));
+        bytes32 claimId = keccak256(abi.encodePacked(txId, transaction.basicInfo.arbitrator, arbitratorInfo.revenueETHAddress, CompensationType.ArbitratorFee));
         if (claims[claimId].claimer != address(0)) {
             revert (Errors.COMPENSATION_ALREADY_CLAIMED);
         }
@@ -322,7 +322,7 @@ contract CompensationManager is
         // Create compensation claim
         claims[claimId] = CompensationClaim({
             claimer: msg.sender,
-            arbitrator: transaction.arbitrator,
+            arbitrator: transaction.basicInfo.arbitrator,
             ethAmount: arbitratorFee,
             nftContract: address(0),
             nftTokenIds: new uint256[](0),
@@ -334,7 +334,7 @@ contract CompensationManager is
         emit CompensationClaimed(
             claimId,
             msg.sender,
-            transaction.arbitrator,
+            transaction.basicInfo.arbitrator,
             arbitratorFee,
             new uint256[](0),
             arbitratorFee,
