@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 const ethers = hre.ethers;
-const { readConfig } = require("./helper.js");
+const { readConfig } = require("../helper.js");
 async function main() {
     const claimID = "0x6bef80704221e30c7df6ed3da71c01a1e882d4647bc2d1a0c34d83166cdb92d5";
     // Get the CompensationManager contract

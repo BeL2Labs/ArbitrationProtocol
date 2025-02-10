@@ -1,7 +1,6 @@
 const { ethers, network, getChainId } = require("hardhat");
-const { sleep, writeConfig, readConfig } = require("./helper.js");
+const { sleep, writeConfig, readConfig } = require("../helper.js");
 const { upgrades } = require("hardhat");
-const net = require("node:net");
 
 async function main() {
     try {
@@ -14,17 +13,17 @@ async function main() {
         console.log("Account balance:", ethers.utils.formatEther(await ethers.provider.getBalance(deployer.address)));
 
         // Get required contract addresses from previous deployments
+        const zkServiceAddress = await readConfig(network.name, "ZK_SERVICE");
+        if (!zkServiceAddress) {
+            throw new Error("ZkService address not found.");
+        }
+        console.log("Using ZkService at:", zkServiceAddress);
+
         const configManagerAddress = await readConfig(network.name, "CONFIG_MANAGER");
         if (!configManagerAddress) {
             throw new Error("ConfigManager address not found.");
         }
         console.log("Using ConfigManager at:", configManagerAddress);
-
-        const dappRegistryAddress = await readConfig(network.name, "DAPP_REGISTRY");
-        if (!dappRegistryAddress) {
-            throw new Error("DAppRegistry address not found.");
-        }
-        console.log("Using DAppRegistry at:", dappRegistryAddress);
 
         const arbitratorManagerAddress = await readConfig(network.name, "ARBITRATOR_MANAGER");
         if (!arbitratorManagerAddress) {
@@ -32,16 +31,16 @@ async function main() {
         }
         console.log("Using ArbitratorManager at:", arbitratorManagerAddress);
 
-        const compensationManager = await readConfig(network.name, "COMPENSATION_MANAGER");
-        if (!compensationManager) {
-            throw new Error("compensationManager address not found.");
+        const transactionManagerAddress = await readConfig(network.name, "TRANSACTION_MANAGER");
+        if (!transactionManagerAddress) {
+            throw new Error("TransactionManager address not found.");
         }
-        console.log("Using CompensationManager at:", compensationManager);
-        console.log("\nDeploying TransactionManager...");
-        const TransactionManager = await ethers.getContractFactory("TransactionManager", deployer);
-        
-        const transactionManager = await upgrades.deployProxy(TransactionManager, 
-            [arbitratorManagerAddress, dappRegistryAddress, configManagerAddress, compensationManager],
+        console.log("Using TransactionManager at:", transactionManagerAddress);
+
+        console.log("\nDeploying CompensationManager...");
+        const CompensationManager = await ethers.getContractFactory("CompensationManager", deployer);
+        const compensationManager = await upgrades.deployProxy(CompensationManager, 
+            [zkServiceAddress, configManagerAddress, arbitratorManagerAddress],
             { 
                 initializer: "initialize",
                 timeout: 60000,
@@ -53,13 +52,12 @@ async function main() {
             }
         );
         
-        const contractAddress = await transactionManager.address;
-        console.log("TransactionManager deployed as proxy to:", contractAddress);
+        const contractAddress = await compensationManager.address;
+        console.log("CompensationManager deployed as proxy to:", contractAddress);
         
         // Save the contract address
-        await writeConfig(network.name, "TRANSACTION_MANAGER", contractAddress);
+        await writeConfig(network.name, "COMPENSATION_MANAGER", contractAddress);
         
-
         console.log("\nDeployment completed successfully!");
         
     } catch (error) {

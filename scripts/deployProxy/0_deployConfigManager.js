@@ -1,5 +1,5 @@
 const { ethers, network, upgrades, getChainId } = require("hardhat");
-const { sleep, writeConfig } = require("./helper.js");
+const { sleep, writeConfig } = require("../helper.js");
 
 async function verifyInitialConfig(contract) {
     console.log("Verifying initial configuration...");

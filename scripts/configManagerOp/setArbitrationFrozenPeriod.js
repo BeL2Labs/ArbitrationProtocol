@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 const { ethers, network } = hre;
-const { readConfig } = require("./helper.js");
+const { readConfig } = require("../helper.js");
 
 async function main() {
     // Get the deployer account

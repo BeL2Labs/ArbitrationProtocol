@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 const ethers = hre.ethers;
-const { readConfig } = require("./helper");
+const { readConfig } = require("../helper");
 
 async function main() {
     // Get the deployer account (or the account with owner permissions)

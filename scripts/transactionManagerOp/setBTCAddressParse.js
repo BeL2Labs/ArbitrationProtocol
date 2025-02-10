@@ -1,5 +1,5 @@
 const { ethers, network } = require("hardhat");
-const { writeConfig, readConfig } = require("./helper.js");
+const { writeConfig, readConfig } = require("../helper.js");
 
 async function main() {
     // Get the network name

@@ -1,4 +1,4 @@
-import { readConfig } from "./helper.js";
+import { readConfig } from "../helper.js";
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

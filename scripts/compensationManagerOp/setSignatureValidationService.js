@@ -1,5 +1,5 @@
 const { ethers,network } = require('hardhat');
-const { readConfig } = require('./helper');
+const { readConfig } = require('../helper');
 
 async function main() {
     const SIGNATURE_VALIDATION_SERVICE = await readConfig(network.name, 'SIGNATURE_VALIDATION_SERVICE');

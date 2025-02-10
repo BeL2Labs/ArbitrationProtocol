@@ -6,7 +6,7 @@ describe("BTCUtils", function () {
 
     before(async function () {
         // Create a contract that uses the BTCUtils library
-        const TestBTCUtilsFactory = await ethers.getContractFactory("TestBTCUtils");
+        const TestBTCUtilsFactory = await ethers.getContractFactory("BTCUtils");
         testBTCUtils = await TestBTCUtilsFactory.deploy();
         console.log("TestBTCUtils deployed to:", testBTCUtils.address);
     });
@@ -21,25 +21,24 @@ describe("BTCUtils", function () {
             console.log("txBytes ", txBytes);
 
             // Call the parseBTCTransaction method
-            let rawData;
-            rawData = await testBTCUtils.testParseBTCTransaction(txHex);
-            console.log("rawData ", rawData);
+            const parsedTx = await testBTCUtils.parseBTCTransaction(txHex);
+            console.log("parsedTx ", parsedTx);
             // Verify transaction details
-            // expect(parsedTx.version).to.equal(2);
-            // expect(parsedTx.inputs.length).to.equal(1);
-            // expect(parsedTx.outputs.length).to.equal(1);
-            // expect(parsedTx.locktime).to.equal(0);
-            // expect(parsedTx.hasWitness).to.be.true;
+            expect(parsedTx.version).to.equal(2);
+            expect(parsedTx.inputs.length).to.equal(1);
+            expect(parsedTx.outputs.length).to.equal(1);
+            expect(parsedTx.locktime).to.equal(0);
+            expect(parsedTx.hasWitness).to.be.true;
         });
 
-        // it("should revert for an invalid transaction", async function () {
-        //     // Invalid transaction (too short)
-        //     const invalidTxHex = "0x0200";
-        //     const invalidTxBytes = ethers.utils.arrayify(invalidTxHex);
+        it("should revert for an invalid transaction", async function () {
+            // Invalid transaction (too short)
+            const invalidTxHex = "0x0200";
+            const invalidTxBytes = ethers.utils.arrayify(invalidTxHex);
 
-        //     // Expect the transaction parsing to revert
-        //     await expect(testBTCUtils.testParseBTCTransaction(invalidTxBytes))
-        //         .to.be.revertedWithCustomError(testBTCUtils, "INVALID_BTC_TX");
-        // });
+            // Expect the transaction parsing to revert
+            await expect(testBTCUtils.parseBTCTransaction(invalidTxBytes))
+                .to.be.revertedWith("T7");
+        });
     });
 });

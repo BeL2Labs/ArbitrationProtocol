@@ -1,5 +1,5 @@
 const { ethers, network, getChainId } = require("hardhat");
-const { sleep, writeConfig, readConfig } = require("./helper.js");
+const { sleep, writeConfig, readConfig } = require("../helper.js");
 const { upgrades } = require("hardhat");
 
 async function main() {
@@ -19,17 +19,13 @@ async function main() {
         }
         console.log("Using ConfigManager at:", configManagerAddress);
 
-        const nftAddress = await readConfig(network.name, "ERC721_ADDRESS");
-        console.log("nftAddress:", nftAddress);
-
-        const nftInfoAddress = await readConfig(network.name, "BNFT_INFO");
-        console.log("nftInfoAddress:", nftInfoAddress);
-
-        console.log("\nDeploying ArbitratorManager...");
-        const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager", deployer);
+        // Check if a previous deployment exists
         
-        const arbitratorManager = await upgrades.deployProxy(ArbitratorManager, 
-            [configManagerAddress, nftAddress, nftInfoAddress], 
+        const DAppRegistry = await ethers.getContractFactory("DAppRegistry", deployer);
+        
+        console.log("Deploying new DAppRegistry");
+        let dappRegistry = await upgrades.deployProxy(DAppRegistry, 
+            [configManagerAddress], 
             { 
                 initializer: "initialize",
                 timeout: 60000,
@@ -40,14 +36,16 @@ async function main() {
                 }
             }
         );
+        console.log("DAppRegistry deployed as proxy");
         
-        const contractAddress = await arbitratorManager.address;
-        console.log("ArbitratorManager deployed as proxy to:", contractAddress);
+        const contractAddress = await dappRegistry.address;
+        console.log("DAppRegistry address:", contractAddress);
         
-        // Save contract addresses
-        await writeConfig(network.name, "ARBITRATOR_MANAGER", contractAddress);
+        // Save the contract address
+        await writeConfig(network.name, "DAPP_REGISTRY", contractAddress);
         
-        console.log("\nDeployment completed successfully!");
+
+        console.log("\nDeployment/Upgrade completed successfully!");
         
     } catch (error) {
         console.error("Deployment failed!", error);

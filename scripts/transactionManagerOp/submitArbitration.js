@@ -1,5 +1,5 @@
 const { ethers, network } = require("hardhat");
-const { readConfig } = require("./helper.js");
+const { readConfig } = require("../helper.js");
 const {sha256} = require("bitcoinjs-lib/src/crypto");
 const secp256k1 = require("secp256k1");
 const bitcoin = require('bitcoinjs-lib');
