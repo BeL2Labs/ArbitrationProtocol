@@ -55,19 +55,24 @@ describe("TransactionManager", function () {
             validationService.address 
         ], { initializer: 'initialize' });
 
+        const BTCUtils = await ethers.getContractFactory("BTCUtils");
+        let btcUtils = await BTCUtils.deploy();
+        await btcUtils.deployed();
+
+        // Deploy BTC Address Parser
+        const BTCAddressParser = await ethers.getContractFactory("MockBtcAddress");
+        btcAddressParser = await BTCAddressParser.deploy();
         // Deploy TransactionManager
         const TransactionManager = await ethers.getContractFactory("TransactionManager");
         transactionManager = await upgrades.deployProxy(TransactionManager, [
             arbitratorManager.address,
             dappRegistry.address,
             configManager.address,
-            compensationManager.address
-        ], { initializer: 'initialize' });
+            compensationManager.address,
+            btcUtils.address,
+            btcAddressParser.address
 
-        // Deploy BTC Address Parser
-        const BTCAddressParser = await ethers.getContractFactory("MockBtcAddress");
-        btcAddressParser = await BTCAddressParser.deploy();
-        await transactionManager.connect(owner).setBTCAddressParser(btcAddressParser.address);
+        ], { initializer: 'initialize' });
 
         // Set transactionManager
         await compensationManager.connect(owner).setTransactionManager(transactionManager.address);
@@ -285,17 +290,29 @@ describe("TransactionManager", function () {
             const signHash = "0xbc671702bd4023e7088f9abf540bfdeb2648c5b35ec75335f181dca02cd36b40";
             const script = "0x6321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ac676321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad21036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac676303ab0440b275210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ada820c7edc93e03202c56d1067d602476e3dd982689b0a6be6a44d016404926cd66ce876703b20440b27521036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac686868";
 
+            let arbitrationData = {
+                id: transactionId,
+                rawData: rawData,
+                signDataType: 1,
+                signHashFlag: 1,
+                script: script,
+                timeoutCompensationReceiver: dapp.address
+            }
+
             await expect(transactionManager.connect(dapp).requestArbitration(
-                transactionId, rawData, 1, 1, script, dapp.address))
+                arbitrationData))
                 .emit(transactionManager, "ArbitrationRequested");
             
-            const transaction = await transactionManager.getTransactionById(transactionId);
-            expect(transaction.status).to.equal(2);
-            expect(transaction.arbitrator).to.equal(arbitrator.address);
-            expect(transaction.btcTx).to.equal(rawData);
-            expect(transaction.btcTxHash).to.equal(signHash);
-            expect(transaction.timeoutCompensationReceiver).to.equal(dapp.address);
-            const txSignData = await transactionManager.transactionSignData(transaction.btcTxHash);
+            const transactionData = await transactionManager.getTransactionDataById(transactionId);
+            const transactionParties = await transactionManager.getTransactionPartiesById(transactionId);
+            const transactionRawData = await transactionManager.getTransactionBtcRawDataById(transactionId);
+            const transactionSignHash = await transactionManager.getTransactionSignHashById(transactionId);
+            expect(transactionData.status).to.equal(2);
+            expect(transactionParties.arbitrator).to.equal(arbitrator.address);
+            expect(transactionRawData).to.equal(rawData);
+            expect(transactionSignHash).to.equal(signHash);
+            expect(transactionParties.timeoutCompensationReceiver).to.equal(dapp.address);
+            const txSignData = await transactionManager.transactionSignData(transactionSignHash);
             expect(txSignData).to.equal(signData);
 
             expect(await transactionManager.txHashToId(signHash)).to.equal(transactionId);
@@ -330,18 +347,28 @@ describe("TransactionManager", function () {
             const rawData = "0x02000000000101a7b650787c6e2844c0906b3893f6d42fc3041f23869448980ce9a00430cb7a870000000000000000000268210000000000001976a9149b42587007f85e456b5d0d702e828f34ea1f55b188ac640000000000000017a9146fb7f3048e4b6d3eb81ecb1760221650734bab2887050000010100fd0a0163210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac6763210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad2102098cf93afc2c0682e0b6d7e132f9fbeedc610dc1c0d09dbcd75db1892f975641ac676303b60040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ada8205a0737e8cbcfa24dcc118b0ab1e6d98bee17c57daa8a1686024159aae707ed6f876703bd0040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac68686800000000";
             const script = "0x6321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ac676321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad21036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac676303ab0440b275210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ada820c7edc93e03202c56d1067d602476e3dd982689b0a6be6a44d016404926cd66ce876703b20440b27521036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac686868";
 
+            let arbitrationData = {
+                id: transactionId,
+                rawData: rawData,
+                signDataType: 1,
+                signHashFlag: 1,
+                script: script,
+                timeoutCompensationReceiver: dapp.address
+            }
+
             await expect(transactionManager.connect(dapp).requestArbitration(
-                transactionId, rawData, 1, 1, script, dapp.address))
+                arbitrationData))
                 .emit(transactionManager, "ArbitrationRequested");
             
-            const transaction = await transactionManager.getTransactionById(transactionId);
-            expect(transaction.status).to.equal(2);
-            expect(transaction.arbitrator).to.equal(arbitrator.address);
-            expect(transaction.btcTx).to.equal(rawData);
-            // expect(transaction.btcTxHash).to.equal(signHash);
-            expect(transaction.timeoutCompensationReceiver).to.equal(dapp.address);
-
-            expect(await transactionManager.txHashToId(transaction.btcTxHash)).to.equal(transactionId);
+            const transactionData = await transactionManager.getTransactionDataById(transactionId);
+            const transactionParties = await transactionManager.getTransactionPartiesById(transactionId);
+            const transactionRawData = await transactionManager.getTransactionBtcRawDataById(transactionId);
+            const btcTxHash = await transactionManager.getTransactionSignHashById(transactionId);
+            expect(transactionData.status).to.equal(2);
+            expect(transactionParties.arbitrator).to.equal(arbitrator.address);
+            expect(transactionRawData).to.equal(rawData);
+            expect(transactionParties.timeoutCompensationReceiver).to.equal(dapp.address);
+            expect(await transactionManager.txHashToId(btcTxHash)).to.equal(transactionId);
         });
 
         it ("Should request arbitration failed with invalid output amount", async function () {
@@ -379,9 +406,15 @@ describe("TransactionManager", function () {
             const rawData = "0x02000000000101a7b650787c6e2844c0906b3893f6d42fc3041f23869448980ce9a00430cb7a870000000000000000000268210000000000001976a9149b42587007f85e456b5d0d702e828f34ea1f55b188ac640000000000000017a9146fb7f3048e4b6d3eb81ecb1760221650734bab2887050000010100fd0a0163210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac6763210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad2102098cf93afc2c0682e0b6d7e132f9fbeedc610dc1c0d09dbcd75db1892f975641ac676303b60040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ada8205a0737e8cbcfa24dcc118b0ab1e6d98bee17c57daa8a1686024159aae707ed6f876703bd0040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac68686800000000";
             const script = "0x6321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ac676321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad21036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac676303ab0440b275210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ada820c7edc93e03202c56d1067d602476e3dd982689b0a6be6a44d016404926cd66ce876703b20440b27521036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac686868";
 
-            await expect(transactionManager.connect(dapp).requestArbitration(
-                transactionId, rawData, 1, 1, script, dapp.address))
-                .revertedWith("I5");
+            let arbitrationData = {
+                id: transactionId,
+                rawData: rawData,
+                signDataType: 1,
+                signHashFlag: 1,
+                script: script,
+                timeoutCompensationReceiver: dapp.address
+            }
+            await expect(transactionManager.connect(dapp).requestArbitration(arbitrationData)).to.be.revertedWith("I5");
 
         });
     });
@@ -412,7 +445,7 @@ describe("TransactionManager", function () {
             ).to.emit(transactionManager, "TransactionCompleted");
 
             // Check status (Completed is 3)
-            let transaction = await transactionManager.getTransactionById(transactionId);
+            let transaction = await transactionManager.getTransactionDataById(transactionId);
             expect(transaction.status).to.equal(1);//completed
 
             let isActive = await arbitratorManager.isActiveArbitrator(arbitrator.address);

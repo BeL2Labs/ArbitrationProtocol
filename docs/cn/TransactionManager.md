@@ -228,18 +228,24 @@ await transactionManager.uploadUTXOs(txId, utxos);
 ### 示例 2: 请求仲裁签名
 ```javascript
 // 1. 准备签名数据
-const signData = "0x..."; // 待签名数据
-const script = "0x..."; // 脚本数据
-const signDataType = 0; // 签名数据类型
+    const transactionId = "0x..."; // Transaction ID
+    const btcTx = "0x..."; // Transaction data
+    const signData = "0x..."; // Data to be signed
+    const script = "0x..."; // Script data
+    const timeoutCompensationReceiver = "0x..."; // Timeout compensation receiver (ETH address)
+    
+    const arbitrationData = {
+        id: transactionId,
+        rawData: btcTx,
+        signDataType: 0, // 对应SignDataType.Witness
+        signHashFlag: 0, // Default hash flag
+        script: "", // Default unlock script
+        timeoutCompensationReceiver: timeoutCompensationReceiver
+    };
 
 // 2. 请求仲裁
-await transactionManager.requestArbitration(
-    txId,
-    signData,
-    signDataType,
-    script,
-    timeoutCompensationReceiver
-);
+function requestArbitration(
+    DataTypes.ArbitrationData calldata arbitrationData) external nonReentrant;
 ```
 
 ### 示例 3: 仲裁人提交签名

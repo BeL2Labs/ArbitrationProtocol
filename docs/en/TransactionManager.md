@@ -228,17 +228,24 @@ await transactionManager.uploadUTXOs(txId, utxos);
 ### Example 2: Request Arbitration
 ```javascript
 // 1. Prepare signature data
-const signData = "0x..."; // Data to be signed
-const script = "0x..."; // Script data
-const signDataType = 0; // Signature data type
+    const transactionId = "0x..."; // Transaction ID
+    const btcTx = "0x..."; // Transaction data
+    const signData = "0x..."; // Data to be signed
+    const script = "0x..."; // Script data
+    const timeoutCompensationReceiver = "0x..."; // Timeout compensation    receiver (ETH address)
+
+    const arbitrationData = {
+        id: transactionId,
+        rawData: btcTx,
+        signDataType: 0, // Corresponds to SignDataType.Witness
+        signHashFlag: 0, // Default hash flag
+        script: "", // Default unlock script
+        timeoutCompensationReceiver: timeoutCompensationReceiver
+    };
 
 // 2. Request arbitration
 await transactionManager.requestArbitration(
-    txId,
-    signData,
-    signDataType,
-    script,
-    timeoutCompensationReceiver
+    arbitrationData
 );
 ```
 
