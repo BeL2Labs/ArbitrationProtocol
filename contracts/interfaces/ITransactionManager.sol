@@ -34,11 +34,13 @@ interface ITransactionManager {
     
     // Query transaction
     function getTransactionDataById(bytes32 id) external view returns (DataTypes.TransactionData memory);
-    function getTransactionData(bytes32 txHash) external view returns (DataTypes.TransactionData memory);
+    function getTransactionDataByTxHash(bytes32 txHash) external view returns (DataTypes.TransactionData memory);
     function getTransactionStatus(bytes32 id) external view returns (DataTypes.TransactionStatus);
     function getTransactionPartiesById(bytes32 id) external view returns (DataTypes.TransactionParties memory);
+    function getTransactionPartiesByTxHash(bytes32 txHash) external view returns (DataTypes.TransactionParties memory);
     function getTransactionUTXOsById(bytes32 id) external view returns (DataTypes.UTXO[] memory);
     function getTransactionSignatureById(bytes32 id) external view returns (bytes memory);
+    function getTransactionSignatureByTxHash(bytes32 txHash) external view returns (bytes memory);
     function getTransactionBtcRawDataById(bytes32 id) external view returns (bytes memory);
     function getTransactionSignHashById(bytes32 id) external view returns (bytes32);
 

@@ -157,7 +157,7 @@ describe("ConfigManager", function () {
 
         it("Should fail to set zero address as fee collector", async function () {
             await expect(configManager.connect(owner).setSystemFeeCollector(ethers.constants.AddressZero))
-                .to.be.revertedWith("Zero address");
+                .to.be.revertedWith("Z0");
         });
     });
 
@@ -191,15 +191,15 @@ describe("ConfigManager", function () {
             ];
 
             await expect(configManager.connect(owner).setConfigs(keys, values))
-                .to.be.revertedWith("Length mismatch");
+                .to.be.revertedWith("L0");
         });
     });
 
     describe("Config Queries", function () {
         it("Should return all configs correctly", async function () {
             const [keys, values] = await configManager.getAllConfigs();
-            expect(keys.length).to.equal(11); // Total number of configs
-            expect(values.length).to.equal(11);
+            expect(keys.length).to.equal(12); // Total number of configs
+            expect(values.length).to.equal(12);
         });
     });
 });

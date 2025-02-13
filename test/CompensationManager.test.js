@@ -23,22 +23,27 @@ describe("CompensationManager", function () {
     let transactionId;
     const duration = 30 * 24 * 60 * 60; // 30days
 
-    const VALID_BTC_TX = "0x02000000e5cd49421a525ae552acc8abd1d126108317aa517d96cd8550895d10486819da8cb9012517c817fead650287d61bdd9c68803b6bf9c64133dcab3e65b5a50cb9e2892172663c3d37fbc68260898676f5440fb4702289242fd82dcbef21be070c00000000fd0a0163210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac6763210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad2102b32f28976aa0be56a9de7cb7764c31c62a8d844244d9a5ecbe348e97e85475dfac676303b60040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ada8205a0737e8cbcfa24dcc118b0ab1e6d98bee17c57daa8a1686024159aae707ed6f876703bd0040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac686868692900000000000000000000c19695b1d2324599c15f4b3b47c0379b9a0c8b10512fc69cc93abf09f8afa3fe0000000001000000";
+    const VALID_BTC_TX = "0x02000000000101929119c4ba3c6e4b3f40474bb14d3d8610593fc4cda68288a69e91cfa363a1ad00000000000000000001a01b0000000000001976a914cb539f4329eeb589e83659c8304bcc6c99553a9688ac05483045022100f1296c9b96f1029d6b74782c9a827ee334a773e33d3a3593816543594ffd1b940220453bfa91aec7a445619cea8f3a5219945260d5ef529d6e02f399318eed96e6a901473044022007974847cf4d0397b4ca736e92e8c3ada42dc8f1c2cb2f98b0038e9967be684f0220241464a067fe1bb3ffbecb178a12004993ec0f51ea9dfc09521096f855f3f3d201010100fd0a016321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ac676321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad21036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac676303ab0440b275210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ada820c7edc93e03202c56d1067d602476e3dd982689b0a6be6a44d016404926cd66ce876703b20440b27521036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac68686800000000";
     const VALID_SIGNATURE = "0x30440220287e9e41c54b48c30e46ea442aa80ab793dac56d3816dbb2a5ea465f0c6e26e1022079aed874e9774b23c98ad9a60b38f37918591d50af83f49b92e63b9ce74fdedf";
-    const VALID_TX_HASH = "0x3b07965292e50272b6ee3ba2c89fea4c6f626e8ad01a25dd509f97b53d88d581";
-    const VALID_PUB_KEY = "0x02b1a82d3c01657ffa2b2b3433896386ac3fcad4cd04cffc74a90cba4c4bd8adde";
+    const VALID_TX_HASH = "0x74c0acaefebca6bf4221bf8d2bb86b4d69fb2273a95a1aee4683f5db08bd3eca";
+    const VALID_PUB_KEY = "0x02098cf93afc2c0682e0b6d7e132f9fbeedc610dc1c0d09dbcd75db1892f975641";
     const VALID_UTXOS = [{
-        txHash: "0x0c07be21efcb2dd82f24892270b40f44f57686896082c6fb373d3c66722189e2",
+        txHash: "0xada163a3cf919ea68882a6cdc43f5910863d4db14b47403f4b6e3cbac4199192",
         index: 0,
-        script: "0x0020d473100bd1a04e1ea90ad3e5411e6b4b75ca5d96b57781fc09bc79f135b24531",
-        amount: 10816
+        script: "0x00200a00f7c850b180f51bbb20f59e87f00150fda6974c04059fab771f04b300e97e",
+        amount: 7922
     }];
     const VALID_EVIDENCE = "0xa8a0b55bd00df1287445685c7c4a7e0a3df8edd82fee186cfcfda436f2924cea";
     const STAKE_AMOUNT = ethers.utils.parseEther("1.0");
 
     beforeEach(async function () {
         [owner, dapp, arbitrator, user, user1, compensationReceiver, timeoutReceiver] = await ethers.getSigners();
-
+        if (!user) {
+            user = owner;
+            user1 = owner;
+            compensationReceiver = dapp;
+            timeoutReceiver = dapp;
+        }
         // Deploy mock contracts
         const MockZkService = await ethers.getContractFactory("MockZkService");
         const MockSignatureValidationService = await ethers.getContractFactory("MockSignatureValidationService");
@@ -70,11 +75,20 @@ describe("CompensationManager", function () {
             validationService.address
         ], { initializer: 'initialize' });
 
+        const BTCUtils = await ethers.getContractFactory("BTCUtils");
+        const btcUtils = await BTCUtils.deploy();
+        await btcUtils.deployed();
+
+        const BTCAddressParser = await ethers.getContractFactory("MockBtcAddress");
+        const btcAddressParser = await BTCAddressParser.deploy();
+        await btcAddressParser.deployed();
         transactionManager = await upgrades.deployProxy(TransactionManager, [
             arbitratorManager.address,
             dappRegistry.address,
             configManager.address,
-            compensationManager.address
+            compensationManager.address,
+            btcUtils.address,
+            btcAddressParser.address
         ], { initializer: 'initialize' });
 
         // Set transactionManager
@@ -92,7 +106,8 @@ describe("CompensationManager", function () {
             dapp.address,
         );
 
-        const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+        const btcAddress = "1KY6M7H6hvEexW9QFqeTHzbZGuCXgAjxUn";
+        const btcScript = "0x76a914cb539f4329eeb589e83659c8304bcc6c99553a9688ac";
         const deadline = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60; // 356 days from now
         const feeRate = 1000; // 10%
         let tx = await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
@@ -103,18 +118,12 @@ describe("CompensationManager", function () {
             { value: STAKE_AMOUNT }
         );
         await tx.wait();
-
-        // Correctly register transaction using registerTransaction
-        const txData = {
-            sender: owner.address,
-            recipient: user1.address,
-            amount: ethers.utils.parseEther("1"),
-        };
-
+        await btcAddressParser.connect(owner).setBtcAddressToScript(btcAddress, btcScript);
         const registerTx = await transactionManager.connect(dapp).registerTransaction(
             arbitrator.address,
             Math.floor(Date.now() / 1000) + duration, // 30 days from now
             compensationReceiver.address,
+            dapp.address,
             { value: ethers.utils.parseEther("0.1") }
         );
         const receipt = await registerTx.wait();
@@ -153,7 +162,7 @@ describe("CompensationManager", function () {
 
             expect(await arbitratorManager.getAvailableStake(arbitrator.address)).to.equal(0);
 
-            const transaction = await transactionManager.getTransactionById(transactionId);
+            const transaction = await transactionManager.getTransactionDataById(transactionId);
             expect(transaction.status).to.equal(1);
 
             const claimId = ethers.utils.solidityKeccak256(
@@ -201,12 +210,17 @@ describe("CompensationManager", function () {
         });
 
         it("should revert with no active transaction", async function () {
+            let arbitrationData = {
+                id: transactionId,
+                rawData: VALID_BTC_TX,
+                signDataType: 1,
+                signHashFlag: 1,
+                script: "0xab2348",
+                timeoutCompensationReceiver: user.address
+            }
+
             await transactionManager.connect(dapp).requestArbitration(
-                transactionId,
-                VALID_BTC_TX,
-                1,
-                "0xab2348",
-                user.address
+                arbitrationData
             );
 
             await transactionManager.connect(arbitrator).submitArbitration(
@@ -243,284 +257,294 @@ describe("CompensationManager", function () {
             )).to.be.revertedWith("M6");
         });
     });
-    describe("claimFailedArbitrationCompensation", function () {
-        beforeEach(async function () {
-            await transactionManager.connect(dapp).requestArbitration(
-                transactionId,
-                VALID_BTC_TX,
-                1,
-                "0xab2348",
-                timeoutReceiver.address
-            );
+   describe("claimFailedArbitrationCompensation", function () {
+       beforeEach(async function () {
+           let arbitrationData = {
+               id: transactionId,
+               rawData: VALID_BTC_TX,
+               signDataType: 1,
+               signHashFlag: 1,
+               script: "0xab2348",
+               timeoutCompensationReceiver: timeoutReceiver.address
+           }
+           await transactionManager.connect(dapp).requestArbitration(arbitrationData);
+       });
+
+       it("should succeed with invalid verification data", async function () {
+           const valid_evidence = ethers.utils.solidityKeccak256(
+               ["bytes32", "uint8", "bytes", "bytes"],
+               [VALID_TX_HASH, 0, VALID_SIGNATURE, VALID_PUB_KEY]
+           );
+           await validationService.submitFailedData(
+               VALID_TX_HASH,
+               0,
+               VALID_SIGNATURE,
+               VALID_PUB_KEY
+           );
+           await transactionManager.connect(arbitrator).submitArbitration(
+               transactionId,
+               VALID_SIGNATURE);
+
+           const claimId = ethers.utils.solidityKeccak256(
+               ["bytes32", "address", "address", "uint8"],
+               [valid_evidence, arbitrator.address, compensationReceiver.address, 2]
+           );
+
+           await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
+               valid_evidence
+           )).to.emit(compensationManager, "CompensationClaimed").withArgs(
+               claimId,
+               dapp.address,
+               arbitrator.address,
+               STAKE_AMOUNT,
+               [],
+               STAKE_AMOUNT,
+               compensationReceiver.address,
+               2
+           );
+
+           expect(await arbitratorManager.getAvailableStake(arbitrator.address)).to.equal(0);
+
+           const transaction = await transactionManager.getTransactionDataById(transactionId);
+           expect(transaction.status).to.equal(1);
+
+           const compensationClaim = await compensationManager.claims(claimId);
+           expect(compensationClaim.claimer).to.equal(dapp.address);
+           expect(compensationClaim.arbitrator).to.equal(arbitrator.address);
+           expect(compensationClaim.claimType).to.equal(2);
+           expect(compensationClaim.withdrawn).to.equal(false);
+           expect(compensationClaim.ethAmount).to.equal(STAKE_AMOUNT);
+           expect(compensationClaim.totalAmount).to.equal(STAKE_AMOUNT);
+           expect(compensationClaim.receivedCompensationAddress).to.equal(compensationReceiver.address);
+       });
+
+       it("should revert with signature not submitted", async function () {
+           const valid_evidence = ethers.utils.solidityKeccak256(
+               ["bytes32", "uint8", "bytes", "bytes"],
+               [VALID_TX_HASH, 0, VALID_SIGNATURE, VALID_PUB_KEY]
+           );
+           await validationService.submitFailedData(
+               VALID_TX_HASH,
+               0,
+               VALID_SIGNATURE,
+               VALID_PUB_KEY
+           );
+           await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
+               valid_evidence
+           )).to.be.revertedWith("S5");
+       });
+
+       it("should revert with signature mismatch", async function () {
+           const signature = "0x30440220785b0fafc9a705952850455098820dd16eb1401c8cb4c743a836414679eeaeef022059e625a5cbb5f5508c30b1764c4d11a2b1d7d6676250a33da77b2c48a52eb1e9";
+           await transactionManager.connect(arbitrator).submitArbitration(
+               transactionId,
+               VALID_SIGNATURE);
+
+           const valid_evidence = ethers.utils.solidityKeccak256(
+               ["bytes32", "uint8", "bytes", "bytes"],
+               [VALID_TX_HASH, 0, signature, VALID_PUB_KEY]
+           );
+           await validationService.submitFailedData(
+               VALID_TX_HASH,
+               0,
+               signature,
+               VALID_PUB_KEY
+           );
+           await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
+               valid_evidence
+           )).to.be.revertedWith("S6");
+       });
+
+       it("should revert with public key mismatch", async function () {
+           const pubkey = "0x03cb0ee3eb3e9cdfdfdd6a5b276f7e480153caa491c590f8ac4a15dbde0442e6ea";
+           await transactionManager.connect(arbitrator).submitArbitration(
+               transactionId,
+               VALID_SIGNATURE);
+
+           const valid_evidence = ethers.utils.solidityKeccak256(
+               ["bytes32", "uint8", "bytes", "bytes"],
+               [VALID_TX_HASH, 0, VALID_SIGNATURE, pubkey]
+           );
+           await validationService.submitFailedData(
+               VALID_TX_HASH,
+               0,
+               VALID_SIGNATURE,
+               pubkey
+           );
+           await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
+               valid_evidence
+           )).to.be.revertedWith("M7");
+       });
+
+       it("should revert with verified", async function () {
+           await transactionManager.connect(arbitrator).submitArbitration(
+               transactionId,
+               VALID_SIGNATURE);
+
+           const valid_evidence = ethers.utils.solidityKeccak256(
+               ["bytes32", "uint8", "bytes", "bytes"],
+               [VALID_TX_HASH, 0, VALID_SIGNATURE, VALID_PUB_KEY]
+           );
+           await validationService.submit(
+               VALID_TX_HASH,
+               0,
+               VALID_SIGNATURE,
+               VALID_PUB_KEY
+           );
+           await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
+               valid_evidence
+           )).to.be.revertedWith("S7");
+       });
+   });
+
+   describe("claimTimeoutCompensation", function () {
+       let claimId;
+       beforeEach(async function () {
+           let arbitrationData = {
+               id: transactionId,
+               rawData: VALID_BTC_TX,
+               signDataType: 1,
+               signHashFlag: 1,
+               script: "0xab2348",
+               timeoutCompensationReceiver: timeoutReceiver.address
+           }
+           await transactionManager.connect(dapp).requestArbitration(
+               arbitrationData
+           );
+
+           claimId = ethers.utils.solidityKeccak256(
+               ["bytes32", "address", "address", "uint8"],
+               [transactionId, arbitrator.address, timeoutReceiver.address, 1]
+             );
+       });
+       it("should scceed after timeout", async function () {
+           const configTime = await configManager.getArbitrationTimeout();
+           await network.provider.send("evm_increaseTime", [configTime.toNumber()]);
+           await network.provider.send("evm_mine");
+
+           await expect(compensationManager.connect(dapp).claimTimeoutCompensation(
+               transactionId)).to.emit(compensationManager, "CompensationClaimed")
+               .withArgs(
+                   claimId,
+                   dapp.address,
+                   arbitrator.address,
+                   STAKE_AMOUNT,
+                   [],
+                   STAKE_AMOUNT,
+                   timeoutReceiver.address,
+                   1);
+
+           expect(await arbitratorManager.getAvailableStake(arbitrator.address)).to.equal(0);
+
+           const transaction = await transactionManager.getTransactionDataById(transactionId);
+           expect(transaction.status).to.equal(1);
+
+           const compensationClaim = await compensationManager.claims(claimId);
+           expect(compensationClaim.claimer).to.equal(dapp.address);
+           expect(compensationClaim.arbitrator).to.equal(arbitrator.address);
+           expect(compensationClaim.claimType).to.equal(1);
+           expect(compensationClaim.withdrawn).to.equal(false);
+           expect(compensationClaim.ethAmount).to.equal(STAKE_AMOUNT);
+           expect(compensationClaim.totalAmount).to.equal(STAKE_AMOUNT);
+           expect(compensationClaim.receivedCompensationAddress).to.equal(timeoutReceiver.address);
+       });
+
+       it("should revert with not timeout", async function () {
+           await network.provider.send("evm_increaseTime", [1000]);
+           await network.provider.send("evm_mine");
+
+           await expect(compensationManager.connect(dapp).claimTimeoutCompensation(
+               transactionId)).to.be.revertedWith("M3");
+       });
+
+       it("should revert with already claimed", async function () {
+           const configTime = await configManager.getArbitrationTimeout();
+           await network.provider.send("evm_increaseTime", [configTime.toNumber()]);
+           await network.provider.send("evm_mine");
+
+           await compensationManager.connect(dapp).claimTimeoutCompensation(transactionId)
+           await expect(compensationManager.connect(dapp).claimTimeoutCompensation(
+               transactionId)).to.be.revertedWith("M9");
+       });
+       it("should revert with not in arbitration", async function () {
+           await transactionManager.connect(arbitrator).submitArbitration(transactionId, VALID_SIGNATURE);
+           await expect(compensationManager.connect(dapp).claimTimeoutCompensation(
+               transactionId)).to.be.revertedWith("M2");
+       });
+   });
+
+   describe("withdrawCompensation", function () {
+       let claimId;
+       let withdrawFee;
+       beforeEach(async function () {
+           let arbitrationData = {
+               id: transactionId,
+               rawData: VALID_BTC_TX,
+               signDataType: 1,
+               signHashFlag: 1,
+               script: "0xab2348",
+               timeoutCompensationReceiver: timeoutReceiver.address
+           }
+           await transactionManager.connect(dapp).requestArbitration(
+               arbitrationData
+           );
+           const valid_evidence = ethers.utils.solidityKeccak256(
+               ["bytes32", "uint8", "bytes", "bytes"],
+               [VALID_TX_HASH, 0, VALID_SIGNATURE, VALID_PUB_KEY]
+           );
+           await validationService.submitFailedData(
+               VALID_TX_HASH,
+               0,
+               VALID_SIGNATURE,
+               VALID_PUB_KEY
+           );
+           await transactionManager.connect(arbitrator).submitArbitration(
+               transactionId,
+               VALID_SIGNATURE);
+           await compensationManager.connect(dapp).claimFailedArbitrationCompensation(
+               valid_evidence
+           );
+           claimId = ethers.utils.solidityKeccak256(
+               ["bytes32", "address", "address", "uint8"],
+               [valid_evidence, arbitrator.address, compensationReceiver.address, 2]
+             );
+           const feeRate = await configManager.getSystemCompensationFeeRate();
+           withdrawFee = STAKE_AMOUNT.mul(feeRate).div(10000);
+       });
+
+       it("should withdraw successfully", async function () {
+           await expect(compensationManager.connect(compensationReceiver).withdrawCompensation(claimId, {value: withdrawFee}))
+               .to.emit(compensationManager, "CompensationWithdrawn").withArgs(
+                   claimId,
+                   compensationReceiver.address,
+                   compensationReceiver.address,
+                   STAKE_AMOUNT,
+                   [],
+                   withdrawFee,
+                   0
+               );
+       });
+
+       it("should withdraw successfully with correct amount", async function () {
+           const balanceBefore = await ethers.provider.getBalance(compensationReceiver.address);
+
+           const tx = await compensationManager.connect(compensationReceiver).withdrawCompensation(claimId, {value: withdrawFee});
+           const receipt = await tx.wait();
+           const gasUsed = receipt.gasUsed;
+           const gasPrice = receipt.effectiveGasPrice;
+           const txFee = gasUsed.mul(gasPrice);
+
+           const balanceAfter = await ethers.provider.getBalance(compensationReceiver.address);
+           expect(balanceAfter.sub(balanceBefore)).to.equal(STAKE_AMOUNT.sub(withdrawFee).sub(txFee));
         });
 
-        it("should succeed with invalid verification data", async function () {
-            const valid_evidence = ethers.utils.solidityKeccak256(
-                ["bytes32", "uint8", "bytes", "bytes"],
-                [VALID_TX_HASH, 0, VALID_SIGNATURE, VALID_PUB_KEY]
-            );
-            await validationService.submitFailedData(
-                VALID_TX_HASH,
-                0,
-                VALID_SIGNATURE,
-                VALID_PUB_KEY
-            );
-            await transactionManager.connect(arbitrator).submitArbitration(
-                transactionId,
-                VALID_SIGNATURE);
+       it("should withdraw successfully by other account with correct amount", async function () {
+           const balanceBefore = await ethers.provider.getBalance(compensationReceiver.address);
 
-            const claimId = ethers.utils.solidityKeccak256(
-                ["bytes32", "address", "address", "uint8"],
-                [valid_evidence, arbitrator.address, compensationReceiver.address, 2]
-              );
+           await compensationManager.connect(owner).withdrawCompensation(claimId, {value: withdrawFee});
 
-            await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                valid_evidence
-            )).to.emit(compensationManager, "CompensationClaimed").withArgs(
-                claimId,
-                dapp.address,
-                arbitrator.address,
-                STAKE_AMOUNT,
-                [],
-                STAKE_AMOUNT,
-                compensationReceiver.address,
-                2
-            );
-
-            expect(await arbitratorManager.getAvailableStake(arbitrator.address)).to.equal(0);
-
-            const transaction = await transactionManager.getTransactionById(transactionId);
-            expect(transaction.status).to.equal(1);
-
-            const compensationClaim = await compensationManager.claims(claimId);
-            expect(compensationClaim.claimer).to.equal(dapp.address);
-            expect(compensationClaim.arbitrator).to.equal(arbitrator.address);
-            expect(compensationClaim.claimType).to.equal(2);
-            expect(compensationClaim.withdrawn).to.equal(false);
-            expect(compensationClaim.ethAmount).to.equal(STAKE_AMOUNT);
-            expect(compensationClaim.totalAmount).to.equal(STAKE_AMOUNT);
-            expect(compensationClaim.receivedCompensationAddress).to.equal(compensationReceiver.address);
-        });
-
-        it("should revert with signature not submitted", async function () {
-            const valid_evidence = ethers.utils.solidityKeccak256(
-                ["bytes32", "uint8", "bytes", "bytes"],
-                [VALID_TX_HASH, 0, VALID_SIGNATURE, VALID_PUB_KEY]
-            );
-            await validationService.submitFailedData(
-                VALID_TX_HASH,
-                0,
-                VALID_SIGNATURE,
-                VALID_PUB_KEY
-            );
-            await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                valid_evidence
-            )).to.be.revertedWith("S5");
-        });
-
-        it("should revert with signature mismatch", async function () {
-            const signature = "0x30440220785b0fafc9a705952850455098820dd16eb1401c8cb4c743a836414679eeaeef022059e625a5cbb5f5508c30b1764c4d11a2b1d7d6676250a33da77b2c48a52eb1e9";
-            await transactionManager.connect(arbitrator).submitArbitration(
-                transactionId,
-                VALID_SIGNATURE);
-
-            const valid_evidence = ethers.utils.solidityKeccak256(
-                ["bytes32", "uint8", "bytes", "bytes"],
-                [VALID_TX_HASH, 0, signature, VALID_PUB_KEY]
-            );
-            await validationService.submitFailedData(
-                VALID_TX_HASH,
-                0,
-                signature,
-                VALID_PUB_KEY
-            );
-            await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                valid_evidence
-            )).to.be.revertedWith("S6");
-        });
-
-        it("should revert with public key mismatch", async function () {
-            const pubkey = "0x03cb0ee3eb3e9cdfdfdd6a5b276f7e480153caa491c590f8ac4a15dbde0442e6ea";
-            await transactionManager.connect(arbitrator).submitArbitration(
-                transactionId,
-                VALID_SIGNATURE);
-
-            const valid_evidence = ethers.utils.solidityKeccak256(
-                ["bytes32", "uint8", "bytes", "bytes"],
-                [VALID_TX_HASH, 0, VALID_SIGNATURE, pubkey]
-            );
-            await validationService.submitFailedData(
-                VALID_TX_HASH,
-                0,
-                VALID_SIGNATURE,
-                pubkey
-            );
-            await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                valid_evidence
-            )).to.be.revertedWith("M7");
-        });
-
-        it("should revert with verified", async function () {
-            await transactionManager.connect(arbitrator).submitArbitration(
-                transactionId,
-                VALID_SIGNATURE);
-
-            const valid_evidence = ethers.utils.solidityKeccak256(
-                ["bytes32", "uint8", "bytes", "bytes"],
-                [VALID_TX_HASH, 0, VALID_SIGNATURE, VALID_PUB_KEY]
-            );
-            await validationService.submit(
-                VALID_TX_HASH,
-                0,
-                VALID_SIGNATURE,
-                VALID_PUB_KEY
-            );
-            await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                valid_evidence
-            )).to.be.revertedWith("S7");
-        });
-    });
-
-    describe("claimTimeoutCompensation", function () {
-        let claimId;
-        beforeEach(async function () {
-            await transactionManager.connect(dapp).requestArbitration(
-                transactionId,
-                VALID_BTC_TX,
-                1,
-                "0xab2348",
-                timeoutReceiver.address
-            );
-
-            claimId = ethers.utils.solidityKeccak256(
-                ["bytes32", "address", "address", "uint8"],
-                [transactionId, arbitrator.address, timeoutReceiver.address, 1]
-              );
-        });
-        it("should scceed after timeout", async function () {
-            const configTime = await configManager.getArbitrationTimeout();
-            await network.provider.send("evm_increaseTime", [configTime.toNumber()]);
-            await network.provider.send("evm_mine");
-
-            await expect(compensationManager.connect(dapp).claimTimeoutCompensation(
-                transactionId)).to.emit(compensationManager, "CompensationClaimed")
-                .withArgs(
-                    claimId,
-                    dapp.address,
-                    arbitrator.address,
-                    STAKE_AMOUNT,
-                    [],
-                    STAKE_AMOUNT,
-                    timeoutReceiver.address,
-                    1);
-
-            expect(await arbitratorManager.getAvailableStake(arbitrator.address)).to.equal(0);
-
-            const transaction = await transactionManager.getTransactionById(transactionId);
-            expect(transaction.status).to.equal(1);
-
-            const compensationClaim = await compensationManager.claims(claimId);
-            expect(compensationClaim.claimer).to.equal(dapp.address);
-            expect(compensationClaim.arbitrator).to.equal(arbitrator.address);
-            expect(compensationClaim.claimType).to.equal(1);
-            expect(compensationClaim.withdrawn).to.equal(false);
-            expect(compensationClaim.ethAmount).to.equal(STAKE_AMOUNT);
-            expect(compensationClaim.totalAmount).to.equal(STAKE_AMOUNT);
-            expect(compensationClaim.receivedCompensationAddress).to.equal(timeoutReceiver.address);
-        });
-
-        it("should revert with not timeout", async function () {
-            await network.provider.send("evm_increaseTime", [1000]);
-            await network.provider.send("evm_mine");
-
-            await expect(compensationManager.connect(dapp).claimTimeoutCompensation(
-                transactionId)).to.be.revertedWith("M3");
-        });
-
-        it("should revert with already claimed", async function () {
-            const configTime = await configManager.getArbitrationTimeout();
-            await network.provider.send("evm_increaseTime", [configTime.toNumber()]);
-            await network.provider.send("evm_mine");
-
-            await compensationManager.connect(dapp).claimTimeoutCompensation(transactionId)
-            await expect(compensationManager.connect(dapp).claimTimeoutCompensation(
-                transactionId)).to.be.revertedWith("M9");
-        });
-        it("should revert with not in arbitration", async function () {
-            await transactionManager.connect(arbitrator).submitArbitration(transactionId, VALID_SIGNATURE);
-            await expect(compensationManager.connect(dapp).claimTimeoutCompensation(
-                transactionId)).to.be.revertedWith("M2");
-        });
-    });
-
-    describe("withdrawCompensation", function () {
-        let claimId;
-        let withdrawFee;
-        beforeEach(async function () {
-            await transactionManager.connect(dapp).requestArbitration(
-                transactionId,
-                VALID_BTC_TX,
-                1,
-                "0xab2348",
-                timeoutReceiver.address
-            );
-            const valid_evidence = ethers.utils.solidityKeccak256(
-                ["bytes32", "uint8", "bytes", "bytes"],
-                [VALID_TX_HASH, 0, VALID_SIGNATURE, VALID_PUB_KEY]
-            );
-            await validationService.submitFailedData(
-                VALID_TX_HASH,
-                0,
-                VALID_SIGNATURE,
-                VALID_PUB_KEY
-            );
-            await transactionManager.connect(arbitrator).submitArbitration(
-                transactionId,
-                VALID_SIGNATURE);
-            await compensationManager.connect(dapp).claimFailedArbitrationCompensation(
-                valid_evidence
-            );
-            claimId = ethers.utils.solidityKeccak256(
-                ["bytes32", "address", "address", "uint8"],
-                [valid_evidence, arbitrator.address, compensationReceiver.address, 2]
-              );
-            const feeRate = await configManager.getSystemCompensationFeeRate();
-            withdrawFee = STAKE_AMOUNT.mul(feeRate).div(10000);
-        });
-
-        it("should withdraw successfully", async function () {
-            await expect(compensationManager.connect(compensationReceiver).withdrawCompensation(claimId, {value: withdrawFee}))
-                .to.emit(compensationManager, "CompensationWithdrawn").withArgs(
-                    claimId,
-                    compensationReceiver.address,
-                    compensationReceiver.address,
-                    STAKE_AMOUNT,
-                    [],
-                    withdrawFee,
-                    0
-                );
-        });
-
-        it("should withdraw successfully with correct amount", async function () {
-            const balanceBefore = await ethers.provider.getBalance(compensationReceiver.address);
-
-            const tx = await compensationManager.connect(compensationReceiver).withdrawCompensation(claimId, {value: withdrawFee});
-            const receipt = await tx.wait();
-            const gasUsed = receipt.gasUsed;
-            const gasPrice = receipt.effectiveGasPrice;
-            const txFee = gasUsed.mul(gasPrice);
-
-            const balanceAfter = await ethers.provider.getBalance(compensationReceiver.address);
-            expect(balanceAfter.sub(balanceBefore)).to.equal(STAKE_AMOUNT.sub(withdrawFee).sub(txFee));
-        });
-
-        it("should withdraw successfully by other account with correct amount", async function () {
-            const balanceBefore = await ethers.provider.getBalance(compensationReceiver.address);
-
-            await compensationManager.connect(owner).withdrawCompensation(claimId, {value: withdrawFee});
-
-            const balanceAfter = await ethers.provider.getBalance(compensationReceiver.address);
-            expect(balanceAfter.sub(balanceBefore)).to.equal(STAKE_AMOUNT);
+           const balanceAfter = await ethers.provider.getBalance(compensationReceiver.address);
+           expect(balanceAfter.sub(balanceBefore)).to.equal(STAKE_AMOUNT);
         });
 
         it("should revert with withdrawn", async function () {
@@ -533,12 +557,16 @@ describe("CompensationManager", function () {
     describe("claimArbitratorFee", function () {
         let claimId;
         beforeEach(async function () {
+            let arbitrationData = {
+                id: transactionId,
+                rawData: VALID_BTC_TX,
+                signDataType: 1,
+                signHashFlag: 1,
+                script: "0xab2348",
+                timeoutCompensationReceiver: timeoutReceiver.address
+            }
             await transactionManager.connect(dapp).requestArbitration(
-                transactionId,
-                VALID_BTC_TX,
-                1,
-                "0xab2348",
-                timeoutReceiver.address
+                arbitrationData
             );
 
             claimId = ethers.utils.solidityKeccak256(
@@ -564,7 +592,7 @@ describe("CompensationManager", function () {
             expect(compensationClaim.withdrawn).to.equal(true);
             expect(compensationClaim.receivedCompensationAddress).to.equal(arbitrator.address);
 
-            const transaction = await transactionManager.getTransactionById(transactionId);
+            const transaction = await transactionManager.getTransactionDataById(transactionId);
             expect(transaction.status).to.equal(1);
 
             expect(await arbitratorManager.isActiveArbitrator(arbitrator.address)).to.equal(true);
@@ -612,7 +640,7 @@ describe("CompensationManager", function () {
             expect(compensationClaim.withdrawn).to.equal(true);
             expect(compensationClaim.receivedCompensationAddress).to.equal(arbitrator.address);
 
-            const transaction = await transactionManager.getTransactionById(transactionId);
+            const transaction = await transactionManager.getTransactionDataById(transactionId);
             expect(transaction.status).to.equal(1);
 
             expect(await arbitratorManager.isActiveArbitrator(arbitrator.address)).to.equal(true);

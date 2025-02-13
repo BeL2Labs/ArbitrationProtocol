@@ -11,7 +11,6 @@ import "../interfaces/IArbitratorManager.sol";
 import "../libraries/Errors.sol";
 import "../libraries/DataTypes.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "hardhat/console.sol";
 
 contract CompensationManager is 
     ICompensationManager,
@@ -115,7 +114,7 @@ contract CompensationManager is
             revert (Errors.NO_ACTIVE_TRANSACTION);
         }
         
-        DataTypes.TransactionData memory transactionData = transactionManager.getTransactionData(arbitratorInfo.activeTransactionId);
+        DataTypes.TransactionData memory transactionData = transactionManager.getTransactionDataById(arbitratorInfo.activeTransactionId);
         if (transactionData.status != DataTypes.TransactionStatus.Active) {
             revert (Errors.NO_ACTIVE_TRANSACTION);
         }
@@ -200,7 +199,7 @@ contract CompensationManager is
             revert (Errors.COMPENSATION_ALREADY_CLAIMED);
         }
         // Get transaction data
-        DataTypes.TransactionData memory transactionData = transactionManager.getTransactionData(id);
+        DataTypes.TransactionData memory transactionData = transactionManager.getTransactionDataById(id);
         if (transactionData.status != DataTypes.TransactionStatus.Arbitrated) revert (Errors.TRANSACTION_NOT_IN_ARBITRATED);
 
         uint256 configTime = configManager.getArbitrationTimeout();
@@ -253,7 +252,7 @@ contract CompensationManager is
         }
 
         // Get transaction parties
-        DataTypes.TransactionParties memory transactionParties = transactionManager.getTransactionPartiesById(msghash);
+        DataTypes.TransactionParties memory transactionParties = transactionManager.getTransactionPartiesByTxHash(msghash);
         if (transactionParties.dapp == address(0) || transactionParties.arbitrator == address(0)) {
             revert (Errors.NO_ACTIVE_TRANSACTION);
         }
@@ -265,7 +264,7 @@ contract CompensationManager is
         }
 
         // Get transaction signature and verify
-        bytes memory transaction_signature = transactionManager.getTransactionSignatureById(msghash);
+        bytes memory transaction_signature = transactionManager.getTransactionSignatureByTxHash(msghash);
         if (transaction_signature.length == 0) revert (Errors.SIGNATURE_NOT_SUBMITTED);
         if (keccak256(transaction_signature) != keccak256(signature)) revert (Errors.SIGNATURE_MISMATCH);
 
