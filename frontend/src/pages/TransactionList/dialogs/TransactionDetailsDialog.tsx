@@ -65,6 +65,10 @@ export const TransactionDetailsDialog: FC<{
             <DetailsTableCellWithLabel>Deposited Fee</DetailsTableCellWithLabel>
             <DetailsTableCellWithValue>{transaction.depositedFee ? <TokenWithValue amount={transaction.depositedFee} token={activeChain?.nativeCurrency} decimals={5} /> : "-"}</DetailsTableCellWithValue>
           </DetailsTableRow>
+          {/*  <DetailsTableRow>
+            <DetailsTableCellWithLabel>Arbiter BTC Reward</DetailsTableCellWithLabel>
+            <DetailsTableCellWithValue>{transaction.depositedFee ? <TokenWithValue amount={0} token={escBtcToken} decimals={8} /> : "-"}</DetailsTableCellWithValue>
+          </DetailsTableRow> */}
         </TableBody>
       </Table>
 

@@ -1,3 +1,5 @@
+- Show the arbiter address in email notifications.
+
 - Arbiter list sorting: use remote sorting, and default to stake amount.
 - Show tooltips over arbiter status to explain what this means (Active, Busy deadline, Busy stake...)
 
