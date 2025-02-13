@@ -80,13 +80,13 @@ describe("DAppRegistry", function () {
       const insufficientFee = REGISTRATION_FEE.sub(ethers.utils.parseEther("1"));
       await expect(
         dappRegistry.connect(dappOwner).registerDApp(dappContractAddress, { value: insufficientFee })
-      ).to.be.revertedWith("Insufficient fee");
+      ).to.be.revertedWith("T5");
     });
 
     it("Should fail to register zero address", async function () {
       await expect(
         dappRegistry.connect(dappOwner).registerDApp(ethers.constants.AddressZero, { value: REGISTRATION_FEE })
-      ).to.be.revertedWith("Zero address");
+      ).to.be.revertedWith("Z0");
     });
   });
 
@@ -108,7 +108,7 @@ describe("DAppRegistry", function () {
       const unregisteredDApp = otherAccount.address;
       await expect(
         dappRegistry.connect(owner).authorizeDApp(unregisteredDApp)
-      ).to.be.revertedWith("DApp not registered");
+      ).to.be.revertedWith("D1");
     });
 
   it("Should fail if non-owner tries to authorize", async function () {
@@ -145,13 +145,13 @@ describe("DAppRegistry", function () {
       const unregisteredDApp = otherAccount.address;
       await expect(
         dappRegistry.connect(dappOwner).deregisterDApp(unregisteredDApp)
-      ).to.be.revertedWith("DApp not registered");
+      ).to.be.revertedWith("D1");
     });
 
     it("Should fail if unauthorized account tries to deregister", async function () {
       await expect(
         dappRegistry.connect(otherAccount).deregisterDApp(dappContractAddress)
-      ).to.be.revertedWith("Not authorized");
+      ).to.be.revertedWith("N0");
     });
   });
 
@@ -198,7 +198,7 @@ describe("DAppRegistry", function () {
     it("Should fail to update config manager with zero address", async function () {
       await expect(
         dappRegistry.connect(owner).setConfigManager(ethers.constants.AddressZero)
-      ).to.be.revertedWith("Zero address");
+      ).to.be.revertedWith("Z0");
     });
 
     it("Should fail if non-owner tries to update config manager", async function () {

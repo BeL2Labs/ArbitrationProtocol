@@ -463,6 +463,10 @@ contract TransactionManager is
         return transactions_btc_signature[id];
     }
 
+    function getTransactionSignatureByTxHash(bytes32 txHash) external view returns (bytes memory) {
+        return transactions_btc_signature[txHashToId[txHash]];
+    }
+
     function getTransactionBtcRawDataById(bytes32 id) external view returns (bytes memory) {
         return transactions_btc_raw_data[id];
     }
@@ -476,12 +480,16 @@ contract TransactionManager is
      * @param txHash Transaction hash
      * @return Transaction struct
      */
-    function getTransactionData(bytes32 txHash) external view override returns (DataTypes.TransactionData memory) {
+    function getTransactionDataByTxHash(bytes32 txHash) external view override returns (DataTypes.TransactionData memory) {
         return transactions_data[txHashToId[txHash]];
     }
 
     function getTransactionPartiesById(bytes32 id) external view returns (DataTypes.TransactionParties memory) {
         return transactions_parties[id];
+    }
+
+    function getTransactionPartiesByTxHash(bytes32 txHash) external view returns (DataTypes.TransactionParties memory) {
+        return transactions_parties[txHashToId[txHash]];
     }
 
     function getTransactionStatus(bytes32 id) external view override returns (DataTypes.TransactionStatus status) {
