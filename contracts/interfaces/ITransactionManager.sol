@@ -23,12 +23,7 @@ interface ITransactionManager {
     function isAbleCompletedTransaction(bytes32 id) external view returns (bool);
     // Request arbitration
     function requestArbitration(
-        bytes32 id,
-        bytes calldata rawData,
-        DataTypes.SignDataType signDataType,
-        uint8 signHashFlag,
-        bytes calldata script,
-        address timeoutCompensationReceiver
+       DataTypes.ArbitrationData calldata data
     ) external;
     
     // Submit arbitration result
@@ -38,9 +33,14 @@ interface ITransactionManager {
     ) external;
     
     // Query transaction
-    function getTransactionById(bytes32 id) external view returns (DataTypes.Transaction memory);
-    function getTransaction(bytes32 txHash) external view returns (DataTypes.Transaction memory);
-    function getTransactionStatus(bytes32 id) external view returns (DataTypes.TransactionStatus status);
+    function getTransactionDataById(bytes32 id) external view returns (DataTypes.TransactionData memory);
+    function getTransactionData(bytes32 txHash) external view returns (DataTypes.TransactionData memory);
+    function getTransactionStatus(bytes32 id) external view returns (DataTypes.TransactionStatus);
+    function getTransactionPartiesById(bytes32 id) external view returns (DataTypes.TransactionParties memory);
+    function getTransactionUTXOsById(bytes32 id) external view returns (DataTypes.UTXO[] memory);
+    function getTransactionSignatureById(bytes32 id) external view returns (bytes memory);
+    function getTransactionBtcRawDataById(bytes32 id) external view returns (bytes memory);
+    function getTransactionSignHashById(bytes32 id) external view returns (bytes32);
 
     function txHashToId(bytes32 txHash) external view returns (bytes32);
 
@@ -84,7 +84,6 @@ interface ITransactionManager {
 
     event DepositFeeTransfer(bytes32 indexed txId, address indexed revenueETHAddress, uint256 arbitratorFee, uint256 systemFee, uint256 refundedFee);
     // Functions
-    function initialize(address _arbitratorManager, address _dappRegistry, address _configManager, address _compensationManager) external;
     function setArbitratorManager(address _arbitratorManager) external;
     function setBTCAddressParser(address _btcAddressParser) external;
 }
