@@ -1,4 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
+import arbitrationRequestPlaceholder from "../../assets/email-placeholders/arbitration-request.json";
+import emailVerificationPlaceholder from "../../assets/email-placeholders/email-verification.json";
 import { EmailTemplateType } from './email-template-type';
 import { EmailingService } from './emailing.service';
 
@@ -23,13 +25,9 @@ export class EmailingDevController {
   private getPlaceholderData(templateType: EmailTemplateType) {
     switch (templateType) {
       case EmailTemplateType.ARBITRATION_REQUEST:
-        return {
-          arbiterDashboardUrl: "https://arbiter.bel2.org/dashboard"
-        }
+        return arbitrationRequestPlaceholder;
       case EmailTemplateType.EMAIL_VERIFICATION:
-        return {
-          pinCode: "1234"
-        }
+        return emailVerificationPlaceholder;
       default:
         return {};
     }

@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { getAddress } from 'ethers';
+import moment from 'moment';
 import { EmailTemplateType } from 'src/emailing/email-template-type';
 import { EmailingService } from 'src/emailing/emailing.service';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -117,7 +118,9 @@ export class TransactionHandlerService implements OnModuleInit {
             arbiter.email,
             "New arbitration request",
             {
-              arbiterDashboardUrl: "https://arbiter.bel2.org/dashboard"
+              arbiterDashboardUrl: "https://arbiter.bel2.org/dashboard",
+              arbiter: refreshedRequest.arbiter?.ownerEvmAddress,
+              deadline: moment(refreshedRequest.deadline).format("YYYY-MM-DD HH:mm")
             }
           );
 

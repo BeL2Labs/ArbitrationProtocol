@@ -5,11 +5,11 @@ import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EmailingModule } from './emailing/emailing.module';
-import { RegistrationModule } from './registration/registration.module';
-import { TransactionHandlerModule } from './transaction-handler/transaction-handler.module';
-import { SubgraphModule } from './subgraph/subgraph.module';
-import { TransactionsModule } from './transactions/transactions.module';
 import { EvmModule } from './evm/evm.module';
+import { RegistrationModule } from './registration/registration.module';
+import { SubgraphModule } from './subgraph/subgraph.module';
+import { TransactionHandlerModule } from './transaction-handler/transaction-handler.module';
+import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
   imports: [
@@ -19,7 +19,7 @@ import { EvmModule } from './evm/evm.module';
       envFilePath: '.env',
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public')
+      rootPath: join(__dirname, '../..', 'public')
     }),
     RegistrationModule,
     TransactionHandlerModule,
