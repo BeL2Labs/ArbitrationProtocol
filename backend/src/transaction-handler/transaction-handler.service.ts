@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { getAddress } from 'ethers';
 import moment from 'moment';
+import { ConfigManagerContractService } from 'src/contracts/config-manager-contract.service';
 import { EmailTemplateType } from 'src/emailing/email-template-type';
 import { EmailingService } from 'src/emailing/emailing.service';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -16,7 +17,8 @@ export class TransactionHandlerService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private transactionsService: TransactionsService,
-    private emailing: EmailingService
+    private emailing: EmailingService,
+    private configManager: ConfigManagerContractService
   ) { }
 
   onModuleInit() {
@@ -71,12 +73,15 @@ export class TransactionHandlerService implements OnModuleInit {
       }
     });
 
+    const arbitrationDeadline = moment(transaction.requestArbitrationTime).clone().add(Number(this.configManager.getSettings().arbitrationTimeout), "seconds").toDate();
+
     this.logger.log(`Transaction ${transaction.txId} (that has an arbitration request) not yet in DB, saving`);
     await this.prisma.arbitrationRequest.create({
       data: {
         transactionId: transaction.txId,
         requestArbitrationTime: transaction.requestArbitrationTime.toDate(),
         deadline: transaction.deadline.toDate(),
+        arbitrationDeadline,
         ...(arbiter && { arbiterId: arbiter.id }),
       }
     });
@@ -120,7 +125,7 @@ export class TransactionHandlerService implements OnModuleInit {
             {
               arbiterDashboardUrl: "https://arbiter.bel2.org/dashboard",
               arbiter: refreshedRequest.arbiter?.ownerEvmAddress,
-              deadline: moment(refreshedRequest.deadline).format("YYYY-MM-DD HH:mm")
+              deadline: moment(refreshedRequest.arbitrationDeadline).format("YYYY-MM-DD HH:mm")
             }
           );
 

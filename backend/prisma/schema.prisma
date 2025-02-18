@@ -11,9 +11,10 @@ model ArbitrationRequest {
   id        String   @id @unique @default(uuid())
   createdAt DateTime @default(now())
 
-  transactionId          String   @unique
+  transactionId          String    @unique
   requestArbitrationTime DateTime // Matches transaction.requestArbitrationTime
-  deadline               DateTime // Matches transaction.deadline
+  deadline               DateTime // Transaction deadline - Matches transaction.deadline 
+  arbitrationDeadline    DateTime? // Arbitration deadline
 
   arbiter   Arbiter? @relation(fields: [arbiterId], references: [id])
   arbiterId String?

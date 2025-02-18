@@ -10,6 +10,7 @@ import { RegistrationModule } from './registration/registration.module';
 import { SubgraphModule } from './subgraph/subgraph.module';
 import { TransactionHandlerModule } from './transaction-handler/transaction-handler.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { ContractsModule } from './contracts/contracts.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { TransactionsModule } from './transactions/transactions.module';
     SubgraphModule,
     TransactionsModule,
     EvmModule,
+    ContractsModule,
   ],
   controllers: [
     AppController
