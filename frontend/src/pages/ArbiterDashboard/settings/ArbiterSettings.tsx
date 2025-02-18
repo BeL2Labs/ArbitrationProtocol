@@ -47,9 +47,9 @@ export const ArbiterSettings: FC = () => {
           </EnsureWalletNetwork>
         }
         {
-          !isFetchingArbiter && ownedArbiter && ownedArbiter.getIsActive() && ownedArbiter.isPaused() &&
+          !isFetchingArbiter && ownedArbiter && ownedArbiter.isPaused() &&
           <EnsureWalletNetwork continuesTo='Resume'>
-            <Button onClick={handleResumeArbiter} disabled={isResuming || !ownedArbiter.getIsActive()}>Resume</Button>
+            <Button onClick={handleResumeArbiter} disabled={isResuming}>Resume</Button>
           </EnsureWalletNetwork>
         }
       </div>

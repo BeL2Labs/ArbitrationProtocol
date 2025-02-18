@@ -1,9 +1,3 @@
-- Email notification improvements:
-  - display expiration date
-  - warn of the risks of not signing in time
-  - tell users how to deploy arbiter signature service
-      https://github.com/BeL2Labs/Arbiter_Signer/blob/main/docs/deploy_loan_arbiter.md
-
 - Arbiter list sorting: use remote sorting, and default to stake amount.
 - Show tooltips over arbiter status to explain what this means (Active, Busy deadline, Busy stake...)
 
