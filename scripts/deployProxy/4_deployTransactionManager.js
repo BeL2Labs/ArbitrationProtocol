@@ -37,11 +37,31 @@ async function main() {
             throw new Error("compensationManager address not found.");
         }
         console.log("Using CompensationManager at:", compensationManager);
+
+        const btc_utils = await readConfig(network.name, "BTC_UTILS");
+        if (!btc_utils) {
+            throw new Error("BTCUtils address not found.");
+        }
+        console.log("Using BTCUtils at:", btc_utils);
+
+        const btcAddressParser = await readConfig(network.name, "BTC_ADDRESS_CONTRACT");
+        if (!btcAddressParser) {
+            throw new Error("BTCAddressParser address not found.");
+        }
+        console.log("Using BTCAddressParser at:", btcAddressParser);
+
         console.log("\nDeploying TransactionManager...");
         const TransactionManager = await ethers.getContractFactory("TransactionManager", deployer);
         
         const transactionManager = await upgrades.deployProxy(TransactionManager, 
-            [arbitratorManagerAddress, dappRegistryAddress, configManagerAddress, compensationManager],
+            [
+                arbitratorManagerAddress,
+                dappRegistryAddress,
+                configManagerAddress,
+                compensationManager,
+                btc_utils,
+                btcAddressParser
+            ],
             { 
                 initializer: "initialize",
                 timeout: 60000,
