@@ -2,7 +2,7 @@ import { useActiveEVMChainConfig } from '@/services/chains/hooks/useActiveEVMCha
 import { useMulticall } from '@/services/multicall/hooks/contract/useMulticall';
 import { useCallback } from 'react';
 import { abi } from "../../../../../contracts/core/TransactionManager.sol/TransactionManager.json";
-import { ContractTransaction } from '../../dto/contract-transaction';
+import { ContractTransactionData, ContractTransactionParties } from '../../dto/contract-transaction';
 import { Transaction } from '../../model/transaction';
 
 /**
@@ -13,17 +13,27 @@ export const useMultiTransactions = () => {
   const { singleContractMulticall } = useMulticall();
 
   const fetchTransactions = useCallback(async (transactionIds: string[]): Promise<Transaction[]> => {
-    const contractTransactions = await singleContractMulticall<ContractTransaction>(
-      abi,
-      activeChain!.contracts.transactionManager,
-      "getTransactionById",
-      transactionIds.map(transactionId => [transactionId])
-    );
+    const transactionIdsArrays = transactionIds.map(transactionId => [transactionId]);
 
-    if (!contractTransactions)
+
+    const [data, parties, signHashes] = await Promise.all([
+      singleContractMulticall<ContractTransactionData>(
+        abi, activeChain!.contracts.transactionManager, "getTransactionDataById", transactionIdsArrays
+      ),
+      singleContractMulticall<ContractTransactionParties>(
+        abi, activeChain!.contracts.transactionManager, "getTransactionPartiesById", transactionIdsArrays
+      ),
+      singleContractMulticall<string>(
+        abi, activeChain!.contracts.transactionManager, "getTransactionSignHashById", transactionIdsArrays
+      )
+    ])
+
+    if (!data || !parties || !signHashes)
       return undefined;
 
-    return contractTransactions.map((ct, i) => Transaction.fromContractTransaction(ct, transactionIds[i])).filter(t => !!t);
+    return transactionIds
+      .map((transactionId, i) => Transaction.fromContractTransaction(data[i], parties[i], signHashes[i], transactionId))
+      .filter(t => !!t);
   }, [activeChain, singleContractMulticall]);
 
   return { fetchTransactions };
