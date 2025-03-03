@@ -1,5 +1,5 @@
 const { ethers, network, getChainId } = require("hardhat");
-const { readConfig } = require("./helper.js");
+const { readConfig } = require("../helper.js");
 const bitcoin = require('bitcoinjs-lib');
 const {publicKeyCreate} = require("secp256k1");
 

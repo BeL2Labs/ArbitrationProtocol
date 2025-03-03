@@ -1,5 +1,5 @@
 const { ethers, network } = require("hardhat");
-const { readConfig } = require("./helper.js");
+const { readConfig } = require("../helper.js");
 async function main() {
   // Transaction ID to claim timeout compensation for
   const txId = "0x492d988d47f46931e6469fc6bb521e08275ee980a84fea565fc524ca499a47d6";
@@ -16,6 +16,12 @@ async function main() {
   const compensationManager = CompensationManager.attach(compensationManagerAddress);
 
   try {
+
+    const transactionManager = await compensationManager.transactionManager();
+    console.log("transactionManager", transactionManager);
+    let gasLimit = await compensationManager.estimateGas.claimTimeoutCompensation(txId);
+    console.log("gasLimit:", gasLimit);
+
     // Call the claimTimeoutCompensation method
     const tx = await compensationManager.connect(signer).claimTimeoutCompensation(
       txId);
