@@ -1,7 +1,11 @@
 const { ethers, network, getChainId } = require("hardhat");
 const { readConfig } = require("../helper.js");
 
-
+/**
+ * @param {string} networkName - Name of the network to read config from
+ * @param {string} contractName - Name of the contract to read config for
+ * @returns {string} Address of the contract
+ */
 async function main() {
     let chainId = await getChainId();
     console.log("chainId is :" + chainId, " network ", network.name);

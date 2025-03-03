@@ -1,5 +1,5 @@
 const { ethers, network } = require("hardhat");
-const { readConfig } = require("./helper.js");
+const { readConfig } = require("../helper.js");
 
 async function main() {
     // Get contract addresses from config

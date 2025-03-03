@@ -1,5 +1,5 @@
 const { ethers, network, getChainId } = require("hardhat");
-const { readConfig } = require("./helper.js");
+const { readConfig } = require("../helper.js");
 
 // Helper function to format arbitrator status
 function formatArbitratorStatus(status) {

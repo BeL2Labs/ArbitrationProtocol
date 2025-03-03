@@ -1,7 +1,9 @@
 const { ethers, network, getChainId } = require("hardhat");
-const { readConfig } = require("./helper.js");
+const { readConfig } = require("../helper.js");
 
-
+/**
+ * @dev 
+ */
 async function main() {
     const chainID = await getChainId();
     console.log("chain ID:", chainID);
