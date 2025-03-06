@@ -54,7 +54,7 @@ dataSources:
     network: esc-staging
     source:
       abi: TransactionManager
-      address: "0xA10b92006743Ef3B12077da67e465963743b03D3"
+      address: "0x1f872A1fBc02A38B087DE6af2176ab0BC63a53d0"
       startBlock: 28330216
     mapping:
       file: ./src/event-handlers/TransactionManager.ts
@@ -81,6 +81,9 @@ dataSources:
         - event: TransactionRegistered(indexed bytes32,indexed address,indexed
             address,uint256,uint256,address)
           handler: handleTransactionRegistered
+        - event: DepositFeeTransfer(indexed bytes32,indexed
+            address,uint256,uint256,uint256)
+          handler: handleDepositFeeTransfer
   - name: CompensationManager
     kind: ethereum/contract
     network: esc-staging

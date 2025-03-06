@@ -510,6 +510,57 @@ export class Transaction extends Entity {
     }
   }
 
+  get arbitratorFee(): BigInt | null {
+    let value = this.get("arbitratorFee");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set arbitratorFee(value: BigInt | null) {
+    if (!value) {
+      this.unset("arbitratorFee");
+    } else {
+      this.set("arbitratorFee", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get refundedFee(): BigInt | null {
+    let value = this.get("refundedFee");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set refundedFee(value: BigInt | null) {
+    if (!value) {
+      this.unset("refundedFee");
+    } else {
+      this.set("refundedFee", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get systemFee(): BigInt | null {
+    let value = this.get("systemFee");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set systemFee(value: BigInt | null) {
+    if (!value) {
+      this.unset("systemFee");
+    } else {
+      this.set("systemFee", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
   get signature(): string | null {
     let value = this.get("signature");
     if (!value || value.kind == ValueKind.NULL) {

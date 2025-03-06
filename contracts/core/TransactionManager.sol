@@ -7,11 +7,11 @@ import "../interfaces/ITransactionManager.sol";
 import "../interfaces/IArbitratorManager.sol";
 import "../interfaces/IDAppRegistry.sol";
 import "../interfaces/IConfigManager.sol";
+import "../interfaces/IBTCUtils.sol";
+import "../interfaces/IBtcAddress.sol";
 import "../core/ConfigManager.sol";
 import "../libraries/DataTypes.sol";
 import "../libraries/Errors.sol";
-import "../libraries/BTCUtils.sol";
-import "hardhat/console.sol";
 
 /**
  * @title TransactionManager
@@ -29,15 +29,23 @@ contract TransactionManager is
     // Contract references
     IArbitratorManager public arbitratorManager;
     IDAppRegistry public dappRegistry;
-    ConfigManager public configManager;
+    IConfigManager public configManager;
+    IBTCUtils public btcUtils;
+    address public compensationManager;
+    IBtcAddress public btcAddressParser;
 
     // Transaction storage
-    mapping(bytes32 => DataTypes.Transaction) public transactions;
+    mapping(bytes32 => DataTypes.TransactionData) internal transactions_data;
+    mapping(bytes32 => DataTypes.TransactionParties) internal transactions_parties;
+    mapping(bytes32 => bytes) internal transactions_btc_raw_data;
+    mapping(bytes32 => bytes) internal transactions_btc_signature;
+    mapping(bytes32 => bytes) internal transactions_btc_script;
+    mapping(bytes32 => DataTypes.UTXO[]) internal transactions_utxos;
+    mapping(bytes32 => bytes32) internal transactions_sign_hash;
+    // key is the transaction signhash
+    mapping(bytes32 => bytes) public transactionSignData;
     mapping(bytes32 => bytes32) public txHashToId;
     uint256 private _transactionIdCounter;
-
-    // State variables
-    address public compensationManager;
 
     modifier onlyCompensationManager() {
         if (msg.sender != compensationManager) revert(Errors.NOT_COMPENSATION_MANAGER);
@@ -45,7 +53,8 @@ contract TransactionManager is
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(
+    ) {
         _disableInitializers();
     }
 
@@ -55,12 +64,16 @@ contract TransactionManager is
      * @param _dappRegistry Address of the DApp registry contract
      * @param _configManager Address of the config manager contract
      * @param _compensationManager Address of the compensation manager contract
+     * @param _btcUtils Address of the BTC utils contract
+     * @param _btcAddressParser Address of the BTC address parser contract
      */
     function initialize(
         address _arbitratorManager,
         address _dappRegistry,
         address _configManager,
-        address _compensationManager
+        address _compensationManager,
+        address _btcUtils,
+        address _btcAddressParser
     ) public initializer {
         __ReentrancyGuard_init();
         __Ownable_init(msg.sender);
@@ -68,12 +81,16 @@ contract TransactionManager is
         if (_arbitratorManager == address(0)
             || _dappRegistry == address(0)
             || _configManager == address(0)
-            || _compensationManager == address(0)) revert(Errors.ZERO_ADDRESS);
+            || _compensationManager == address(0)
+            || _btcUtils == address(0)
+            || _btcAddressParser == address(0)) revert(Errors.ZERO_ADDRESS);
 
         arbitratorManager = IArbitratorManager(_arbitratorManager);
         dappRegistry = IDAppRegistry(_dappRegistry);
         configManager = ConfigManager(_configManager);
         compensationManager = _compensationManager;
+        btcUtils = IBTCUtils(_btcUtils);
+        btcAddressParser = IBtcAddress(_btcAddressParser);
     }
 
     /**
@@ -81,14 +98,16 @@ contract TransactionManager is
      * @param arbitrator The arbitrator address
      * @param deadline The deadline for the transaction
      * @param compensationReceiver Address to receive compensation in case of timeout
+     * @param refundAddress Address to receive refund
      * @return id The unique transaction ID
      */
     function registerTransaction(
         address arbitrator,
         uint256 deadline,
-        address compensationReceiver
+        address compensationReceiver,
+        address refundAddress
     ) external payable nonReentrant returns (bytes32) {
-        if (arbitrator == address(0) || compensationReceiver == address(0)) {
+        if (arbitrator == address(0) || compensationReceiver == address(0) || refundAddress == address(0)) {
             revert(Errors.ZERO_ADDRESS);
         }
 
@@ -105,8 +124,8 @@ contract TransactionManager is
         if (deadline <= block.timestamp)
             revert(Errors.INVALID_DEADLINE);
         uint256 duration = deadline - block.timestamp;
-        if (duration < configManager.getConfig(configManager.MIN_TRANSACTION_DURATION()) ||
-            duration > configManager.getConfig(configManager.MAX_TRANSACTION_DURATION())) {
+        if (duration < configManager.getConfig(ConfigManagerKeys.MIN_TRANSACTION_DURATION) ||
+            duration > configManager.getConfig(ConfigManagerKeys.MAX_TRANSACTION_DURATION)) {
             revert(Errors.INVALID_DURATION);
         }
 
@@ -131,14 +150,16 @@ contract TransactionManager is
         arbitratorManager.setArbitratorWorking(arbitrator, id);
 
         // Store transaction
-        DataTypes.Transaction storage transaction = transactions[id];
-        transaction.dapp = msg.sender;
-        transaction.arbitrator = arbitrator;
-        transaction.startTime = block.timestamp;
-        transaction.deadline = deadline;
-        transaction.status = DataTypes.TransactionStatus.Active;
-        transaction.depositedFee = msg.value;
-        transaction.compensationReceiver = compensationReceiver;
+        DataTypes.TransactionData storage transactionData = transactions_data[id];
+        DataTypes.TransactionParties storage transactionParties = transactions_parties[id];
+        transactionData.startTime = block.timestamp;
+        transactionData.deadline = deadline;
+        transactionData.depositedFee = msg.value;
+        transactionData.status = DataTypes.TransactionStatus.Active;
+        transactionParties.arbitrator = arbitrator;
+        transactionParties.compensationReceiver = compensationReceiver;
+        transactionParties.dapp = msg.sender;
+        transactionParties.depositedFeeRefundAddress = refundAddress;
 
         emit TransactionRegistered(id, msg.sender, arbitrator, deadline, msg.value, compensationReceiver);
         return id;
@@ -155,8 +176,8 @@ contract TransactionManager is
         // Validate UTXO input, only one UTXO is allowed
         if (utxos.length != 1) revert(Errors.INVALID_UTXO);
 
-        DataTypes.Transaction storage transaction = transactions[id];
-        if (transaction.status != DataTypes.TransactionStatus.Active) {
+        DataTypes.TransactionParties storage transaction = transactions_parties[id];
+        if (transactions_data[id].status != DataTypes.TransactionStatus.Active) {
             revert(Errors.INVALID_TRANSACTION_STATUS);
         }
 
@@ -164,12 +185,13 @@ contract TransactionManager is
             revert(Errors.NOT_AUTHORIZED);
         }
 
-        if (transaction.utxos.length != 0) {
+        DataTypes.UTXO[] storage transaction_utxos = transactions_utxos[id];
+        if (transaction_utxos.length != 0) {
             revert(Errors.UTXO_ALREADY_UPLOADED);
         }
 
         for (uint i = 0; i < utxos.length; i++) {
-            transaction.utxos.push(utxos[i]);
+            transaction_utxos.push(utxos[i]);
         }
 
         emit UTXOsUploaded(id, msg.sender);
@@ -180,34 +202,34 @@ contract TransactionManager is
      * @param id Transaction ID
      */
     function completeTransaction(bytes32 id) external {
-        DataTypes.Transaction storage transaction = transactions[id];
+        DataTypes.TransactionParties storage parties = transactions_parties[id];
         if (!this.isAbleCompletedTransaction(id)) {
             revert(Errors.CANNOT_COMPLETE_TRANSACTION);
         }
 
-        if (msg.sender != transaction.dapp) {
+        if (msg.sender != parties.dapp) {
             revert(Errors.NOT_AUTHORIZED);
         }
 
-        _completeTransaction(id, transaction);
+        _completeTransaction(id, parties);
     }
 
     function isAbleCompletedTransaction(bytes32 id) external view returns (bool) {
-        DataTypes.Transaction memory transaction = transactions[id];
-        if(transaction.status == DataTypes.TransactionStatus.Active) {
+        DataTypes.TransactionData memory transactionData = transactions_data[id];
+        if(transactionData.status == DataTypes.TransactionStatus.Active) {
             return true;
-        } else if (transaction.status == DataTypes.TransactionStatus.Arbitrated) {
-            if(isSubmitArbitrationOutTime(transaction)) {
+        } else if (transactionData.status == DataTypes.TransactionStatus.Arbitrated) {
+            if(isSubmitArbitrationOutTime(transactionData)) {
                 return true;
             }
-        } else if (transaction.status == DataTypes.TransactionStatus.Submitted) {
+        } else if (transactionData.status == DataTypes.TransactionStatus.Submitted) {
             return true;
         }
 
         return false;
     }
 
-    function isSubmitArbitrationOutTime(DataTypes.Transaction memory transaction ) internal view returns (bool) {
+    function isSubmitArbitrationOutTime(DataTypes.TransactionData memory transaction ) internal view returns (bool) {
         if (block.timestamp > transaction.deadline) {
             return true;
         }
@@ -225,9 +247,9 @@ contract TransactionManager is
         bytes32 id, 
         address receivedCompensationAddress
     ) external onlyCompensationManager {
-        DataTypes.Transaction storage transaction = transactions[id];
-
-        if (transaction.status == DataTypes.TransactionStatus.Completed) {
+        DataTypes.TransactionParties storage transactionParties = transactions_parties[id];
+        DataTypes.TransactionData storage transactionData = transactions_data[id];
+        if (transactionData.status == DataTypes.TransactionStatus.Completed) {
             revert(Errors.INVALID_TRANSACTION_STATUS);
         }
         // Validate received compensation address
@@ -235,43 +257,42 @@ contract TransactionManager is
             revert(Errors.ZERO_ADDRESS);
         }
         // Update transaction status to Completed
-        transaction.status = DataTypes.TransactionStatus.Completed;
+        transactionData.status = DataTypes.TransactionStatus.Completed;
         // Transfer deposited fee to compensation address
-        (bool success, ) = payable(receivedCompensationAddress).call{value: transaction.depositedFee}("");
+        (bool success, ) = payable(receivedCompensationAddress).call{value: transactionData.depositedFee}("");
         if (!success) {
             revert(Errors.TRANSFER_FAILED);
         }
         // Release arbitrator from working status
-        arbitratorManager.releaseArbitrator(transaction.arbitrator, id);
+        arbitratorManager.releaseArbitrator(transactionParties.arbitrator, id);
 
-        emit TransactionCompleted(id, transaction.dapp);
+        emit TransactionCompleted(id, transactionParties.dapp);
     }
 
-    function _completeTransaction(bytes32 id, DataTypes.Transaction storage transaction) internal returns(uint256, uint256) {
-        // Get arbitrator info and calculate duration-based fee
-        (uint256 finalArbitratorFee, uint256 systemFee) = transferCompletedTransactionFee(transaction);
-        
-        // Release arbitrator from working status
-        arbitratorManager.releaseArbitrator(transaction.arbitrator, id);
+    function _completeTransaction(bytes32 id, DataTypes.TransactionParties memory parties) internal returns(uint256, uint256) {
+         // Get arbitrator info and calculate duration-based fee
+        (uint256 finalArbitratorFee, uint256 systemFee) = transferCompletedTransactionFee(id,parties);
 
-        transaction.status = DataTypes.TransactionStatus.Completed;
-        emit TransactionCompleted(id, transaction.dapp);
+        arbitratorManager.releaseArbitrator(parties.arbitrator, id);
+
+        transactions_data[id].status = DataTypes.TransactionStatus.Completed;
+        emit TransactionCompleted(id, parties.dapp);
 
         return (finalArbitratorFee, systemFee);
     }
     
-    function transferCompletedTransactionFee(DataTypes.Transaction memory transaction) internal returns(uint256, uint256) {
+    function transferCompletedTransactionFee(bytes32 id, DataTypes.TransactionParties memory parties) internal returns(uint256, uint256) {
         // Get arbitrator info and calculate duration-based fee
-        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transaction.arbitrator);
-
-        uint256 duration = block.timestamp > transaction.deadline ? transaction.deadline - transaction.startTime : block.timestamp - transaction.startTime;
-        uint256 arbitratorFee = _getFee(transaction.arbitrator, arbitratorInfo.currentFeeRate, duration);
-        if (arbitratorFee > transaction.depositedFee) {
-            arbitratorFee = transaction.depositedFee;
+        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(parties.arbitrator);
+        DataTypes.TransactionData memory transactionData = transactions_data[id];
+        uint256 duration = block.timestamp > transactionData.deadline ? transactionData.deadline - transactionData.startTime : block.timestamp - transactionData.startTime;
+        uint256 arbitratorFee = _getFee(parties.arbitrator, arbitratorInfo.currentFeeRate, duration);
+        if (arbitratorFee > transactionData.depositedFee) {
+            arbitratorFee = transactionData.depositedFee;
         }
 
         // Calculate system fee from arbitrator's fee and get fee collector
-        uint256 systemFee = (arbitratorFee * configManager.getConfig(configManager.SYSTEM_FEE_RATE())) / 10000;
+        uint256 systemFee = (arbitratorFee * configManager.getConfig(ConfigManagerKeys.SYSTEM_FEE_RATE)) / 10000;
         uint256 finalArbitratorFee = arbitratorFee - systemFee;
         address feeCollector = configManager.getSystemFeeCollector();
 
@@ -284,79 +305,110 @@ contract TransactionManager is
         if (!success2) revert(Errors.TRANSFER_FAILED);
 
         // Refund remaining balance to DApp
-        uint256 remainingBalance = transaction.depositedFee - arbitratorFee;
+        uint256 remainingBalance = transactionData.depositedFee - arbitratorFee;
         if (remainingBalance > 0) {
-            (bool success3, ) = transaction.dapp.call{value: remainingBalance}("");
-            if (!success3) revert(Errors.NO_RECEIVE_METHOD);
+            (bool success3, ) = parties.depositedFeeRefundAddress.call{value: remainingBalance}("");
+            if (!success3) revert(Errors.TRANSFER_FAILED);
         }
+        emit DepositFeeTransfer(id, arbitratorInfo.revenueETHAddress, arbitratorFee, systemFee, remainingBalance);
         return (finalArbitratorFee, systemFee);
     }
 
     /**
-     * @notice Request arbitration for a transaction
-     * @param id Transaction ID
-     * @param signData Bitcoin transaction sign data
-     * @param signDataType the signData type
-     * @param script Bitcoin transaction script
-     * @param timeoutCompensationReceiver Address to receive timeout compensation
+     * @notice Handles arbitration request and validates Bitcoin transaction
+     * @dev This method will:
+     * - Validate transaction status and caller permissions
+     * - Parse and verify Bitcoin transaction inputs against UTXOs
+     * - Generate witness signature data and transaction hash
+     * - Verify output scripts contain arbitrator's Bitcoin address
+     * - Update transaction status to Arbitrated
+     *
+     * @param data Arbitration data structure containing:
+     *   - id: Transaction ID
+     *   - rawData: Raw Bitcoin transaction data
+     *   - signDataType: Signature data type (currently only witness supported)
+     *   - signHashFlag: Signature hash flag
+     *   - script: Bitcoin transaction script
+     *   - timeoutCompensationReceiver: Timeout compensation recipient address
      */
     function requestArbitration(
-        bytes32 id,
-        bytes calldata signData,
-        DataTypes.SignDataType signDataType,
-        bytes calldata script,
-        address timeoutCompensationReceiver
+       DataTypes.ArbitrationData calldata data
     ) external override nonReentrant {
-        if (timeoutCompensationReceiver == address(0)) {
+        if (data.timeoutCompensationReceiver == address(0)) {
             revert(Errors.ZERO_ADDRESS);
         }
 
-        DataTypes.Transaction storage transaction = transactions[id];
-
+        DataTypes.TransactionData storage transactionData = transactions_data[data.id];
         // Validate transaction status and ownership
-        if (transaction.status != DataTypes.TransactionStatus.Active) {
+        if (transactionData.status != DataTypes.TransactionStatus.Active) {
             revert(Errors.INVALID_TRANSACTION_STATUS);
         }
-        if (msg.sender != transaction.dapp) {
-            revert(Errors.NOT_AUTHORIZED);
-        }
-        if (transaction.utxos.length == 0) {
-            revert(Errors.UTXO_NOT_UPLOADED);
-        }
-
-        if (block.timestamp + configManager.getArbitrationTimeout() > transaction.deadline) {
+        if (block.timestamp + configManager.getArbitrationTimeout() > transactionData.deadline) {
             revert(Errors.REQUEST_ARBITRATION_OUTTIME);
         }
-
         // Only support witness type now
-        if (signDataType != DataTypes.SignDataType.Witness) {
+        if (data.signDataType != DataTypes.SignDataType.Witness) {
             revert(Errors.INVALID_SIGN_DATA_TYPE);
         }
 
+        DataTypes.TransactionParties storage transactionParties = transactions_parties[data.id];
+        if (msg.sender != transactionParties.dapp) {
+            revert(Errors.NOT_AUTHORIZED);
+        }
+        DataTypes.UTXO[] storage transactionUtxos = transactions_utxos[data.id];
+        if (transactionUtxos.length == 0) {
+            revert(Errors.UTXO_NOT_UPLOADED);
+        }
+
         // Parse and validate Bitcoin transaction
-        BTCUtils.BTCTransaction memory parsedTx = BTCUtils.parseWitnessSignData(signData);
-        if(parsedTx.inputs.length != transaction.utxos.length) {
-            revert(Errors.INVALID_TRANSACTION);
+        IBTCUtils.BTCTransaction memory parsedTx = btcUtils.parseBTCTransaction(data.rawData);
+        if(parsedTx.inputs.length != transactionUtxos.length) {
+             revert(Errors.INVALID_TRANSACTION);
         }
         for(uint i = 0; i < parsedTx.inputs.length; i++) {
-            if(parsedTx.inputs[i].txid != transaction.utxos[i].txHash
-                || parsedTx.inputs[i].vout != transaction.utxos[i].index) {
+            if(parsedTx.inputs[i].txid != transactionUtxos[i].txHash
+                || parsedTx.inputs[i].vout != transactionUtxos[i].index) {
                 revert(Errors.INVALID_TRANSACTION);
             }
         }
 
+        // Generate sign data and sign hash
+        uint256 amount = transactionUtxos[0].amount;
+        bytes memory signData = btcUtils.generateWitnessSignData(
+             parsedTx, 0, data.script, uint64(amount), data.signHashFlag);
+
         bytes32 signHash = sha256(abi.encodePacked(sha256(signData)));
 
-        transaction.status = DataTypes.TransactionStatus.Arbitrated;
-        transaction.btcTx = signData;
-        transaction.btcTxHash = signHash;
-        transaction.timeoutCompensationReceiver = timeoutCompensationReceiver;
-        transaction.script = script;
-        transaction.requestArbitrationTime = block.timestamp;
-        // Store txHash to id mapping
-        txHashToId[signHash] = id;
+        // Check output script is sent to arbitrator's address
+        bool isOutputOfArbitrator = false;
+        string memory arbitratorAddress = arbitratorManager.getArbitratorInfo(transactionParties.arbitrator).revenueBtcAddress;
+        for (uint i = 0; i < parsedTx.outputs.length; i++) {
+            bytes memory decodedScript = btcAddressParser.DecodeBtcAddressToScript(arbitratorAddress);
+            isOutputOfArbitrator = keccak256(parsedTx.outputs[i].scriptPubKey) == keccak256(decodedScript);
+            if (isOutputOfArbitrator) {
+                uint fee = amount * configManager.getArbitrationBTCFeeRate() / 10000;
+                if (parsedTx.outputs[i].value < fee) {
+                    revert(Errors.INVALID_OUTPUT_AMOUNT);
+                }
+                break;
+            }
+        }
+        if (!isOutputOfArbitrator) {
+            revert(Errors.INVALID_OUTPUT_SCRIPT);
+        }
 
-        emit ArbitrationRequested(id, msg.sender, transaction.arbitrator, signData, script, timeoutCompensationReceiver);
+        transactionParties.timeoutCompensationReceiver = data.timeoutCompensationReceiver;
+        transactionData.requestArbitrationTime = block.timestamp;
+        transactionData.status = DataTypes.TransactionStatus.Arbitrated;
+        transactions_sign_hash[data.id] = signHash;
+        transactions_btc_raw_data[data.id] = data.rawData;
+        transactions_btc_script[data.id] = data.script;
+        //Store txHash to id mapping
+        txHashToId[signHash] = data.id;
+        // Store signData
+        transactionSignData[signHash] = signData;
+
+        emit ArbitrationRequested(data.id, transactionParties.dapp, transactionParties.arbitrator, data.rawData, data.script, transactionParties.timeoutCompensationReceiver);
     }
 
     /**
@@ -368,29 +420,30 @@ contract TransactionManager is
         bytes32 id,
         bytes calldata btcTxSignature
     ) external {
-        DataTypes.Transaction storage transaction = transactions[id];
+        DataTypes.TransactionData storage transactionData = transactions_data[id];
+        DataTypes.TransactionParties storage transactionParties = transactions_parties[id];
 
-        if (transaction.status != DataTypes.TransactionStatus.Arbitrated) {
+        if (transactionData.status != DataTypes.TransactionStatus.Arbitrated) {
             revert(Errors.INVALID_TRANSACTION_STATUS);
         }
 
-        if (isSubmitArbitrationOutTime(transaction)) {
+        if (isSubmitArbitrationOutTime(transactionData)) {
             revert(Errors.SUBMITTED_SIGNATURES_OUTTIME);
         }
 
-        if (!arbitratorManager.isOperatorOf(transaction.arbitrator, msg.sender)) {
+        if (!arbitratorManager.isOperatorOf(transactionParties.arbitrator, msg.sender)) {
             revert(Errors.NOT_AUTHORIZED);
         }
 
-        if (!BTCUtils.IsValidDERSignature(btcTxSignature)) {
+        if (!btcUtils.IsValidDERSignature(btcTxSignature)) {
             revert(Errors.INVALID_DER_SIGNATURE);
         }
 
-        transaction.status = DataTypes.TransactionStatus.Submitted;
-        transaction.signature = btcTxSignature;
-        arbitratorManager.frozenArbitrator(transaction.arbitrator);
+        transactionData.status = DataTypes.TransactionStatus.Submitted;
+        transactions_btc_signature[id] = btcTxSignature;
+        arbitratorManager.frozenArbitrator(transactionParties.arbitrator);
 
-        emit ArbitrationSubmitted(id, transaction.dapp, msg.sender, btcTxSignature);
+        emit ArbitrationSubmitted(id, transactionParties.dapp, msg.sender, btcTxSignature);
     }
 
     /**
@@ -398,8 +451,28 @@ contract TransactionManager is
      * @param id Transaction ID
      * @return Transaction struct
      */
-    function getTransactionById(bytes32 id) external view override returns (DataTypes.Transaction memory) {
-        return transactions[id];
+    function getTransactionDataById(bytes32 id) external view override returns (DataTypes.TransactionData memory) {
+        return transactions_data[id];
+    }
+
+    function getTransactionUTXOsById(bytes32 id) external view returns (DataTypes.UTXO[] memory) {
+        return transactions_utxos[id];
+    }
+
+    function getTransactionSignatureById(bytes32 id) external view returns (bytes memory) {
+        return transactions_btc_signature[id];
+    }
+
+    function getTransactionSignatureByTxHash(bytes32 txHash) external view returns (bytes memory) {
+        return transactions_btc_signature[txHashToId[txHash]];
+    }
+
+    function getTransactionBtcRawDataById(bytes32 id) external view returns (bytes memory) {
+        return transactions_btc_raw_data[id];
+    }
+
+    function getTransactionSignHashById(bytes32 id) external view returns (bytes32) {
+        return transactions_sign_hash[id];
     }
 
     /**
@@ -407,17 +480,25 @@ contract TransactionManager is
      * @param txHash Transaction hash
      * @return Transaction struct
      */
-    function getTransaction(bytes32 txHash) external view override returns (DataTypes.Transaction memory) {
-        return transactions[txHashToId[txHash]];
+    function getTransactionDataByTxHash(bytes32 txHash) external view override returns (DataTypes.TransactionData memory) {
+        return transactions_data[txHashToId[txHash]];
+    }
+
+    function getTransactionPartiesById(bytes32 id) external view returns (DataTypes.TransactionParties memory) {
+        return transactions_parties[id];
+    }
+
+    function getTransactionPartiesByTxHash(bytes32 txHash) external view returns (DataTypes.TransactionParties memory) {
+        return transactions_parties[txHashToId[txHash]];
     }
 
     function getTransactionStatus(bytes32 id) external view override returns (DataTypes.TransactionStatus status) {
-        DataTypes.Transaction memory transaction = transactions[id];
+        DataTypes.TransactionData memory transaction = transactions_data[id];
         status = transaction.status;
-        if (status == DataTypes.TransactionStatus.Active && transaction.deadline < block.timestamp) {
+        if (transaction.status == DataTypes.TransactionStatus.Active && transaction.deadline < block.timestamp) {
             status = DataTypes.TransactionStatus.Expired;
         }
-        if (status == DataTypes.TransactionStatus.Arbitrated && isSubmitArbitrationOutTime(transaction)) {
+        if (transaction.status == DataTypes.TransactionStatus.Arbitrated && isSubmitArbitrationOutTime(transaction)) {
             status = DataTypes.TransactionStatus.Expired;
         }
         return status;
@@ -433,10 +514,11 @@ contract TransactionManager is
     function transferArbitrationFee(
         bytes32 id
     ) external override onlyCompensationManager returns (uint256 arbitratorFee, uint256 systemFee) {
-        DataTypes.Transaction storage transaction = transactions[id];
+        DataTypes.TransactionData memory transaction = transactions_data[id];
+        DataTypes.TransactionParties memory transactionParties = transactions_parties[id];
         if ((transaction.status == DataTypes.TransactionStatus.Active && block.timestamp > transaction.deadline)
-            || (transaction.status == DataTypes.TransactionStatus.Submitted && !arbitratorManager.isFrozenStatus(transaction.arbitrator))) {
-            return _completeTransaction(id, transaction);
+            || (transaction.status == DataTypes.TransactionStatus.Submitted && !arbitratorManager.isFrozenStatus(transactionParties.arbitrator))) {
+            return _completeTransaction(id, transactionParties);
         } else {
             revert(Errors.INVALID_TRANSACTION_STATUS);
         }
@@ -450,8 +532,8 @@ contract TransactionManager is
     function getRegisterTransactionFee(uint256 deadline, address arbitrator) external view returns (uint256 fee) {
         // Calculate the duration from now to the deadline
         uint256 duration = deadline > block.timestamp ? deadline - block.timestamp : 0;
-        if (duration < configManager.getConfig(configManager.MIN_TRANSACTION_DURATION()) ||
-            duration > configManager.getConfig(configManager.MAX_TRANSACTION_DURATION())) {
+        if (duration < configManager.getConfig(ConfigManagerKeys.MIN_TRANSACTION_DURATION) ||
+            duration > configManager.getConfig(ConfigManagerKeys.MAX_TRANSACTION_DURATION)) {
             revert(Errors.INVALID_DURATION);
         }
 
@@ -475,6 +557,14 @@ contract TransactionManager is
         emit SetArbitratorManager(_arbitratorManager);
     }
 
+    function setBTCAddressParser(address _btcAddressParser) external onlyOwner {
+        if (_btcAddressParser == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
+        }
+        btcAddressParser = IBtcAddress(_btcAddressParser);
+        emit BTCAddressParserChanged(_btcAddressParser);
+    }
+
     // Add a gap for future storage variables
-    uint256[50] private __gap;
+    uint256[48] private __gap;
 }

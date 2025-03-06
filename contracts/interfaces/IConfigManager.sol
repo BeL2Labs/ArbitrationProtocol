@@ -49,6 +49,7 @@ interface IConfigManager {
     // System compensation fee rate
     function getSystemCompensationFeeRate() external view returns (uint256);
     function setSystemCompensationFeeRate(uint256 rate) external;
+    function getArbitrationBTCFeeRate() external view returns (uint256);
     
     /**
      * @notice Emitted when a config value is updated

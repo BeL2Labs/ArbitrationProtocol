@@ -12,7 +12,7 @@ export default defineConfig({
     svgr({}),
   ],
   server: {
-    port: 3000,
+    port: 3202,
   },
   build: {
     outDir: 'dist'

@@ -1,5 +1,5 @@
 import { ethereum } from "@graphprotocol/graph-ts";
-import { ArbitrationRequested, ArbitrationSubmitted, OwnershipTransferred, TransactionCompleted, TransactionRegistered } from "../../generated/TransactionManager/TransactionManager";
+import { ArbitrationRequested, ArbitrationSubmitted, DepositFeeTransfer, OwnershipTransferred, TransactionCompleted, TransactionRegistered } from "../../generated/TransactionManager/TransactionManager";
 import { Transaction } from "../../generated/schema";
 import { recomputeArbitratorIsActive } from "./ArbitratorManager";
 
@@ -49,6 +49,16 @@ export function handleTransactionCompleted(event: TransactionCompleted): void {
   transaction.save();
 
   recomputeArbitratorIsActive(transaction.arbiter, event.block);
+}
+
+// Emitted when a transaction is completed. Fees are real amounts received by all parties.
+export function handleDepositFeeTransfer(event: DepositFeeTransfer): void {
+  const transaction = getTransaction(event.block, event.params.txId.toHexString());
+  transaction.arbitratorFee = event.params.arbitratorFee;
+  transaction.refundedFee = event.params.refundedFee;
+  transaction.systemFee = event.params.systemFee;
+  // UNUSED? = event.params.revenueETHAddress;
+  transaction.save();
 }
 
 /**

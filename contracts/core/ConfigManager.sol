@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../interfaces/IConfigManager.sol";
 import "../libraries/Errors.sol";
 import "../libraries/DataTypes.sol";
+import "../libraries/ConfigManagerKeys.sol";
 
 /**
  * @title ConfigManager
@@ -15,17 +16,18 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
     mapping(bytes32 => uint256) private configs;
 
     // Config keys
-    bytes32 public constant MIN_STAKE = keccak256("MIN_STAKE");
-    bytes32 public constant MAX_STAKE = keccak256("MAX_STAKE");
-    bytes32 public constant MIN_STAKE_LOCKED_TIME = keccak256("MIN_STAKE_LOCKED_TIME");
-    bytes32 public constant MIN_TRANSACTION_DURATION = keccak256("MIN_TRANSACTION_DURATION");
-    bytes32 public constant MAX_TRANSACTION_DURATION = keccak256("MAX_TRANSACTION_DURATION");
-    bytes32 public constant TRANSACTION_MIN_FEE_RATE = keccak256("TRANSACTION_MIN_FEE_RATE");
-    bytes32 public constant ARBITRATION_TIMEOUT = keccak256("ARBITRATION_TIMEOUT");
-    bytes32 public constant ARBITRATION_FROZEN_PERIOD = keccak256("arbitrationFrozenPeriod");
-    bytes32 public constant SYSTEM_FEE_RATE = keccak256("systemFeeRate");
-    bytes32 public constant SYSTEM_COMPENSATION_FEE_RATE = keccak256("SYSTEM_COMPENSATION_FEE_RATE");
-    bytes32 public constant SYSTEM_FEE_COLLECTOR = keccak256("SYSTEM_FEE_COLLECTOR");
+    bytes32 public constant MIN_STAKE = ConfigManagerKeys.MIN_STAKE;
+    bytes32 public constant MAX_STAKE =ConfigManagerKeys.MAX_STAKE;
+    bytes32 public constant MIN_STAKE_LOCKED_TIME = ConfigManagerKeys.MIN_STAKE_LOCKED_TIME;
+    bytes32 public constant MIN_TRANSACTION_DURATION = ConfigManagerKeys.MIN_TRANSACTION_DURATION;
+    bytes32 public constant MAX_TRANSACTION_DURATION = ConfigManagerKeys.MAX_TRANSACTION_DURATION;
+    bytes32 public constant TRANSACTION_MIN_FEE_RATE = ConfigManagerKeys.TRANSACTION_MIN_FEE_RATE;
+    bytes32 public constant ARBITRATION_TIMEOUT = ConfigManagerKeys.ARBITRATION_TIMEOUT;
+    bytes32 public constant ARBITRATION_FROZEN_PERIOD = ConfigManagerKeys.ARBITRATION_FROZEN_PERIOD;
+    bytes32 public constant SYSTEM_FEE_RATE = ConfigManagerKeys.SYSTEM_FEE_RATE;
+    bytes32 public constant SYSTEM_COMPENSATION_FEE_RATE = ConfigManagerKeys.SYSTEM_COMPENSATION_FEE_RATE;
+    bytes32 public constant SYSTEM_FEE_COLLECTOR = ConfigManagerKeys.SYSTEM_FEE_COLLECTOR;
+    bytes32 public constant ARBITRATION_BTC_FEE_RATE = ConfigManagerKeys.ARBITRATION_BTC_FEE_RATE;
 
     ///@custom:oz-upgrades-unsafe-allow constructor
     constructor() { _disableInitializers(); }
@@ -47,6 +49,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
         configs[ARBITRATION_FROZEN_PERIOD] = 30 minutes;//The freezing period after the end of the transaction, during which transaction cannot be accepted or exited
         configs[SYSTEM_FEE_RATE] = 500; // 5% in basis points
         configs[SYSTEM_COMPENSATION_FEE_RATE] = 200; // 2% in basis points
+        configs[ARBITRATION_BTC_FEE_RATE] = 1000;// 0.1% in basis points
     }
 
     /**
@@ -194,8 +197,8 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
      * @return values Array of config values
      */
     function getAllConfigs() external view returns (bytes32[] memory keys, uint256[] memory values) {
-        keys = new bytes32[](11);
-        values = new uint256[](11);
+        keys = new bytes32[](12);
+        values = new uint256[](12);
 
         keys[0] = MIN_STAKE;
         keys[1] = MAX_STAKE;
@@ -208,6 +211,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
         keys[8] = SYSTEM_FEE_RATE;
         keys[9] = SYSTEM_COMPENSATION_FEE_RATE;
         keys[10] = SYSTEM_FEE_COLLECTOR;
+        keys[11] = ARBITRATION_BTC_FEE_RATE;
 
         for (uint256 i = 0; i < keys.length; i++) {
             values[i] = configs[keys[i]];
@@ -258,6 +262,24 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
      */
     function getArbitrationTimeout() external view returns (uint256) {
         return configs[ARBITRATION_TIMEOUT];
+    }
+
+    /**
+     * @notice Set arbitration BTC fee rate
+     * @param feeRate Fee rate in basis points
+     */
+    function setArbitrationBTCFeeRate(uint256 feeRate) external onlyOwner {
+        uint256 oldValue = configs[ARBITRATION_BTC_FEE_RATE];
+        configs[ARBITRATION_BTC_FEE_RATE] = feeRate;
+        emit ConfigUpdated(ARBITRATION_BTC_FEE_RATE, oldValue, feeRate);
+    }
+
+    /**
+     * @notice Get arbitration BTC fee rate
+     * @return Fee rate in basis points
+     */
+    function getArbitrationBTCFeeRate() external view returns (uint256) {
+        return configs[ARBITRATION_BTC_FEE_RATE];
     }
 
     // Add a gap for future storage variables

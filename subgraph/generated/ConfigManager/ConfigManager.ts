@@ -106,6 +106,29 @@ export class ConfigManager extends ethereum.SmartContract {
     return new ConfigManager("ConfigManager", address);
   }
 
+  ARBITRATION_BTC_FEE_RATE(): Bytes {
+    let result = super.call(
+      "ARBITRATION_BTC_FEE_RATE",
+      "ARBITRATION_BTC_FEE_RATE():(bytes32)",
+      [],
+    );
+
+    return result[0].toBytes();
+  }
+
+  try_ARBITRATION_BTC_FEE_RATE(): ethereum.CallResult<Bytes> {
+    let result = super.tryCall(
+      "ARBITRATION_BTC_FEE_RATE",
+      "ARBITRATION_BTC_FEE_RATE():(bytes32)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytes());
+  }
+
   ARBITRATION_FROZEN_PERIOD(): Bytes {
     let result = super.call(
       "ARBITRATION_FROZEN_PERIOD",
@@ -374,6 +397,29 @@ export class ConfigManager extends ethereum.SmartContract {
     );
   }
 
+  getArbitrationBTCFeeRate(): BigInt {
+    let result = super.call(
+      "getArbitrationBTCFeeRate",
+      "getArbitrationBTCFeeRate():(uint256)",
+      [],
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getArbitrationBTCFeeRate(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getArbitrationBTCFeeRate",
+      "getArbitrationBTCFeeRate():(uint256)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   getArbitrationFrozenPeriod(): BigInt {
     let result = super.call(
       "getArbitrationFrozenPeriod",
@@ -598,6 +644,36 @@ export class RenounceOwnershipCall__Outputs {
   _call: RenounceOwnershipCall;
 
   constructor(call: RenounceOwnershipCall) {
+    this._call = call;
+  }
+}
+
+export class SetArbitrationBTCFeeRateCall extends ethereum.Call {
+  get inputs(): SetArbitrationBTCFeeRateCall__Inputs {
+    return new SetArbitrationBTCFeeRateCall__Inputs(this);
+  }
+
+  get outputs(): SetArbitrationBTCFeeRateCall__Outputs {
+    return new SetArbitrationBTCFeeRateCall__Outputs(this);
+  }
+}
+
+export class SetArbitrationBTCFeeRateCall__Inputs {
+  _call: SetArbitrationBTCFeeRateCall;
+
+  constructor(call: SetArbitrationBTCFeeRateCall) {
+    this._call = call;
+  }
+
+  get feeRate(): BigInt {
+    return this._call.inputValues[0].value.toBigInt();
+  }
+}
+
+export class SetArbitrationBTCFeeRateCall__Outputs {
+  _call: SetArbitrationBTCFeeRateCall;
+
+  constructor(call: SetArbitrationBTCFeeRateCall) {
     this._call = call;
   }
 }

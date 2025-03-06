@@ -27,7 +27,7 @@
         {
           "indexed": false,
           "internalType": "bytes",
-          "name": "signData",
+          "name": "rawData",
           "type": "bytes"
         },
         {
@@ -75,6 +75,56 @@
         }
       ],
       "name": "ArbitrationSubmitted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newParser",
+          "type": "address"
+        }
+      ],
+      "name": "BTCAddressParserChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "txId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "revenueETHAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "arbitratorFee",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "systemFee",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "refundedFee",
+          "type": "uint256"
+        }
+      ],
+      "name": "DepositFeeTransfer",
       "type": "event"
     },
     {
@@ -230,24 +280,33 @@
       "inputs": [
         {
           "internalType": "bytes32",
-          "name": "txHash",
+          "name": "id",
           "type": "bytes32"
         }
       ],
-      "name": "getTransaction",
+      "name": "getTransactionBtcRawDataById",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getTransactionDataById",
       "outputs": [
         {
           "components": [
-            {
-              "internalType": "address",
-              "name": "dapp",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "arbitrator",
-              "type": "address"
-            },
             {
               "internalType": "uint256",
               "name": "startTime",
@@ -259,19 +318,9 @@
               "type": "uint256"
             },
             {
-              "internalType": "bytes",
-              "name": "btcTx",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "btcTxHash",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "enum DataTypes.TransactionStatus",
-              "name": "status",
-              "type": "uint8"
+              "internalType": "uint256",
+              "name": "requestArbitrationTime",
+              "type": "uint256"
             },
             {
               "internalType": "uint256",
@@ -279,59 +328,58 @@
               "type": "uint256"
             },
             {
-              "internalType": "bytes",
-              "name": "signature",
-              "type": "bytes"
+              "internalType": "enum DataTypes.TransactionStatus",
+              "name": "status",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct DataTypes.TransactionData",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getTransactionDataByTxHash",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "startTime",
+              "type": "uint256"
             },
             {
-              "internalType": "address",
-              "name": "compensationReceiver",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "timeoutCompensationReceiver",
-              "type": "address"
-            },
-            {
-              "components": [
-                {
-                  "internalType": "bytes32",
-                  "name": "txHash",
-                  "type": "bytes32"
-                },
-                {
-                  "internalType": "uint32",
-                  "name": "index",
-                  "type": "uint32"
-                },
-                {
-                  "internalType": "bytes",
-                  "name": "script",
-                  "type": "bytes"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "amount",
-                  "type": "uint256"
-                }
-              ],
-              "internalType": "struct DataTypes.UTXO[]",
-              "name": "utxos",
-              "type": "tuple[]"
-            },
-            {
-              "internalType": "bytes",
-              "name": "script",
-              "type": "bytes"
+              "internalType": "uint256",
+              "name": "deadline",
+              "type": "uint256"
             },
             {
               "internalType": "uint256",
               "name": "requestArbitrationTime",
               "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "depositedFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "enum DataTypes.TransactionStatus",
+              "name": "status",
+              "type": "uint8"
             }
           ],
-          "internalType": "struct DataTypes.Transaction",
+          "internalType": "struct DataTypes.TransactionData",
           "name": "",
           "type": "tuple"
         }
@@ -347,7 +395,7 @@
           "type": "bytes32"
         }
       ],
-      "name": "getTransactionById",
+      "name": "getTransactionPartiesById",
       "outputs": [
         {
           "components": [
@@ -362,39 +410,55 @@
               "type": "address"
             },
             {
-              "internalType": "uint256",
-              "name": "startTime",
-              "type": "uint256"
+              "internalType": "address",
+              "name": "compensationReceiver",
+              "type": "address"
             },
             {
-              "internalType": "uint256",
-              "name": "deadline",
-              "type": "uint256"
+              "internalType": "address",
+              "name": "timeoutCompensationReceiver",
+              "type": "address"
             },
             {
-              "internalType": "bytes",
-              "name": "btcTx",
-              "type": "bytes"
+              "internalType": "address",
+              "name": "refundAddress",
+              "type": "address"
             },
             {
-              "internalType": "bytes32",
-              "name": "btcTxHash",
-              "type": "bytes32"
+              "internalType": "address",
+              "name": "depositedFeeRefundAddress",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct DataTypes.TransactionParties",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getTransactionPartiesByTxHash",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "dapp",
+              "type": "address"
             },
             {
-              "internalType": "enum DataTypes.TransactionStatus",
-              "name": "status",
-              "type": "uint8"
-            },
-            {
-              "internalType": "uint256",
-              "name": "depositedFee",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes",
-              "name": "signature",
-              "type": "bytes"
+              "internalType": "address",
+              "name": "arbitrator",
+              "type": "address"
             },
             {
               "internalType": "address",
@@ -407,46 +471,76 @@
               "type": "address"
             },
             {
-              "components": [
-                {
-                  "internalType": "bytes32",
-                  "name": "txHash",
-                  "type": "bytes32"
-                },
-                {
-                  "internalType": "uint32",
-                  "name": "index",
-                  "type": "uint32"
-                },
-                {
-                  "internalType": "bytes",
-                  "name": "script",
-                  "type": "bytes"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "amount",
-                  "type": "uint256"
-                }
-              ],
-              "internalType": "struct DataTypes.UTXO[]",
-              "name": "utxos",
-              "type": "tuple[]"
+              "internalType": "address",
+              "name": "refundAddress",
+              "type": "address"
             },
             {
-              "internalType": "bytes",
-              "name": "script",
-              "type": "bytes"
-            },
-            {
-              "internalType": "uint256",
-              "name": "requestArbitrationTime",
-              "type": "uint256"
+              "internalType": "address",
+              "name": "depositedFeeRefundAddress",
+              "type": "address"
             }
           ],
-          "internalType": "struct DataTypes.Transaction",
+          "internalType": "struct DataTypes.TransactionParties",
           "name": "",
           "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getTransactionSignHashById",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getTransactionSignatureById",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getTransactionSignatureByTxHash",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
         }
       ],
       "stateMutability": "view",
@@ -464,7 +558,7 @@
       "outputs": [
         {
           "internalType": "enum DataTypes.TransactionStatus",
-          "name": "status",
+          "name": "",
           "type": "uint8"
         }
       ],
@@ -474,29 +568,42 @@
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "_arbitratorManager",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_dappRegistry",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_configManager",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_compensationManager",
-          "type": "address"
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
         }
       ],
-      "name": "initialize",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "name": "getTransactionUTXOsById",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "txHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "index",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bytes",
+              "name": "script",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct DataTypes.UTXO[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -534,6 +641,11 @@
           "internalType": "address",
           "name": "compensationReceive",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "refundAddress",
+          "type": "address"
         }
       ],
       "name": "registerTransaction",
@@ -550,29 +662,41 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
-          "name": "id",
-          "type": "bytes32"
-        },
-        {
-          "internalType": "bytes",
-          "name": "signData",
-          "type": "bytes"
-        },
-        {
-          "internalType": "enum DataTypes.SignDataType",
-          "name": "signDataType",
-          "type": "uint8"
-        },
-        {
-          "internalType": "bytes",
-          "name": "script",
-          "type": "bytes"
-        },
-        {
-          "internalType": "address",
-          "name": "timeoutCompensationReceiver",
-          "type": "address"
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "id",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes",
+              "name": "rawData",
+              "type": "bytes"
+            },
+            {
+              "internalType": "enum DataTypes.SignDataType",
+              "name": "signDataType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "signHashFlag",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes",
+              "name": "script",
+              "type": "bytes"
+            },
+            {
+              "internalType": "address",
+              "name": "timeoutCompensationReceiver",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct DataTypes.ArbitrationData",
+          "name": "data",
+          "type": "tuple"
         }
       ],
       "name": "requestArbitration",
@@ -589,6 +713,19 @@
         }
       ],
       "name": "setArbitratorManager",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_btcAddressParser",
+          "type": "address"
+        }
+      ],
+      "name": "setBTCAddressParser",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

@@ -1,23 +1,11 @@
-- Arbiter dashboard: ability to visualize on going busy transactions, and history or transactions, dates and profits made.
-  - use tabs
-  - find TransactionCompleted transactions for this arbiter (subgraph), and get dates and amounts there.
-
-- Paginations for arbiters, transactions (remote) + remote search
-
-------------------------------------------
-
-TO BE CLARIFIED FIRST:
-
-- Email service for arbiters:
-  - "Arbiter can register an email for the arbitration notification, we need a background script to check the events"
-  - "new arbitration request" event. poll subgraph (better?) or listen to evm events.
-  - need to create a backend
-  - we already have bel2.org belayer2.org in zoho mail
+- Arbiter list: show deadline  on list mode
+- Show compensation date in the componesation detail popup ?
 
 ------------------------------------------
 
 P2:
-
+- Arbiter list sorting: use remote sorting, and default to stake amount.
+- Show tooltips over arbiter status to explain what this means (Active, Busy deadline, Busy stake...)
 
 ------------------------------------------
 
@@ -73,7 +61,7 @@ staging contract is deployed : {
     "CONFIG_MANAGER": "0x4421c63241A262C423277FFA82C376953072d25f",
     "DAPP_REGISTRY": "0x538f5e27299384c0FEF434d3359d948277E13C85",
     "ARBITRATOR_MANAGER": "0x611E86f21ff95a36d0675D12c287db32B2B9DFa8",
-    "TRANSACTION_MANAGER": "0xA10b92006743Ef3B12077da67e465963743b03D3",
+    "TRANSACTION_MANAGER": "0x1f872A1fBc02A38B087DE6af2176ab0BC63a53d0",
     "COMPENSATION_MANAGER": "0x34832C9283f9915DCff196241d00D7306147e151"
 }
 

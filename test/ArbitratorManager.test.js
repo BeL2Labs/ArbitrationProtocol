@@ -76,7 +76,7 @@ describe("ArbitratorManager", function () {
              deadline,
              { value: smallStake }
            )
-         ).to.be.revertedWith("Insufficient stake");
+         ).to.be.revertedWith("S2");
        });
 
        it("Should fail to register with invalid fee rate", async function () {
@@ -93,7 +93,7 @@ describe("ArbitratorManager", function () {
              deadline,
              { value: stakeAmount }
            )
-         ).to.be.revertedWith("Invalid fee rate");
+         ).to.be.revertedWith("F0");
        });
 
        it("Should fail to register with invalid deadline", async function () {
@@ -109,7 +109,7 @@ describe("ArbitratorManager", function () {
              pastDeadline,
              { value: stakeAmount }
            )
-         ).to.be.revertedWith("Invalid deadline");
+         ).to.be.revertedWith("T3");
        });
      });
 

@@ -6,7 +6,7 @@ describe("BTCUtils", function () {
 
     before(async function () {
         // Create a contract that uses the BTCUtils library
-        const TestBTCUtilsFactory = await ethers.getContractFactory("TestBTCUtils");
+        const TestBTCUtilsFactory = await ethers.getContractFactory("BTCUtils");
         testBTCUtils = await TestBTCUtilsFactory.deploy();
         console.log("TestBTCUtils deployed to:", testBTCUtils.address);
     });
@@ -14,32 +14,31 @@ describe("BTCUtils", function () {
     describe("parseBTCTransaction", function () {
         it("should parse a valid Bitcoin transaction", async function () {
             // The transaction hex you provided
-            const txHex = "0x020000000001014fe2cafe6618db5559476be56cc724535832a4797a8c6c04ebd5dca7a07f04650000000000010000000103280000000000001976a9149b42587007f85e456b5d0d702e828f34ea1f55b188ac05473044022057f207246708a1c5382b56798305a76f568c949ad3dff7bc95de9361ad7727a5022061641b3790ec3a83037b5d61e6f87034b40258f81460e38dfdf38cc2286f07ff01483045022100c4d6198525bf2a8822def06882a43515ea37520f009f52758b3ecac0968e7a23022065c525be4e29ad4a5af40413cc7d285f645e9aed76ed6ec93eee93676065643b01010100fd0a0163210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad21020d983021f335423a077bc62ddcbb8f18163959333747cdb079d116ecb45bffb0ac6763210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad21024b84ffd1896c96a8f81fc874c2b5b4a2051c50b1a8dd350de8ea03bb89484672ac676303ac0040b27521020d983021f335423a077bc62ddcbb8f18163959333747cdb079d116ecb45bffb0ada8205a0737e8cbcfa24dcc118b0ab1e6d98bee17c57daa8a1686024159aae707ed6f876703ac0040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac68686800000000";
+            const txHex = "0x02000000000101a47f197216cdf5ecfdf17abb499d9b28a8a0b07f79c7c452d896cc470219c8c100000000000000000002701f0000000000001976a914cb539f4329eeb589e83659c8304bcc6c99553a9688ac1c040000000000001976a914ead4667312ac687dbddde40fd549ad0ce431742b88ac0547304402205025f4d72820c479095f08beae16ee7b5471ba619bb930c0a561d7aeb2dd119202201a79bd69ef1321efcbb112bd3c67b4e4becda7a9f6a14233608562058a36532201473044022045d37b264d3ce674ce769cfb26907d0357b1a82bbf57d34b0b9ec2513a7ae91402203b5d000df0303ba32c4a210fb6fd4ed98bf01612eacf906a496ea331938673c801010100fd0a016321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ac676321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ac676303b60040b275210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ada820d33b43be98c98eaf20ae03306859c84492fb8354a62a4f48591845e1d646a325876703bd0040b27521036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac68686800000000";
             
             // Convert hex to bytes
             const txBytes = ethers.utils.arrayify(txHex);
             console.log("txBytes ", txBytes);
 
             // Call the parseBTCTransaction method
-            let rawData;
-            rawData = await testBTCUtils.testParseBTCTransaction(txHex);
-            console.log("rawData ", rawData);
+            const parsedTx = await testBTCUtils.parseBTCTransaction(txHex);
+            console.log("parsedTx ", parsedTx);
             // Verify transaction details
-            // expect(parsedTx.version).to.equal(2);
-            // expect(parsedTx.inputs.length).to.equal(1);
-            // expect(parsedTx.outputs.length).to.equal(1);
-            // expect(parsedTx.locktime).to.equal(0);
-            // expect(parsedTx.hasWitness).to.be.true;
+            expect(parsedTx.version).to.equal(2);
+            expect(parsedTx.inputs.length).to.equal(1);
+            expect(parsedTx.outputs.length).to.equal(2);
+            expect(parsedTx.locktime).to.equal(0);
+            expect(parsedTx.hasWitness).to.be.true;
         });
 
-        // it("should revert for an invalid transaction", async function () {
-        //     // Invalid transaction (too short)
-        //     const invalidTxHex = "0x0200";
-        //     const invalidTxBytes = ethers.utils.arrayify(invalidTxHex);
+        it("should revert for an invalid transaction", async function () {
+            // Invalid transaction (too short)
+            const invalidTxHex = "0x0200";
+            const invalidTxBytes = ethers.utils.arrayify(invalidTxHex);
 
-        //     // Expect the transaction parsing to revert
-        //     await expect(testBTCUtils.testParseBTCTransaction(invalidTxBytes))
-        //         .to.be.revertedWithCustomError(testBTCUtils, "INVALID_BTC_TX");
-        // });
+            // Expect the transaction parsing to revert
+            await expect(testBTCUtils.parseBTCTransaction(invalidTxBytes))
+                .to.be.revertedWith("T7");
+        });
     });
 });

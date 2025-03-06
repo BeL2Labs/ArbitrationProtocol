@@ -76,7 +76,7 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
    * - Only the arbiter.
    * - Status is submitted and arbiter is not frozen
    */
-  const canCloseTransaction = useMemo(() => {
+  const canClaimArbiterFee = useMemo(() => {
     if (!transaction)
       return false;
 
@@ -89,14 +89,14 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
     return condition1 || condition2;
   }, [transaction, evmAccount, isArbiterFrozen]);
 
-  const hasAvailableAction = canSubmitArbitration || canRequestTimeoutCompensation || canRequestFailedArbitrationCompensation || canRequestIllegalSignatureCompensation || canCloseTransaction;
+  const hasAvailableAction = canSubmitArbitration || canRequestTimeoutCompensation || canRequestFailedArbitrationCompensation || canRequestIllegalSignatureCompensation || canClaimArbiterFee;
 
   return {
     canSubmitArbitration,
     canRequestTimeoutCompensation,
     canRequestFailedArbitrationCompensation,
     canRequestIllegalSignatureCompensation,
-    canCloseTransaction,
+    canClaimArbiterFee,
 
     hasAvailableAction
   }

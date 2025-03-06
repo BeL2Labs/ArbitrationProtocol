@@ -38,6 +38,9 @@ library Errors {
     string constant REQUEST_ARBITRATION_OUTTIME = "U7";
     string constant INVALID_SIGN_DATA_TYPE = "U8";
     string constant INVALID_DER_SIGNATURE = "U9";
+    string constant INVALID_INPUT_INDEX = "I2";
+    string constant INVALID_OUTPUT_SCRIPT = "I3";
+    string constant INVALID_OUTPUT_AMOUNT = "I5";
 
     // Arbitrator related errors (A0-A9, S0-S9)
     string constant ARBITRATOR_ALREADY_REGISTERED = "A1";

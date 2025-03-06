@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ArbitrationRequest {
+  id        String   @id @unique @default(uuid())
+  createdAt DateTime @default(now())
+
+  transactionId          String    @unique
+  requestArbitrationTime DateTime // Matches transaction.requestArbitrationTime
+  deadline               DateTime // Transaction deadline - Matches transaction.deadline 
+  arbitrationDeadline    DateTime? // Arbitration deadline
+
+  arbiter   Arbiter? @relation(fields: [arbiterId], references: [id])
+  arbiterId String?
+
+  arbiterOwnerNotifiedAt DateTime? // Date at which the arbiter owner was notified about the request
+}
+
+// backend specific entry to map arbiter info, owner, email address, etc.
+model Arbiter {
+  id        String   @id @unique @default(uuid())
+  createdAt DateTime @default(now())
+
+  ownerEvmAddress String @unique()
+
+  email String? // Verified email. Can be null for a while until verification completed.
+
+  emailToVerify                  String? // Email address, before it's verified
+  emailVerificationPin           String?
+  emailVerificationPinExpiration DateTime? // Date at which the pin expires. After that, need to request another pin.
+  emailVerifiedAt                DateTime?
+  emailVerificationAttempts      Int       @default(0)
+
+  arbitrationRequests ArbitrationRequest[]
+}

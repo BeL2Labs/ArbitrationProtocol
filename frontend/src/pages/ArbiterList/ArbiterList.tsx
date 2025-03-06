@@ -2,10 +2,12 @@ import { Loading } from '@/components/base/Loading';
 import { PageContainer } from '@/components/base/PageContainer';
 import { PageTitle } from '@/components/base/PageTitle';
 import { PageTitleRow } from '@/components/base/PageTitleRow';
+import { Paginator } from '@/components/base/Paginator';
 import { SearchInput } from '@/components/base/SearchInput';
 import { Button } from '@/components/ui/button';
 import { useArbiters } from '@/services/arbiters/hooks/useArbiters';
 import { useOwnedArbiter } from '@/services/arbiters/hooks/useOwnedArbiter';
+import { useDebounceInput } from '@/services/ui/hooks/useDebounceInput';
 import { useScreenSize } from '@/services/ui/hooks/useScreenSize';
 import {
   ListBulletIcon,
@@ -24,11 +26,18 @@ export type SortConfig = {
   direction: 'asc' | 'desc';
 };
 
+const ResultsPerPage = 9;
+
 export default function ArbiterList() {
-  const { arbiters: rawArbiters, fetchArbiters: refreshArbiters } = useArbiters();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchSubject, validatedSearch, typedSearch] = useDebounceInput();
+  const { arbiters, fetchArbiters, total: totalArbitersCount } = useArbiters(
+    currentPage,
+    ResultsPerPage,
+    validatedSearch
+  );
   const { ownedArbiter } = useOwnedArbiter();
   const [viewMode, setViewMode] = useState<ViewMode>(localStorage.getItem('arbiterListMode') as ViewMode || 'grid');
-  const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'stake', direction: 'desc' });
   const navigate = useNavigate();
   const { isSmallDevice } = useScreenSize();
@@ -46,39 +55,30 @@ export default function ArbiterList() {
     localStorage.setItem('arbiterListMode', mode);
   }, []);
 
-  const arbiters = useMemo(() => {
-    const filtered = rawArbiters?.filter(arb => arb.address.toLowerCase().includes(searchTerm.toLowerCase()));
-    const directionFactor = sortConfig.direction === 'asc' ? 1 : -1;
-    switch (sortConfig.key) {
-      case "address":
-        return filtered?.sort((a, b) => a.address.localeCompare(b.address) * directionFactor);
-      case "stake":
-        return filtered?.sort((a, b) => Number(a.totalValue.minus(b.totalValue)) * directionFactor);
-      case "currentFeeRate":
-        return filtered?.sort((a, b) => Number(a.currentFeeRate - b.currentFeeRate) * directionFactor);
-      default:
-        throw new Error(`Unknown sort key: ${sortConfig.key}`);
-    }
-  }, [rawArbiters, searchTerm, sortConfig]);
-
-  const loading = useMemo(() => !rawArbiters, [rawArbiters]);
-
   // Refresh list when page loads
   useEffect(() => {
-    void refreshArbiters();
-  }, [refreshArbiters]);
+    void fetchArbiters()
+  }, [fetchArbiters]);
+
+  // Back to page 1 if search term changes, to not remain eg on page 10 
+  // when there are not 10 pages in the new results
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [validatedSearch]);
+
+  const loading = useMemo(() => !arbiters, [arbiters]);
 
   return (
     <PageContainer>
       <PageTitleRow>
         <PageTitle>Arbiters</PageTitle>
         <div className="flex space-x-4 w-full sm:w-auto items-center">
-          <Button variant="outline" size="icon" onClick={refreshArbiters} className='shrink-0'>
+          <Button variant="outline" size="icon" onClick={fetchArbiters} className='shrink-0'>
             <RefreshCwIcon />
           </Button>
           <SearchInput placeholder="Search arbiters..."
-            value={searchTerm}
-            onChange={(newValue) => setSearchTerm(newValue)} />
+            value={typedSearch}
+            onChange={(newValue) => searchSubject.next(newValue)} />
           <div className="flex rounded-lg shadow-sm">
             <button
               onClick={() => handleViewModeChange('grid')}
@@ -104,6 +104,8 @@ export default function ArbiterList() {
         {viewMode === 'list' && <ListView arbiters={arbiters} sortConfig={sortConfig} handleSort={handleSort} />}
         {viewMode === 'grid' && <GridView arbiters={arbiters} showOperatorInfo={showOperatorInfo} onOperatorVisibilityChange={setShowOperatorInfo} />}
       </>}
+      {!loading && totalArbitersCount === 0 && <div className='text-center'>Nothing yet</div>}
+      <Paginator currentPage={currentPage} totalPages={Math.ceil((totalArbitersCount || 0) / ResultsPerPage)} onPageChange={setCurrentPage} />
     </PageContainer>
   );
 }
