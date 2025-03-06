@@ -36,7 +36,6 @@ export const DAppRow: FC<{
     ))}
     {/* Actions */}
     <TableCell>
-      {/* TODO */}
     </TableCell>
   </TableRow>
 }

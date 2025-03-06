@@ -3,6 +3,7 @@ import { ChildTooltip } from "@/components/base/ChildTooltip";
 import { EnsureWalletNetwork } from "@/components/base/EnsureWalletNetwork/EnsureWalletNetwork";
 import { StatusLabel } from "@/components/base/StatusLabel";
 import { Button } from "@/components/ui/button";
+import { useBackendArbiter } from "@/services/arbiter-backend/hooks/useBackendArbiter";
 import { arbiterStatusLabelColor, arbiterStatusLabelTitle } from "@/services/arbiters/arbiters.service";
 import { useArbiterConfigModifiable } from "@/services/arbiters/hooks/contract/useArbiterConfigModifiable";
 import { useOwnedArbiter } from "@/services/arbiters/hooks/useOwnedArbiter";
@@ -10,10 +11,11 @@ import { ArbiterInfo } from "@/services/arbiters/model/arbiter-info";
 import { useActiveEVMChainConfig } from "@/services/chains/hooks/useActiveEVMChainConfig";
 import { useDynamicAddressFormat } from "@/services/ui/hooks/useDynamicAddressFormat";
 import { formatDate } from "@/utils/dates";
-import { CalendarIcon, DollarSignIcon, Layers2Icon, StarIcon } from "lucide-react";
-import { FC, ReactNode, useCallback, useState } from "react";
+import { BellIcon, CalendarIcon, DollarSignIcon, Layers2Icon, StarIcon } from "lucide-react";
+import { FC, ReactNode, useCallback, useEffect, useState } from "react";
 import { EditDeadlineDialog } from "./dialogs/EditDeadline";
 import { EditFeeRateDialog } from "./dialogs/EditFeeRate";
+import { EditNotificationsDialog } from "./dialogs/EditNotifications/EditNotifications";
 import { EditOperatorDialog } from "./dialogs/EditOperator";
 import { EditRevenueDialog } from "./dialogs/EditRevenue";
 import { EditStakingDialog } from "./dialogs/EditStaking";
@@ -28,23 +30,26 @@ const InfoRow: FC<{
   </div>
 }
 
+type OpenDialog = 'EditFeeRate' | 'EditDeadline' | 'EditOperator' | 'EditStaking' | 'EditRevenue' | 'EditNotifications';
+
 export const ArbiterPreview: FC<{
   arbiter: ArbiterInfo;
 }> = ({ arbiter }) => {
   const termEnd = arbiter.getDeadlineDate();
   const activeChain = useActiveEVMChainConfig();
   const { dynamicAddressFormat } = useDynamicAddressFormat();
-  const [editFeeRateIsOpen, setEditFeeRateIsOpen] = useState(false);
-  const [editDeadlineIsOpen, setEditDeadlineIsOpen] = useState(false);
-  const [editOperatorIsOpen, setEditOperatorIsOpen] = useState(false);
-  const [editStakingIsOpen, setEditStakingIsOpen] = useState(false);
-  const [editRevenueIsOpen, setEditRevenueIsOpen] = useState(false);
+  const [openDialog, setOpenDialog] = useState<OpenDialog>(undefined);
   const { fetchOwnedArbiter } = useOwnedArbiter();
   const isArbiterConfigModifiable = useArbiterConfigModifiable(arbiter);
+  const { fetchBackendArbiterStatus, status: backendArbiterStatus, isFetchingStatus: isFetchingBackendArbiterStatus } = useBackendArbiter(arbiter.address);
 
   const handleArbiterUpdated = useCallback(() => {
     void fetchOwnedArbiter();
   }, [fetchOwnedArbiter]);
+
+  useEffect(() => {
+    void fetchBackendArbiterStatus();
+  }, [fetchBackendArbiterStatus]);
 
   return (
     <div className="space-y-6">
@@ -65,7 +70,7 @@ export const ArbiterPreview: FC<{
               active={!isArbiterConfigModifiable}
               title="Staking unavailable"
               tooltip="Your arbiter is currently working on a transaction. Please wait for it to finish before editing the staking.">
-              <Button disabled={!isArbiterConfigModifiable} onClick={() => setEditStakingIsOpen(true)}><Layers2Icon />Edit</Button>
+              <Button disabled={!isArbiterConfigModifiable} onClick={() => setOpenDialog("EditStaking")}><Layers2Icon />Edit</Button>
             </ChildTooltip>
           </EnsureWalletNetwork>
         </div>
@@ -79,27 +84,30 @@ export const ArbiterPreview: FC<{
         <div className='flex justify-between items-center mx-4 py-2'>
           <BoxTitle>Main Settings</BoxTitle>
         </div>
+
         {/* Fee rate */}
         <div className="flex flex-row justify-between items-center pr-4">
           <InfoRow title="Fee Rate" value={`${arbiter.currentFeeRate / 100}%`} />
           <EnsureWalletNetwork continuesTo="Edit" evmConnectedNeeded supportedNetworkNeeded>
-            <Button disabled={!isArbiterConfigModifiable} onClick={() => setEditFeeRateIsOpen(true)}><DollarSignIcon />Edit</Button>
+            <Button disabled={!isArbiterConfigModifiable} onClick={() => setOpenDialog("EditFeeRate")}><DollarSignIcon />Edit</Button>
           </EnsureWalletNetwork>
         </div>
+
         {/* Deadline */}
         <div className="flex flex-row justify-between items-center pr-4">
           <InfoRow title="Deadline" value={termEnd ? formatDate(termEnd) : "-"} />
           <EnsureWalletNetwork continuesTo="Edit" evmConnectedNeeded supportedNetworkNeeded>
-            <Button disabled={!isArbiterConfigModifiable} onClick={() => setEditDeadlineIsOpen(true)}><CalendarIcon />Edit</Button>
+            <Button disabled={!isArbiterConfigModifiable} onClick={() => setOpenDialog("EditDeadline")}><CalendarIcon />Edit</Button>
           </EnsureWalletNetwork>
         </div>
       </div>
 
+      {/* Operator */}
       <div className="bg-white rounded-lg shadow divide-y">
         <div className='flex justify-between items-center mx-4 py-2'>
           <BoxTitle>Operator</BoxTitle>
           <EnsureWalletNetwork continuesTo="Edit" evmConnectedNeeded supportedNetworkNeeded>
-            <Button disabled={!isArbiterConfigModifiable} onClick={() => setEditOperatorIsOpen(true)}><StarIcon />Edit</Button>
+            <Button disabled={!isArbiterConfigModifiable} onClick={() => setOpenDialog("EditOperator")}><StarIcon />Edit</Button>
           </EnsureWalletNetwork>
         </div>
         <InfoRow title="EVM Address" value={dynamicAddressFormat(arbiter.operatorEvmAddress) || "-"} />
@@ -107,11 +115,12 @@ export const ArbiterPreview: FC<{
         <InfoRow title="BTC Public Key" value={dynamicAddressFormat(arbiter.operatorBtcPubKey) || "-"} />
       </div>
 
+      {/* Revenue */}
       <div className="bg-white rounded-lg shadow divide-y">
         <div className='flex justify-between items-center mx-4 py-2'>
           <BoxTitle>Revenue</BoxTitle>
           <EnsureWalletNetwork continuesTo="Edit" evmConnectedNeeded supportedNetworkNeeded>
-            <Button disabled={!isArbiterConfigModifiable} onClick={() => setEditRevenueIsOpen(true)}><DollarSignIcon />Edit</Button>
+            <Button disabled={!isArbiterConfigModifiable} onClick={() => setOpenDialog("EditRevenue")}><DollarSignIcon />Edit</Button>
           </EnsureWalletNetwork>
         </div>
         <InfoRow title="EVM Address" value={dynamicAddressFormat(arbiter.revenueEvmAddress) || "-"} />
@@ -119,11 +128,21 @@ export const ArbiterPreview: FC<{
         <InfoRow title="BTC Public Key" value={dynamicAddressFormat(arbiter.revenueBtcPubKey) || "-"} />
       </div>
 
-      <EditOperatorDialog arbiter={arbiter} isOpen={editOperatorIsOpen} onHandleClose={() => setEditOperatorIsOpen(false)} onContractUpdated={handleArbiterUpdated} />
-      <EditFeeRateDialog arbiter={arbiter} isOpen={editFeeRateIsOpen} onHandleClose={() => setEditFeeRateIsOpen(false)} onContractUpdated={handleArbiterUpdated} />
-      <EditDeadlineDialog arbiter={arbiter} isOpen={editDeadlineIsOpen} onHandleClose={() => setEditDeadlineIsOpen(false)} onContractUpdated={handleArbiterUpdated} />
-      <EditStakingDialog arbiter={arbiter} isOpen={editStakingIsOpen} onHandleClose={() => setEditStakingIsOpen(false)} onContractUpdated={handleArbiterUpdated} />
-      <EditRevenueDialog arbiter={arbiter} isOpen={editRevenueIsOpen} onHandleClose={() => setEditRevenueIsOpen(false)} onContractUpdated={handleArbiterUpdated} />
-    </div >
+      {/* Notifications */}
+      <div className="bg-white rounded-lg shadow divide-y">
+        <div className='flex justify-between items-center mx-4 py-2'>
+          <BoxTitle>Notifications</BoxTitle>
+          <Button disabled={isFetchingBackendArbiterStatus} onClick={() => setOpenDialog("EditNotifications")}><BellIcon />Edit</Button>
+        </div>
+        <InfoRow title="Email notification" value={backendArbiterStatus?.emailKnown ? "Active" : "No email set yet"} />
+      </div>
+
+      <EditOperatorDialog arbiter={arbiter} isOpen={openDialog === "EditOperator"} onHandleClose={() => setOpenDialog(undefined)} onContractUpdated={handleArbiterUpdated} />
+      <EditFeeRateDialog arbiter={arbiter} isOpen={openDialog === "EditFeeRate"} onHandleClose={() => setOpenDialog(undefined)} onContractUpdated={handleArbiterUpdated} />
+      <EditDeadlineDialog arbiter={arbiter} isOpen={openDialog === "EditDeadline"} onHandleClose={() => setOpenDialog(undefined)} onContractUpdated={handleArbiterUpdated} />
+      <EditStakingDialog arbiter={arbiter} isOpen={openDialog === "EditStaking"} onHandleClose={() => setOpenDialog(undefined)} onContractUpdated={handleArbiterUpdated} />
+      <EditRevenueDialog arbiter={arbiter} isOpen={openDialog === "EditRevenue"} onHandleClose={() => setOpenDialog(undefined)} onContractUpdated={handleArbiterUpdated} />
+      <EditNotificationsDialog arbiter={arbiter} isOpen={openDialog === "EditNotifications"} onHandleClose={() => setOpenDialog(undefined)} onContractUpdated={handleArbiterUpdated} />
+    </div>
   )
 }

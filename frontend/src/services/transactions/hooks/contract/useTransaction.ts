@@ -2,7 +2,6 @@ import { useActiveEVMChainConfig } from '@/services/chains/hooks/useActiveEVMCha
 import { useContractCall } from '@/services/evm/hooks/useContractCall';
 import { useCallback } from 'react';
 import { abi } from "../../../../../contracts/core/TransactionManager.sol/TransactionManager.json";
-import { ContractTransaction } from '../../dto/contract-transaction';
 import { Transaction } from '../../model/transaction';
 
 /**
@@ -14,17 +13,25 @@ export const useTransaction = (transactionId: string) => {
   const { readContract } = useContractCall();
 
   const fetchTransaction = useCallback(async (): Promise<Transaction> => {
-    const contractTransaction: ContractTransaction = await readContract({
-      contractAddress: activeChain.contracts.transactionManager,
-      abi,
-      functionName: 'getTransactionById',
-      args: [transactionId]
-    });
+    const [contractTransactionData, contractTransactionParties, contractTransactionSignHash] = await Promise.all([
+      readContract({
+        contractAddress: activeChain.contracts.transactionManager, abi,
+        functionName: 'getTransactionDataById', args: [transactionId]
+      }),
+      readContract({
+        contractAddress: activeChain.contracts.transactionManager, abi,
+        functionName: 'getTransactionPartiesById', args: [transactionId]
+      }),
+      readContract({
+        contractAddress: activeChain.contracts.transactionManager, abi,
+        functionName: 'getTransactionSignHashById', args: [transactionId]
+      })
+    ]);
 
-    if (!contractTransaction)
+    if (!contractTransactionData || !contractTransactionParties || !contractTransactionSignHash)
       return undefined;
 
-    const transaction = Transaction.fromContractTransaction(contractTransaction, transactionId);
+    const transaction = Transaction.fromContractTransaction(contractTransactionData, contractTransactionParties, contractTransactionSignHash, transactionId);
 
     console.log("Fetched transaction from contract:", transaction);
 

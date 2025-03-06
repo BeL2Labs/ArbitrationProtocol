@@ -18,11 +18,12 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
 
   const canSubmitArbitration = useMemo(() => {
     return transaction && (
+      // Note: important to use stored status here, not dynamic status.
       transaction.status === "Arbitrated" &&
       isSameEVMAddress(transaction.arbiter, evmAccount) &&
       moment().isBefore(transaction.deadline) &&
       !!configSettings &&
-      moment().isBefore(transaction.requestArbitrationTime.add(Number(configSettings.arbitrationTimeout), "seconds"))
+      moment().isBefore(transaction.requestArbitrationTime.clone().add(Number(configSettings.arbitrationTimeout), "seconds"))
     );
   }, [transaction, evmAccount, configSettings]);
 
@@ -32,12 +33,13 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
    */
   const canRequestTimeoutCompensation = useMemo(() => {
     return transaction && (
+      // Note: important to use stored status here, not dynamic status.
       transaction.status === "Arbitrated" &&
       isSameEVMAddress(transaction.timeoutCompensationReceiver, evmAccount) &&
       // Follow the logic of transactionManager.isSubmitArbitrationOutTime()
       moment().isAfter(transaction.deadline) &&
       !!configSettings &&
-      moment().isAfter(transaction.requestArbitrationTime.add(Number(configSettings.arbitrationTimeout), "seconds"))
+      moment().isAfter(transaction.requestArbitrationTime.clone().add(Number(configSettings.arbitrationTimeout), "seconds"))
     );
   }, [transaction, evmAccount, configSettings]);
 
@@ -47,6 +49,7 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
    */
   const canRequestFailedArbitrationCompensation = useMemo(() => {
     return transaction && (
+      // Note: important to use stored status here, not dynamic status.
       transaction.status === "Arbitrated" &&
       isSameEVMAddress(transaction.timeoutCompensationReceiver, evmAccount)
     );
@@ -58,6 +61,7 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
    */
   const canRequestIllegalSignatureCompensation = useMemo(() => {
     return transaction && (
+      // Note: important to use stored status here, not dynamic status.
       transaction.status !== "Arbitrated" && transaction.status !== "Completed" &&
       isSameEVMAddress(transaction.compensationReceiver, evmAccount)
     );
@@ -72,9 +76,11 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
    * - Only the arbiter.
    * - Status is submitted and arbiter is not frozen
    */
-  const canCloseTransaction = useMemo(() => {
+  const canClaimArbiterFee = useMemo(() => {
     if (!transaction)
       return false;
+
+    // Note: important to use stored status here, not dynamic status.
 
     const condition1 = isSameEVMAddress(transaction.arbiter, evmAccount) && transaction.status === "Active" && moment().isAfter(transaction.deadline);
 
@@ -83,14 +89,14 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
     return condition1 || condition2;
   }, [transaction, evmAccount, isArbiterFrozen]);
 
-  const hasAvailableAction = canSubmitArbitration || canRequestTimeoutCompensation || canRequestFailedArbitrationCompensation || canRequestIllegalSignatureCompensation || canCloseTransaction;
+  const hasAvailableAction = canSubmitArbitration || canRequestTimeoutCompensation || canRequestFailedArbitrationCompensation || canRequestIllegalSignatureCompensation || canClaimArbiterFee;
 
   return {
     canSubmitArbitration,
     canRequestTimeoutCompensation,
     canRequestFailedArbitrationCompensation,
     canRequestIllegalSignatureCompensation,
-    canCloseTransaction,
+    canClaimArbiterFee,
 
     hasAvailableAction
   }

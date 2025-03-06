@@ -65,6 +65,9 @@ type Transaction @entity {
     deadline: Int
     status: TransactionStatus!
     depositedFee: BigInt
+    arbitratorFee: BigInt
+    refundedFee: BigInt
+    systemFee: BigInt
     signature: String # Arbiter's signature
     compensationReceiver: String
     timeoutCompensationReceiver: String

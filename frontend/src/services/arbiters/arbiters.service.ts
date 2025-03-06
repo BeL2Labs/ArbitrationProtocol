@@ -12,23 +12,26 @@ type FetchArbitersResponse = SubgraphGQLResponse<{
 }>;
 
 export type FetchArbitersQueryParams = {
-  creatorEvmAddress?: string;
-  operatorEvmAddress?: string
+  search?: string;
 }
 
 /**
  * Fetch all arbiters from the subsgraph.
  */
 export const fetchArbiters = async (chain: ChainConfig, start = 0, limit = 100, queryParams: FetchArbitersQueryParams = {}): Promise<{ arbiters: ArbiterInfo[], total: number }> => {
-  let whereQuery = "";
+  let whereQuery = "and: [";
 
   // Got this arbiter once for unknown reason (contract tests?) so... filter out.
-  whereQuery += ` address_not: "0x0000000000000000000000000000000000000000"`;
+  whereQuery += ` {address_not: "0x0000000000000000000000000000000000000000"} `;
 
-  if (queryParams.creatorEvmAddress)
-    whereQuery += ` address: "${queryParams.creatorEvmAddress.toLowerCase()}"`;
-  if (queryParams.operatorEvmAddress)
-    whereQuery += ` operatorEvmAddress: "${queryParams.operatorEvmAddress.toLowerCase()}"`;
+  if (queryParams.search) {
+    whereQuery += ` { or: [ \
+        {address_contains_nocase: "${queryParams.search.toLowerCase()}"} \
+        {operatorEvmAddress_contains_nocase: "${queryParams.search.toLowerCase()}"} \
+    ]}`;
+  }
+
+  whereQuery += "]";
 
   let whereClause: string = !whereQuery ? "" : `where: { ${whereQuery} }`;
 

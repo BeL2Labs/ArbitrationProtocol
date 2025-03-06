@@ -6,7 +6,7 @@ const escTestnetSubgraph = hasCustomLocalSubgraphEndpoint ? import.meta.env.VITE
 
 export const escTestnet: ChainConfig = {
   name: "Elastos Smart Chain Testnet",
-  rpcs: ["https://api-testnet.elastos.net/esc"],
+  rpcs: ["https://api-testnet.elastos.cc/esc"],
   explorers: ["https://esc-testnet.elastos.io"],
   chainId: 21n,
   networkMode: "testnet",

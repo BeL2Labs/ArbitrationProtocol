@@ -6,6 +6,7 @@ import { ContractArbiterInfo } from '../../dto/contract-arbiter-info';
 import { ArbiterInfo } from '../../model/arbiter-info';
 import { useArbiterIsActive } from './useArbiterIsActive';
 import { useArbiterNFTStakeValue } from './useArbiterNFTStakeValue';
+import { useMultiArbiterStakeValue } from './useMultiArbiterStakeValue';
 
 /**
  * Retrieves an arbiter from the contract instead of subgraph.
@@ -17,6 +18,7 @@ export const useArbiterInfo = (arbiterAddress: string) => {
   const { readContract } = useContractCall();
   const { fetchArbiterNFTStakeValue } = useArbiterNFTStakeValue();
   const { fetchArbiterIsActive } = useArbiterIsActive();
+  const { fetchMultiArbiterStakeValue } = useMultiArbiterStakeValue();
 
   const fetchArbiterInfo = useCallback(async (): Promise<ArbiterInfo> => {
     const contractArbiterInfo: ContractArbiterInfo = await readContract({
@@ -35,12 +37,14 @@ export const useArbiterInfo = (arbiterAddress: string) => {
     if (arbiter) {
       arbiter.setNFTValue(nftValue);
       arbiter.isActive = await fetchArbiterIsActive(arbiterAddress);
+      const stakes = await fetchMultiArbiterStakeValue([arbiter.id]);
+      arbiter.totalValue = stakes?.[0];
     }
 
     console.log("Fetched arbiter info:", arbiter);
 
     return arbiter;
-  }, [readContract, activeChain, arbiterAddress, fetchArbiterNFTStakeValue, fetchArbiterIsActive]);
+  }, [readContract, activeChain, arbiterAddress, fetchArbiterNFTStakeValue, fetchMultiArbiterStakeValue, fetchArbiterIsActive]);
 
   return { fetchArbiterInfo };
 };

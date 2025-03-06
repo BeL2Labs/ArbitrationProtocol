@@ -1,8 +1,8 @@
 import { useActiveEVMChainConfig } from "@/services/chains/hooks/useActiveEVMChainConfig";
 import { useBehaviorSubject } from "@/utils/useBehaviorSubject";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BehaviorSubject } from "rxjs";
-import { fetchArbiters as fetchArbitersApi } from "../arbiters.service";
+import { fetchArbiters as fetchSubgraphArbiters } from "../arbiters.service";
 import { ArbiterInfo } from "../model/arbiter-info";
 import { useMultiArbiterInfo } from "./contract/useMultiArbiterInfo";
 import { useMultiArbiterIsActive } from "./contract/useMultiArbiterIsActive";
@@ -14,19 +14,22 @@ const state$ = new BehaviorSubject<{
   arbiters?: ArbiterInfo[];
 }>({ isPending: false, wasFetched: false });
 
-export const useArbiters = () => {
+export const useArbiters = (currentPage: number, resultsPerPage: number, search?: string) => {
   const activeChain = useActiveEVMChainConfig();
   const state = useBehaviorSubject(state$);
   const { fetchMultiArbiterIsActive } = useMultiArbiterIsActive();
   const { fetchMultiArbiterStakeValue } = useMultiArbiterStakeValue();
   const { fetchMultiArbiterInfo } = useMultiArbiterInfo();
+  const [total, setTotal] = useState(undefined);
 
   const fetchArbiters = useCallback(async () => {
     state$.next({ isPending: true, wasFetched: false });
     if (activeChain) {
-      const { arbiters: graphArbiters } = await fetchArbitersApi(activeChain);
+      const { arbiters: graphArbiters, total: _total } = await fetchSubgraphArbiters(activeChain, (currentPage - 1) * resultsPerPage, resultsPerPage, { search });
 
       if (graphArbiters) {
+        setTotal(_total);
+
         // Only use the subgraph for the arbiters, but real details are fetched from contract through multicall
         const arbiterIds = graphArbiters.map(a => a.id);
         const arbiters = await fetchMultiArbiterInfo(arbiterIds);
@@ -36,7 +39,6 @@ export const useArbiters = () => {
 
           if (isActives && stakes) {
             arbiters.forEach((arbiter, i) => {
-              console.log("stake for arbiter ", arbiter.address, stakes[i].toString())
               arbiter.isActive = isActives[i];
               arbiter.totalValue = stakes[i];
             });
@@ -50,7 +52,7 @@ export const useArbiters = () => {
 
       state$.next({ isPending: false, wasFetched: true, arbiters: undefined });
     }
-  }, [activeChain, fetchMultiArbiterInfo, fetchMultiArbiterStakeValue, fetchMultiArbiterIsActive]);
+  }, [activeChain, currentPage, resultsPerPage, search, fetchMultiArbiterInfo, fetchMultiArbiterIsActive, fetchMultiArbiterStakeValue]);
 
   // Initial lazy fetch (first access)
   useEffect(() => {
@@ -58,5 +60,5 @@ export const useArbiters = () => {
       void fetchArbiters();
   }, [fetchArbiters, state]);
 
-  return { fetchArbiters, ...state }
+  return { fetchArbiters, total, ...state }
 }

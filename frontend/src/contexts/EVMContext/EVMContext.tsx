@@ -3,7 +3,7 @@ import { ChainConfig } from '@/services/chains/chain-config';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect } from 'react';
 import { Chain, toHex } from 'viem';
-import { createConfig, http, useAccount, useConnect, useDisconnect, useReconnect, useSwitchChain, WagmiProvider } from 'wagmi';
+import { createConfig, http, useAccount, useConnect, useDisconnect, useReconnect, useSignTypedData, useSwitchChain, WagmiProvider } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { MetaMaskErrorCode } from '../ErrorHandlerContext';
 import { useWalletContext } from '../WalletContext/WalletContext';
@@ -91,7 +91,7 @@ export const EVMProviderInternal: React.FC<EVMProviderProps> = ({ children }) =>
   const { setEvmAccount, networkMode, setEvmChainId } = useWalletContext() || {};
   const { switchChain } = useSwitchChain();
   const defaultNetworkToUse = chainList.find(c => c.isDefault); /* chainList.find(c => c.networkMode === networkMode); */ // Use the first network of the list that supports the current network mode
-
+  useSignTypedData()
   const connect = useCallback(() => {
     if (address) {
       console.log("Reconnecting to the injected wallet provider");

@@ -1,0 +1,210 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IBTCUtils",
+  "sourceName": "contracts/interfaces/IBTCUtils.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "signature",
+          "type": "bytes"
+        }
+      ],
+      "name": "IsValidDERSignature",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint32",
+              "name": "version",
+              "type": "uint32"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "txid",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint32",
+                  "name": "vout",
+                  "type": "uint32"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "scriptSig",
+                  "type": "bytes"
+                },
+                {
+                  "internalType": "uint32",
+                  "name": "sequence",
+                  "type": "uint32"
+                }
+              ],
+              "internalType": "struct IBTCUtils.BTCInput[]",
+              "name": "inputs",
+              "type": "tuple[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint64",
+                  "name": "value",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "scriptPubKey",
+                  "type": "bytes"
+                }
+              ],
+              "internalType": "struct IBTCUtils.BTCOutput[]",
+              "name": "outputs",
+              "type": "tuple[]"
+            },
+            {
+              "internalType": "uint32",
+              "name": "locktime",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bool",
+              "name": "hasWitness",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct IBTCUtils.BTCTransaction",
+          "name": "btcTx",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint32",
+          "name": "inputIndex",
+          "type": "uint32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "script",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint64",
+          "name": "amount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint8",
+          "name": "sigHashFlag",
+          "type": "uint8"
+        }
+      ],
+      "name": "generateWitnessSignData",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "rawTx",
+          "type": "bytes"
+        }
+      ],
+      "name": "parseBTCTransaction",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint32",
+              "name": "version",
+              "type": "uint32"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "txid",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint32",
+                  "name": "vout",
+                  "type": "uint32"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "scriptSig",
+                  "type": "bytes"
+                },
+                {
+                  "internalType": "uint32",
+                  "name": "sequence",
+                  "type": "uint32"
+                }
+              ],
+              "internalType": "struct IBTCUtils.BTCInput[]",
+              "name": "inputs",
+              "type": "tuple[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint64",
+                  "name": "value",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "scriptPubKey",
+                  "type": "bytes"
+                }
+              ],
+              "internalType": "struct IBTCUtils.BTCOutput[]",
+              "name": "outputs",
+              "type": "tuple[]"
+            },
+            {
+              "internalType": "uint32",
+              "name": "locktime",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bool",
+              "name": "hasWitness",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct IBTCUtils.BTCTransaction",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

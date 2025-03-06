@@ -11,13 +11,15 @@ TransactionManager 是仲裁协议中负责管理跨链交易生命周期的核�
 function registerTransaction(
     address arbitrator,
     uint256 deadline,
-    address compensationReceiver
+    address compensationReceiver,
+    address refundAddress
 ) external payable returns (bytes32 id);
 ```
 注册新的交易。
 - `arbitrator`: 选定的仲裁人地址
 - `deadline`: 交易截止时间戳
 - `compensationReceiver`: 补偿接收地址
+- `refundAddress`: 退款地址
 - `msg.value`: 必须等于所需的注册费用
 - 返回值: 唯一交易ID
 
@@ -211,6 +213,7 @@ const tx = await transactionManager.registerTransaction(
     arbitratorAddress,
     deadline,
     compensationReceiver,
+    refundAddress,
     { value: fee }
 );
 const receipt = await tx.wait();
@@ -225,18 +228,24 @@ await transactionManager.uploadUTXOs(txId, utxos);
 ### 示例 2: 请求仲裁签名
 ```javascript
 // 1. 准备签名数据
-const signData = "0x..."; // 待签名数据
-const script = "0x..."; // 脚本数据
-const signDataType = 0; // 签名数据类型
+    const transactionId = "0x..."; // Transaction ID
+    const btcTx = "0x..."; // Transaction data
+    const signData = "0x..."; // Data to be signed
+    const script = "0x..."; // Script data
+    const timeoutCompensationReceiver = "0x..."; // Timeout compensation receiver (ETH address)
+    
+    const arbitrationData = {
+        id: transactionId,
+        rawData: btcTx,
+        signDataType: 0, // 对应SignDataType.Witness
+        signHashFlag: 0, // Default hash flag
+        script: "", // Default unlock script
+        timeoutCompensationReceiver: timeoutCompensationReceiver
+    };
 
 // 2. 请求仲裁
-await transactionManager.requestArbitration(
-    txId,
-    signData,
-    signDataType,
-    script,
-    timeoutCompensationReceiver
-);
+function requestArbitration(
+    DataTypes.ArbitrationData calldata arbitrationData) external nonReentrant;
 ```
 
 ### 示例 3: 仲裁人提交签名

@@ -24,7 +24,7 @@ export const TransactionDetailsDialog: FC<{
   onHandleClose: () => void;
 }> = ({ transaction, isOpen, onHandleClose, onSubmitArbitration, onRequestCompensation }) => {
   const activeChain = useActiveEVMChainConfig();
-  const { hasAvailableAction, canSubmitArbitration, canRequestTimeoutCompensation, canRequestFailedArbitrationCompensation, canRequestIllegalSignatureCompensation, canCloseTransaction } = useTransactionActionStatus(transaction);
+  const { hasAvailableAction, canSubmitArbitration, canRequestTimeoutCompensation, canRequestFailedArbitrationCompensation, canRequestIllegalSignatureCompensation, canClaimArbiterFee } = useTransactionActionStatus(transaction);
 
   if (!transaction)
     return null;
@@ -65,6 +65,10 @@ export const TransactionDetailsDialog: FC<{
             <DetailsTableCellWithLabel>Deposited Fee</DetailsTableCellWithLabel>
             <DetailsTableCellWithValue>{transaction.depositedFee ? <TokenWithValue amount={transaction.depositedFee} token={activeChain?.nativeCurrency} decimals={5} /> : "-"}</DetailsTableCellWithValue>
           </DetailsTableRow>
+          {/*  <DetailsTableRow>
+            <DetailsTableCellWithLabel>Arbiter BTC Reward</DetailsTableCellWithLabel>
+            <DetailsTableCellWithValue>{transaction.depositedFee ? <TokenWithValue amount={0} token={escBtcToken} decimals={8} /> : "-"}</DetailsTableCellWithValue>
+          </DetailsTableRow> */}
         </TableBody>
       </Table>
 
@@ -97,7 +101,7 @@ export const TransactionDetailsDialog: FC<{
 
           {/* Close transaction */}
           {
-            canCloseTransaction &&
+            canClaimArbiterFee &&
             <Button onClick={() => onRequestCompensation("ArbiterFee")}>Claim Arbiter Fee</Button>
           }
         </div>

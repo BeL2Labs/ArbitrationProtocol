@@ -1,0 +1,14 @@
+version: "3.8"
+name: bel2-arbiter
+services:
+  db:
+    image: postgres:latest
+    ports:
+      - '5445:5432'
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=123
+      - POSTGRES_DB=arbiterbackend
+
+volumes:
+  emails:
