@@ -1095,6 +1095,11 @@ const HelpPage: FC = () => {
                       <h4 className="font-semibold text-gray-800 mb-2">
                         Step 1: Arbiter Registration
                       </h4>
+                      <p className="text-gray-700 text-sm mb-2">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                          Applies to both setup methods
+                        </span>
+                      </p>
                       <div className="aspect-w-16 aspect-h-9 rounded-md overflow-hidden">
                         <iframe
                           className="w-full h-64"
@@ -1109,8 +1114,13 @@ const HelpPage: FC = () => {
 
                     <div className="bg-gray-50 p-4 rounded-md">
                       <h4 className="font-semibold text-gray-800 mb-2">
-                        Step 2: Arbiter Signer Setup
+                        Step 2: One-Click Arbiter Signer Setup
                       </h4>
+                      <p className="text-gray-700 text-sm mb-2">
+                        <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                          For GUI setup method only
+                        </span>
+                      </p>
                       <div className="aspect-w-16 aspect-h-9 rounded-md overflow-hidden">
                         <iframe
                           className="w-full h-64"
@@ -1125,10 +1135,60 @@ const HelpPage: FC = () => {
                   </div>
                 </div>
 
-                {/* One-Click Setup Process */}
+                {/* Setup Methods */}
                 <div>
                   <h3 className="text-xl font-bold text-primary-800 mb-3">
-                    One-Click Setup Process
+                    Setup Methods
+                  </h3>
+                  <p className="text-gray-700 mb-4">
+                    There are two ways to set up your Arbiter Signer. You can
+                    choose the method that best fits your technical comfort
+                    level and requirements:
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
+                      <h4 className="font-bold text-primary-800 mb-2 flex items-center">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm font-medium mr-2">
+                          Option 1
+                        </span>
+                        One-Click GUI Setup
+                      </h4>
+                      <p className="text-gray-700 mb-2 text-sm">
+                        A user-friendly graphical interface for easy setup,
+                        recommended for most users.
+                      </p>
+                      <ul className="list-disc ml-5 space-y-1 text-gray-700 text-sm">
+                        <li>Simple interactive wizard</li>
+                        <li>Automatic configuration</li>
+                        <li>Community-maintained tool</li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                      <h4 className="font-bold text-primary-800 mb-2 flex items-center">
+                        <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded-md text-sm font-medium mr-2">
+                          Option 2
+                        </span>
+                        Standard Setup (Official)
+                      </h4>
+                      <p className="text-gray-700 mb-2 text-sm">
+                        Command-line based setup from the official repository,
+                        recommended for advanced users.
+                      </p>
+                      <ul className="list-disc ml-5 space-y-1 text-gray-700 text-sm">
+                        <li>More configuration options</li>
+                        <li>Official BeL2 Labs implementation</li>
+                        <li>Suitable for production environments</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* One-Click Setup Process */}
+                <div className="border-l-4 border-blue-400 pl-4 mb-8">
+                  <h3 className="text-xl font-bold text-primary-800 mb-3">
+                    Option 1: One-Click Setup Process
                   </h3>
 
                   <ol className="space-y-4 relative border-l-2 border-gray-200 pl-6 ml-2 pt-2 mb-4">
@@ -1254,10 +1314,138 @@ const HelpPage: FC = () => {
                   </ol>
                 </div>
 
+                {/* Standard Setup Process */}
+                <div className="border-l-4 border-gray-400 pl-4 mb-8">
+                  <h3 className="text-xl font-bold text-primary-800 mb-3">
+                    Option 2: Standard Setup Process (Official Repository)
+                  </h3>
+
+                  <p className="text-gray-700 mb-4">
+                    The standard setup method uses the official BeL2 Labs
+                    Arbiter Signer repository. This method provides more
+                    configuration options and is recommended for advanced users
+                    or production environments.
+                  </p>
+
+                  <ol className="space-y-4 relative border-l-2 border-gray-200 pl-6 ml-2 pt-2 mb-4">
+                    <li className="relative">
+                      <div className="absolute -left-8 mt-1 rounded-full bg-gray-200 border-2 border-gray-500 h-4 w-4"></div>
+                      <div>
+                        <h4 className="text-md font-bold text-gray-700">
+                          1. Clone the Official Repository
+                        </h4>
+                        <p className="text-gray-700 mt-1 leading-relaxed">
+                          Clone the official BeL2 Labs Arbiter Signer repository
+                          from GitHub:
+                        </p>
+                        <pre className="bg-gray-100 p-2 rounded text-sm mt-2 overflow-x-auto">
+                          git clone
+                          https://github.com/BeL2Labs/Arbiter_Signer.git
+                        </pre>
+                        <pre className="bg-gray-100 p-2 rounded text-sm mt-2 overflow-x-auto">
+                          cd Arbiter_Signer
+                        </pre>
+                      </div>
+                    </li>
+
+                    <li className="relative">
+                      <div className="absolute -left-8 mt-1 rounded-full bg-gray-200 border-2 border-gray-500 h-4 w-4"></div>
+                      <div>
+                        <h4 className="text-md font-bold text-gray-700">
+                          2. Follow the Installation Instructions
+                        </h4>
+                        <p className="text-gray-700 mt-1 leading-relaxed">
+                          Follow the detailed instructions in the repository's{" "}
+                          <a
+                            href="https://github.com/BeL2Labs/Arbiter_Signer#readme"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary-600 hover:text-primary-800 underline"
+                          >
+                            README.md
+                          </a>{" "}
+                          file and the{" "}
+                          <a
+                            href="https://github.com/BeL2Labs/Arbiter_Signer/blob/main/docs/deploy_loan_arbiter.md"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary-600 hover:text-primary-800 underline"
+                          >
+                            deployment guide
+                          </a>
+                          .
+                        </p>
+                      </div>
+                    </li>
+
+                    <li className="relative">
+                      <div className="absolute -left-8 mt-1 rounded-full bg-gray-200 border-2 border-gray-500 h-4 w-4"></div>
+                      <div>
+                        <h4 className="text-md font-bold text-gray-700">
+                          3. Configure the Arbiter Signer
+                        </h4>
+                        <p className="text-gray-700 mt-1 leading-relaxed">
+                          The official repository requires manual configuration
+                          of several parameters. You'll need to:
+                        </p>
+                        <ul className="list-disc ml-6 space-y-1 text-gray-700 mt-2">
+                          <li>Set up your config variables</li>
+                          <li>Configure your Bitcoin and ESC private keys</li>
+                          <li>Set your arbiter address and other parameters</li>
+                          <li>Configure network settings</li>
+                        </ul>
+                        <p className="text-gray-700 mt-2 italic">
+                          Refer to the repository documentation for detailed
+                          configuration steps.
+                        </p>
+                      </div>
+                    </li>
+
+                    <li className="relative">
+                      <div className="absolute -left-8 mt-1 rounded-full bg-gray-200 border-2 border-gray-500 h-4 w-4"></div>
+                      <div>
+                        <h4 className="text-md font-bold text-gray-700">
+                          4. Run the Arbiter Signer
+                        </h4>
+                        <p className="text-gray-700 mt-1 leading-relaxed">
+                          Once configured, you can start the Arbiter Signer
+                          using the commands specified in the documentation.
+                          Consider setting up monitoring and auto-restart
+                          capabilities to ensure 24/7 operation.
+                        </p>
+                      </div>
+                    </li>
+                  </ol>
+
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <h4 className="font-semibold text-gray-800 mb-2">
+                      Key Advantages of Standard Setup
+                    </h4>
+                    <ul className="list-disc ml-6 space-y-1 text-gray-700">
+                      <li>
+                        Provides more granular control over configuration
+                        options
+                      </li>
+                      <li>
+                        Offers better integration with server environments and
+                        monitoring tools
+                      </li>
+                      <li>
+                        Suitable for experienced developers who prefer
+                        command-line interfaces
+                      </li>
+                      <li>
+                        Direct access to updates from the official BeL2 Labs
+                        repository
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
                 {/* Important Notes */}
                 <div className="bg-amber-50 p-4 rounded-md border-l-4 border-amber-400">
                   <h4 className="font-bold text-primary-800 mb-2">
-                    Important Notes
+                    Important Notes for Both Setup Methods
                   </h4>
                   <ul className="list-disc ml-6 space-y-2 text-gray-700">
                     <li>
@@ -1273,26 +1461,12 @@ const HelpPage: FC = () => {
                       BeL2 protocol.
                     </li>
                     <li>
-                      For advanced setups or production deployments, refer to
-                      the{" "}
-                      <a
-                        href="https://github.com/BeL2Labs/Arbiter_Signer"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary-600 hover:text-primary-800 underline"
-                      >
-                        official repository
-                      </a>{" "}
-                      and its{" "}
-                      <a
-                        href="https://github.com/BeL2Labs/Arbiter_Signer/blob/main/docs/deploy_loan_arbiter.md"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary-600 hover:text-primary-800 underline"
-                      >
-                        deployment guide
-                      </a>
-                      .
+                      The one-click GUI setup is designed for ease of use, while
+                      the standard setup offers more flexibility.
+                    </li>
+                    <li>
+                      Choose the setup method that best aligns with your
+                      technical expertise and requirements.
                     </li>
                   </ul>
                 </div>
