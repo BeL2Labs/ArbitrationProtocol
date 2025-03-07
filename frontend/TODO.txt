@@ -1,4 +1,3 @@
-- Arbiter list: show deadline  on list mode
 - Show compensation date in the componesation detail popup ?
 
 ------------------------------------------
