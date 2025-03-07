@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 const ethers = hre.ethers;
-const { readConfig } = require("./helper.js");
+const { readConfig } = require("../helper.js");
 async function main() {
   // Replace these with your actual values when running the script
   const arbitratorAddress = "0x0262aB0ED65373cC855C34529fDdeAa0e686D913"; // Address of the arbitrator

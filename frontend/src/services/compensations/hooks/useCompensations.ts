@@ -19,6 +19,7 @@ export const useCompensations = () => {
     state$.next({ isPending: true, wasFetched: false });
     if (activeChain) {
       const { compensations } = await fetchCompensations(activeChain, 0, 100);
+      console.log("compensations", compensations)
       state$.next({ wasFetched: true, isPending: false, compensations });
     }
   }, [activeChain]);

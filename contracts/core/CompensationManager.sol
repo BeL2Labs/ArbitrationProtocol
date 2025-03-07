@@ -306,45 +306,6 @@ contract CompensationManager is
             uint8(CompensationType.FailedArbitration));
     }
 
-    function claimArbitratorFee(bytes32 txId) external override returns (bytes32) {
-        // Get transaction details
-        DataTypes.TransactionParties memory transactionParties = transactionManager.getTransactionPartiesById(txId);
-        if (transactionParties.arbitrator != msg.sender) revert (Errors.NOT_TRANSACTION_ARBITRATOR);
-        // Transfer fees and terminate transaction
-        (uint256 arbitratorFee, ) = transactionManager.transferArbitrationFee(txId);
-
-        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(transactionParties.arbitrator);
-        // Generate claim ID
-        bytes32 claimId = keccak256(abi.encodePacked(txId, transactionParties.arbitrator, arbitratorInfo.revenueETHAddress, CompensationType.ArbitratorFee));
-        if (claims[claimId].claimer != address(0)) {
-            revert (Errors.COMPENSATION_ALREADY_CLAIMED);
-        }
-
-        // Create compensation claim
-        claims[claimId] = CompensationClaim({
-            claimer: msg.sender,
-            arbitrator: transactionParties.arbitrator,
-            ethAmount: arbitratorFee,
-            nftContract: address(0),
-            nftTokenIds: new uint256[](0),
-            totalAmount: arbitratorFee,
-            withdrawn: true,
-            claimType: CompensationType.ArbitratorFee,
-            receivedCompensationAddress: arbitratorInfo.revenueETHAddress
-        });
-        emit CompensationClaimed(
-            claimId,
-            msg.sender,
-            transactionParties.arbitrator,
-            arbitratorFee,
-            new uint256[](0),
-            arbitratorFee,
-            arbitratorInfo.revenueETHAddress,
-            uint8(CompensationType.ArbitratorFee)
-        );
-        return claimId;
-    }
-
     function getWithdrawCompensationFee(bytes32 claimId) external view override returns (uint256) {
         CompensationClaim storage claim = claims[claimId];
         uint256 systemFeeRate = configManager.getSystemCompensationFeeRate();

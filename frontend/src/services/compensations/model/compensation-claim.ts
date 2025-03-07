@@ -7,6 +7,7 @@ export type CompensationType = "IllegalSignature" | "Timeout" | "FailedArbitrati
 
 export class CompensationClaim implements Omit<CompensationClaimDTO, "ethAmount" | "createdAt" | "systemFee" | "totalAmount"> {
   @Expose() public id: string;
+  @Expose() @Transform(({ value }) => value && new Date(value * 1000)) public createdAt: Date;
   @Expose() public claimer: string;
   @Expose() public arbiter: string;
   @Expose() public claimType: CompensationType;

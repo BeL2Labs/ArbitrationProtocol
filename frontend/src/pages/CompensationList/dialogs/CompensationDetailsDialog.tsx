@@ -11,6 +11,7 @@ import { useActiveEVMChainConfig } from '@/services/chains/hooks/useActiveEVMCha
 import { useWithdrawCompensation } from '@/services/compensations/hooks/contract/useWithdrawCompensation';
 import { useWithdrawCompensationFee } from '@/services/compensations/hooks/contract/useWithdrawCompensationFee';
 import { CompensationClaim } from '@/services/compensations/model/compensation-claim';
+import { formatDate } from '@/utils/dates';
 import { formatAddress } from '@/utils/formatAddress';
 import BigNumber from 'bignumber.js';
 import { FC, useCallback, useEffect, useState } from 'react';
@@ -63,6 +64,10 @@ export const CompensationDetailsDialog: FC<{
 
       <Table>
         <TableBody>
+          <DetailsTableRow>
+            <DetailsTableCellWithLabel>Creation</DetailsTableCellWithLabel>
+            <DetailsTableCellWithValue>{formatDate(compensation.createdAt)}</DetailsTableCellWithValue>
+          </DetailsTableRow>
           <DetailsTableRow>
             <DetailsTableCellWithLabel>Arbiter</DetailsTableCellWithLabel>
             <DetailsTableCellWithValue>{formatAddress(compensation.arbiter, [10, 8])} <CopyField value={compensation.arbiter} /></DetailsTableCellWithValue>

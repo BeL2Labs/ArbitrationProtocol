@@ -1,5 +1,5 @@
 const { ethers, network, getChainId } = require("hardhat");
-const { readConfig } = require("./helper.js");
+const { readConfig } = require("../helper.js");
 
 async function setArbitrationBTCFeeRate() {
     let chainId = await getChainId();
