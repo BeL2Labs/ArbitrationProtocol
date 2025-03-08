@@ -10,7 +10,7 @@ interface ITransactionManager {
         uint256 deadline,
         address compensationReceive,
         address refundAddress
-    ) external returns (bytes32 id);
+    ) external payable returns (bytes32 id);
 
     // Upload transaction utxos, only once
     function uploadUTXOs(
@@ -46,12 +46,16 @@ interface ITransactionManager {
 
     function txHashToId(bytes32 txHash) external view returns (bytes32);
 
-    /// @notice Marks a transaction as completed by the arbitrator, finalizing the arbitration process
-    /// @dev This function should only be called by the assigned arbitrator after successful dispute resolution
-    /// @param id The unique identifier of the transaction being finalized
-    function arbitratorCompletedTransaction(
+   /**
+    * @notice Transfer arbitration fee to arbitrator and system fee address
+    * @dev Only callable by compensation manager
+    * @param id Transaction ID
+    * @return arbitratorFee The fee amount for arbitrator
+    * @return systemFee The fee amount for system
+    */
+    function transferArbitrationFee(
         bytes32 id
-    ) external;
+    ) external returns (uint256 arbitratorFee, uint256 systemFee);
 
     function getRegisterTransactionFee(uint256 deadline, address arbitrator) external view returns (uint256 fee);
 
