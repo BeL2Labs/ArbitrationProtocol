@@ -70,6 +70,7 @@ library DataTypes {
         uint256 requestArbitrationTime;
         uint256 depositedFee;
         TransactionStatus status;
+        uint256 arbitratorBtcFee;
     }
 
     struct TransactionParties{

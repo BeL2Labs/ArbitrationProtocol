@@ -110,10 +110,12 @@ describe("CompensationManager", function () {
         const btcScript = "0x76a914cb539f4329eeb589e83659c8304bcc6c99553a9688ac";
         const deadline = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60; // 356 days from now
         const feeRate = 1000; // 10%
+        const btcFeeRate = 1000;
         let tx = await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
             btcAddress,
             VALID_PUB_KEY,
             feeRate,
+            btcFeeRate,
             deadline,
             { value: STAKE_AMOUNT }
         );
@@ -153,7 +155,7 @@ describe("CompensationManager", function () {
                 arbitrator.address,
                 VALID_EVIDENCE
             );
-            
+
             // Verify events and claim details
             const receipt = await claimTx.wait();
             const claimEvent = receipt.events.find(e => e.event === 'CompensationClaimed');

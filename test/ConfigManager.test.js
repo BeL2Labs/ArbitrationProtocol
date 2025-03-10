@@ -12,7 +12,8 @@ describe("ConfigManager", function () {
     const DEFAULT_MIN_STAKE_LOCKED_TIME = 7 * 24 * 60 * 60; // 7 days
     const DEFAULT_MIN_TRANSACTION_DURATION = 24 * 60 * 60; // 1 day
     const DEFAULT_MAX_TRANSACTION_DURATION = 30 * 24 * 60 * 60; // 30 days
-    const DEFAULT_TRANSACTION_MIN_FEE_RATE = 100; // 1%
+    const DEFAULT_TRANSACTION_MIN_FEE_RATE = 0; // 0%
+    const TRANSACTION_MIN_BTC_FEE_RATE = 100; // 0%
     const DEFAULT_ARBITRATION_TIMEOUT = 24 * 60 * 60; // 24 hours
     const DEFAULT_ARBITRATION_FROZEN_PERIOD = 30 * 60; // 30 minutes
     const DEFAULT_SYSTEM_FEE_RATE = 500; // 5%
@@ -198,8 +199,8 @@ describe("ConfigManager", function () {
     describe("Config Queries", function () {
         it("Should return all configs correctly", async function () {
             const [keys, values] = await configManager.getAllConfigs();
-            expect(keys.length).to.equal(12); // Total number of configs
-            expect(values.length).to.equal(12);
+            expect(keys.length).to.equal(13); // Total number of configs
+            expect(values.length).to.equal(13);
         });
     });
 });
