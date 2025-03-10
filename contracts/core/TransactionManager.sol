@@ -287,6 +287,9 @@ contract TransactionManager is
         DataTypes.TransactionData memory transactionData = transactions_data[id];
         uint256 duration = block.timestamp > transactionData.deadline ? transactionData.deadline - transactionData.startTime : block.timestamp - transactionData.startTime;
         uint256 arbitratorFee = _getFee(parties.arbitrator, arbitratorInfo.currentFeeRate, duration);
+        if(arbitratorFee == 0) {
+            return (0, 0);
+        }
         if (arbitratorFee > transactionData.depositedFee) {
             arbitratorFee = transactionData.depositedFee;
         }

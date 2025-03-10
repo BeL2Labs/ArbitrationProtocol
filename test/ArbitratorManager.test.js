@@ -10,6 +10,7 @@ describe("ArbitratorManager", function () {
   let other;
   
   const feeRate = 1000; // 10% annual rate
+  const btcFeeRate = 1000; // 10% annual rate
   const stakeAmount = ethers.utils.parseEther("100");
   const minFeeRate = 100; // Assuming a minimum fee rate from ConfigManager
 
@@ -50,6 +51,7 @@ describe("ArbitratorManager", function () {
           btcAddress,
           btcPubKey,
           feeRate,
+          btcFeeRate,
           deadline,
           { value: stakeAmount }
         )
@@ -73,6 +75,7 @@ describe("ArbitratorManager", function () {
              btcAddress,
              btcPubKey,
              feeRate,
+             btcFeeRate,
              deadline,
              { value: smallStake }
            )
@@ -81,6 +84,7 @@ describe("ArbitratorManager", function () {
 
        it("Should fail to register with invalid fee rate", async function () {
          const lowFeeRate = 50; // Below minimum fee rate
+         const btcFeeRate = 50; // Below minimum fee rate
          const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
          const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
          const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
@@ -90,6 +94,7 @@ describe("ArbitratorManager", function () {
              btcAddress,
              btcPubKey,
              lowFeeRate,
+             btcFeeRate,
              deadline,
              { value: stakeAmount }
            )
@@ -106,6 +111,7 @@ describe("ArbitratorManager", function () {
              btcAddress,
              btcPubKey,
              feeRate,
+             btcFeeRate,
              pastDeadline,
              { value: stakeAmount }
            )
@@ -117,6 +123,7 @@ describe("ArbitratorManager", function () {
        let deadline;
        const stakeAmount = ethers.utils.parseEther("10");
        const feeRate = 100; // 1%
+       const btcFeeRate = 100; // 1%
        const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
        const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
 
@@ -129,6 +136,7 @@ describe("ArbitratorManager", function () {
            btcAddress,
            btcPubKey,
            feeRate,
+           btcFeeRate,
            deadline,
            { value: stakeAmount }
          );
@@ -149,6 +157,9 @@ describe("ArbitratorManager", function () {
 
         // Log the entire arbitrator info for debugging
         console.log("Arbitrator Info:", arbitratorInfo);
+
+        const arbitratorInfoExt = await arbitratorManager.getArbitratorInfoExt(arbitrator.address);
+        console.log("Arbitrator Info Ext:", arbitratorInfoExt);
       });
 
 
@@ -168,6 +179,9 @@ describe("ArbitratorManager", function () {
          expect(storedPubKeyHex).to.equal(inputPubKeyHex);
 
          expect(arbitratorInfo.nftTokenIds).to.be.an('array').that.is.empty;
+
+         const arbitratorInfoExt = await arbitratorManager.getArbitratorInfoExt(arbitrator.address);
+         expect(arbitratorInfoExt.currentBTCFeeRate).to.equal(btcFeeRate);
        });
      });
 
@@ -177,11 +191,13 @@ describe("ArbitratorManager", function () {
          const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
          const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
          const feeRate = 100; // 1%
+         const btcFeeRate = 100; // 1%
          // Register arbitrator with initial stake
          await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
            btcAddress,
            btcPubKey,
            feeRate,
+           btcFeeRate,
            deadline,
            { value: stakeAmount }
          );

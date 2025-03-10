@@ -15,6 +15,7 @@ interface IConfigManager {
     
     // Fee related configurations
     function setTransactionMinFeeRate(uint256 rate) external;
+    function setTransactionMinBTCFeeRate(uint256 feeRate) external;
     
     // Arbitrator related configurations
     function setArbitrationFrozenPeriod(uint256 period) external;

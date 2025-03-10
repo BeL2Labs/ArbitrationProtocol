@@ -22,6 +22,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
     bytes32 public constant MIN_TRANSACTION_DURATION = ConfigManagerKeys.MIN_TRANSACTION_DURATION;
     bytes32 public constant MAX_TRANSACTION_DURATION = ConfigManagerKeys.MAX_TRANSACTION_DURATION;
     bytes32 public constant TRANSACTION_MIN_FEE_RATE = ConfigManagerKeys.TRANSACTION_MIN_FEE_RATE;
+    bytes32 public constant TRANSACTION_MIN_BTC_FEE_RATE = ConfigManagerKeys.TRANSACTION_MIN_BTC_FEE_RATE;
     bytes32 public constant ARBITRATION_TIMEOUT = ConfigManagerKeys.ARBITRATION_TIMEOUT;
     bytes32 public constant ARBITRATION_FROZEN_PERIOD = ConfigManagerKeys.ARBITRATION_FROZEN_PERIOD;
     bytes32 public constant SYSTEM_FEE_RATE = ConfigManagerKeys.SYSTEM_FEE_RATE;
@@ -44,7 +45,8 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
         configs[MIN_STAKE_LOCKED_TIME] = 7 days;
         configs[MIN_TRANSACTION_DURATION] = 1 days;
         configs[MAX_TRANSACTION_DURATION] = 30 days;
-        configs[TRANSACTION_MIN_FEE_RATE] = 100; // 1% in basis points
+        configs[TRANSACTION_MIN_FEE_RATE] = 0; // 0% in basis points
+        configs[TRANSACTION_MIN_BTC_FEE_RATE] = 100; // 1% in basis points
         configs[ARBITRATION_TIMEOUT] = 24 hours; //Deadline for submitting signatures
         configs[ARBITRATION_FROZEN_PERIOD] = 30 minutes;//The freezing period after the end of the transaction, during which transaction cannot be accepted or exited
         configs[SYSTEM_FEE_RATE] = 500; // 5% in basis points
@@ -114,6 +116,17 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
         uint256 oldValue = configs[TRANSACTION_MIN_FEE_RATE];
         configs[TRANSACTION_MIN_FEE_RATE] = rate;
         emit ConfigUpdated(TRANSACTION_MIN_FEE_RATE, oldValue, rate);
+    }
+
+    /**
+     * @notice Set transaction minimum fee rate for BTC
+     * @param feeRate Minimum fee rate in basis points
+     */
+    function setTransactionMinBTCFeeRate(uint256 feeRate) external onlyOwner {
+        require(feeRate <= 10000, Errors.INVALID_FEE_RATE);
+        uint256 oldValue = configs[TRANSACTION_MIN_BTC_FEE_RATE];
+        configs[TRANSACTION_MIN_BTC_FEE_RATE] = feeRate;
+        emit ConfigUpdated(TRANSACTION_MIN_BTC_FEE_RATE, oldValue, feeRate);
     }
 
     /**
@@ -212,6 +225,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
         keys[9] = SYSTEM_COMPENSATION_FEE_RATE;
         keys[10] = SYSTEM_FEE_COLLECTOR;
         keys[11] = ARBITRATION_BTC_FEE_RATE;
+        keys[12] = TRANSACTION_MIN_BTC_FEE_RATE;
 
         for (uint256 i = 0; i < keys.length; i++) {
             values[i] = configs[keys[i]];

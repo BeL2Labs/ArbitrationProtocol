@@ -48,6 +48,7 @@ library Errors {
     string constant ARBITRATOR_NOT_ACTIVE = "A3";
     string constant ARBITRATOR_NOT_WORKING = "A5";
     string constant INVALID_FEE_RATE = "F0";
+    string constant INVALID_BTC_FEE_RATE = "F2";
     string constant STAKE_STILL_LOCKED = "S1";
     string constant INSUFFICIENT_STAKE = "S2";
     string constant STAKE_EXCEEDS_MAX = "S3";

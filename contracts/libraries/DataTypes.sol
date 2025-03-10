@@ -44,7 +44,7 @@ library DataTypes {
     struct ArbitratorInfo {
         address arbitrator;        // Arbitrator Ethereum address
         bool paused;               // is paused
-        uint256 currentFeeRate;    // Current fee rate
+        uint256 currentFeeRate;    // Current fee rate receive ETH
         bytes32 activeTransactionId; // Current transaction ID
         uint256 ethAmount;         // ETH stake amount
         address erc20Token;        // ERC20 token address
@@ -58,6 +58,10 @@ library DataTypes {
         string revenueBtcAddress; // Bitcoin address for receiving arbitrator earnings
         address revenueETHAddress; // ETH address for receiving arbitrator earnings
         uint256 lastSubmittedWorkTime; // Last submitted work time
+    }
+
+    struct ArbitratorInfoExt{
+        uint256 currentBTCFeeRate;// Current BTC fee rate, receive BTC
     }
 
     struct TransactionData {
