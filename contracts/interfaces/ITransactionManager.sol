@@ -58,6 +58,7 @@ interface ITransactionManager {
     ) external returns (uint256 arbitratorFee, uint256 systemFee);
 
     function getRegisterTransactionFee(uint256 deadline, address arbitrator) external view returns (uint256 fee);
+    function getRegisterTransactionBtcFee(uint256 deadline, address arbitrator) external view returns (uint256 fee);
 
     // Events
     event TransactionRegistered(

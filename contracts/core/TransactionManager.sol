@@ -133,7 +133,6 @@ contract TransactionManager is
         // fee = stake * (duration / secondsPerYear) * (feeRate / feeRateMultiplier)
         uint256 fee = this.getRegisterTransactionFee(deadline, arbitrator);
    
-        if (fee == 0) revert(Errors.INVALID_FEE);
         if (msg.value < fee) revert(Errors.INSUFFICIENT_FEE);
 
         // Generate transaction ID
@@ -145,7 +144,7 @@ contract TransactionManager is
                 _transactionIdCounter++
             )
         );
-
+        uint256 btcFee = this.getRegisterTransactionBtcFee(deadline, arbitrator);
         // Set arbitrator to working status
         arbitratorManager.setArbitratorWorking(arbitrator, id);
 
@@ -155,6 +154,7 @@ contract TransactionManager is
         transactionData.startTime = block.timestamp;
         transactionData.deadline = deadline;
         transactionData.depositedFee = msg.value;
+        transactionData.arbitratorBtcFee = btcFee;
         transactionData.status = DataTypes.TransactionStatus.Active;
         transactionParties.arbitrator = arbitrator;
         transactionParties.compensationReceiver = compensationReceiver;
@@ -553,6 +553,21 @@ contract TransactionManager is
         // fee = stake * (duration / secondsPerYear) * (feeRate / feeRateMultiplier)
         uint256 totalStake = arbitratorManager.getAvailableStake(arbitrator);
         return (totalStake * duration * arbitratorFeeRate) / (SECONDS_PER_YEAR * FEE_RATE_MULTIPLIER);
+    }
+
+    function getRegisterTransactionBtcFee(uint256 deadline, address arbitrator) external view returns (uint256 fee) {
+        // Calculate the duration from now to the deadline
+        uint256 duration = deadline > block.timestamp ? deadline - block.timestamp : 0;
+        if (duration < configManager.getConfig(ConfigManagerKeys.MIN_TRANSACTION_DURATION) ||
+            duration > configManager.getConfig(ConfigManagerKeys.MAX_TRANSACTION_DURATION)) {
+            revert(Errors.INVALID_DURATION);
+        }
+
+        if (arbitrator == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
+        }
+        uint256 btcFeeRate = arbitratorManager.getArbitratorInfoExt(arbitrator).currentBTCFeeRate;
+        return _getFee(arbitrator, btcFeeRate, duration);
     }
 
     function setArbitratorManager(address _arbitratorManager) external onlyOwner {

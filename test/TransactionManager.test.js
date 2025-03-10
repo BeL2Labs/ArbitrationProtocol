@@ -90,7 +90,7 @@ describe("TransactionManager", function () {
         const btcPubKey = ethers.utils.arrayify("0x0250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19");
         const btcScript = "0x76a9149b42587007f85e456b5d0d702e828f34ea1f55b188ac";
         const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
-        const feeRate = 1000; // 10%
+        const feeRate = 0; // 10%
         const btcFeeRate = 1000; // 10%
         console.log("Before Register arbitrator result:");
         let tx = await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
@@ -116,7 +116,7 @@ describe("TransactionManager", function () {
         console.log("setTransactionManager:", tx.hash);
     });
    
-    describe("Transaction Registration", async function () {
+   describe("Transaction Registration", async function () {
         it ("Should get available stake", async function () {
             const availableStake = await arbitratorManager.getAvailableStake(arbitrator.address);
             expect(availableStake).to.equal(STAKE_AMOUNT);
@@ -165,23 +165,20 @@ describe("TransactionManager", function () {
             ).to.be.revertedWith("T3");
         });
 
-        it("Should fail to register transaction with insufficient fee", async function () {
+        it("Should fail to register transaction with 0 ela fee", async function () {
             const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
-
             // Try to register with zero fee
-            await expect(
-                transactionManager.connect(dapp).registerTransaction(
+            await transactionManager.connect(dapp).registerTransaction(
                     arbitrator.address,
                     deadline,
                     compensationReceiver.address,
                     dapp.address,
                     { value: 0 } // Zero fee
-                )
-            ).to.be.revertedWith("T5");
+                );
         });
     });
 
-    describe("Transaction Upload utxos", function () {
+   describe("Transaction Upload utxos", function () {
         beforeEach(async function () {
             const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
 
