@@ -106,7 +106,7 @@ contract TransactionManager is
         uint256 deadline,
         address compensationReceiver,
         address refundAddress
-    ) external nonReentrant returns (bytes32) {
+    ) external payable nonReentrant returns (bytes32) {
         if (arbitrator == address(0) || compensationReceiver == address(0) || refundAddress == address(0)) {
             revert(Errors.ZERO_ADDRESS);
         }
@@ -134,7 +134,7 @@ contract TransactionManager is
         uint256 fee = this.getRegisterTransactionFee(deadline, arbitrator);
    
         if (fee == 0) revert(Errors.INVALID_FEE);
-//        if (msg.value < fee) revert(Errors.INSUFFICIENT_FEE); use btc transfer
+        if (msg.value < fee) revert(Errors.INSUFFICIENT_FEE);
 
         // Generate transaction ID
         bytes32 id = keccak256(
@@ -154,7 +154,7 @@ contract TransactionManager is
         DataTypes.TransactionParties storage transactionParties = transactions_parties[id];
         transactionData.startTime = block.timestamp;
         transactionData.deadline = deadline;
-        transactionData.depositedFee = fee;//Used to verify whether the transfer has been made to the arbitrator
+        transactionData.depositedFee = msg.value;
         transactionData.status = DataTypes.TransactionStatus.Active;
         transactionParties.arbitrator = arbitrator;
         transactionParties.compensationReceiver = compensationReceiver;
@@ -237,7 +237,7 @@ contract TransactionManager is
         return block.timestamp > transaction.requestArbitrationTime + configTime;
     }
 
-        /**
+     /**
      * @notice Complete a transaction with slashing mechanism
      * @dev Only callable by compensation manager when transaction is in Submitted status and past deadline
      * @param id Transaction ID
@@ -258,17 +258,60 @@ contract TransactionManager is
         }
         // Update transaction status to Completed
         transactionData.status = DataTypes.TransactionStatus.Completed;
-
+        // Transfer deposited fee to compensation address
+        (bool success, ) = payable(receivedCompensationAddress).call{value: transactionData.depositedFee}("");
+        if (!success) {
+            revert(Errors.TRANSFER_FAILED);
+        }
         // Release arbitrator from working status
         arbitratorManager.releaseArbitrator(transactionParties.arbitrator, id);
 
         emit TransactionCompleted(id, transactionParties.dapp);
     }
 
-    function _completeTransaction(bytes32 id, DataTypes.TransactionParties memory parties) internal {
+    function _completeTransaction(bytes32 id, DataTypes.TransactionParties memory parties) internal returns(uint256, uint256) {
+        // Get arbitrator info and calculate duration-based fee
+        (uint256 finalArbitratorFee, uint256 systemFee) = transferCompletedTransactionFee(id,parties);
+
         arbitratorManager.releaseArbitrator(parties.arbitrator, id);
+
         transactions_data[id].status = DataTypes.TransactionStatus.Completed;
         emit TransactionCompleted(id, parties.dapp);
+
+        return (finalArbitratorFee, systemFee);
+    }
+
+    function transferCompletedTransactionFee(bytes32 id, DataTypes.TransactionParties memory parties) internal returns(uint256, uint256) {
+        // Get arbitrator info and calculate duration-based fee
+        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(parties.arbitrator);
+        DataTypes.TransactionData memory transactionData = transactions_data[id];
+        uint256 duration = block.timestamp > transactionData.deadline ? transactionData.deadline - transactionData.startTime : block.timestamp - transactionData.startTime;
+        uint256 arbitratorFee = _getFee(parties.arbitrator, arbitratorInfo.currentFeeRate, duration);
+        if (arbitratorFee > transactionData.depositedFee) {
+            arbitratorFee = transactionData.depositedFee;
+        }
+
+        // Calculate system fee from arbitrator's fee and get fee collector
+        uint256 systemFee = (arbitratorFee * configManager.getConfig(ConfigManagerKeys.SYSTEM_FEE_RATE)) / 10000;
+        uint256 finalArbitratorFee = arbitratorFee - systemFee;
+        address feeCollector = configManager.getSystemFeeCollector();
+
+        // Pay system fee to collector
+        (bool success1, ) = feeCollector.call{value: systemFee}("");
+        if (!success1) revert(Errors.TRANSFER_FAILED);
+
+        // Pay arbitrator
+        (bool success2, ) = arbitratorInfo.revenueETHAddress.call{value: finalArbitratorFee}("");
+        if (!success2) revert(Errors.TRANSFER_FAILED);
+
+        // Refund remaining balance to DApp
+        uint256 remainingBalance = transactionData.depositedFee - arbitratorFee;
+        if (remainingBalance > 0) {
+            (bool success3, ) = parties.depositedFeeRefundAddress.call{value: remainingBalance}("");
+            if (!success3) revert(Errors.TRANSFER_FAILED);
+        }
+        emit DepositFeeTransfer(id, arbitratorInfo.revenueETHAddress, arbitratorFee, systemFee, remainingBalance);
+        return (finalArbitratorFee, systemFee);
     }
 
     /**
@@ -462,15 +505,16 @@ contract TransactionManager is
     }
 
     /**
-    * @notice Marks a transaction as completed by the arbitrator, finalizing the arbitration process
-    * @dev This function should only be called by the assigned arbitrator after successful dispute resolution
-    * @param id The unique identifier of the transaction being finalized
+    * @notice Transfer arbitration fee to arbitrator and system fee address
+    * @dev Only callable by compensation manager
+    * @param id Transaction ID
+    * @return arbitratorFee The fee amount for arbitrator
+    * @return systemFee The fee amount for system
     */
-    function arbitratorCompletedTransaction(
+    function transferArbitrationFee(
         bytes32 id
-    ) external {
+    ) external override onlyCompensationManager returns (uint256 arbitratorFee, uint256 systemFee) {
         DataTypes.TransactionParties memory transactionParties = transactions_parties[id];
-        if (transactionParties.arbitrator != msg.sender) revert (Errors.NOT_TRANSACTION_ARBITRATOR);
         DataTypes.TransactionData memory transaction = transactions_data[id];
         if ((transaction.status == DataTypes.TransactionStatus.Active && block.timestamp > transaction.deadline)
             || (transaction.status == DataTypes.TransactionStatus.Submitted && !arbitratorManager.isFrozenStatus(transactionParties.arbitrator))) {
