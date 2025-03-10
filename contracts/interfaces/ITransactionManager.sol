@@ -57,8 +57,6 @@ interface ITransactionManager {
         bytes32 id
     ) external returns (uint256 arbitratorFee, uint256 systemFee);
 
-    function getRegisterTransactionFee(uint256 deadline, address arbitrator) external view returns (uint256 fee);
-
     // Events
     event TransactionRegistered(
         bytes32 indexed id,
@@ -83,7 +81,7 @@ interface ITransactionManager {
         bytes btcTxSignature);
     event SetArbitratorManager(address indexed arbitratorManager);
     event BTCAddressParserChanged(address indexed newParser);
-
+    event AssetOracleUpdated(address indexed newOracle);
     event DepositFeeTransfer(bytes32 indexed txId, address indexed revenueETHAddress, uint256 arbitratorFee, uint256 systemFee, uint256 refundedFee);
     // Functions
     function setArbitratorManager(address _arbitratorManager) external;
