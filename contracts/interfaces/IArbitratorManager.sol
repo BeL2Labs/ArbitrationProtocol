@@ -14,6 +14,7 @@ interface IArbitratorManager {
     /// @param defaultBtcAddress Bitcoin address for receiving arbitrator earnings set to revenueBtcAddress and operatorBtcAddress
     /// @param defaultBtcPubKey Public key corresponding to the Bitcoin address set to revenueBtcPubKey and operatorBtcPubKey
     /// @param feeRate Percentage fee (in basis points) that the arbitrator will charge for services (4 decimal places)
+    /// @param btcFeeRate Percentage fee (in basis points) that the arbitrator will charge for services (4 decimal places)
     /// @param deadline Timestamp by which the registration must be completed (0 for no deadline)
     /// @dev Requires msg.value to meet the minimum ETH staking requirement
     /// @dev Sets the arbitrator's operator and revenue addresses to the sender by default
@@ -22,6 +23,7 @@ interface IArbitratorManager {
         string calldata defaultBtcAddress,
         bytes calldata defaultBtcPubKey,
         uint256 feeRate,
+        uint256 btcFeeRate,
         uint256 deadline) external payable;
 
     /// @notice Registers a new arbitrator by staking NFTs
@@ -30,6 +32,7 @@ interface IArbitratorManager {
     /// @param defaultBtcAddress Bitcoin address for receiving arbitrator earnings
     /// @param defaultBtcPubKey Public key corresponding to the Bitcoin address
     /// @param feeRate Percentage fee (in basis points) that the arbitrator will charge for services (4 decimal places)
+    /// @param btcFeeRate Percentage fee (in basis points) that the arbitrator will charge for services (4 decimal places)
     /// @param deadline Timestamp by which the registration must be completed (0 for no deadline)
     /// @dev Requires a minimum number of NFTs to be staked
     /// @dev Sets the arbitrator's operator and revenue addresses to the sender by default
@@ -39,6 +42,7 @@ interface IArbitratorManager {
         string calldata defaultBtcAddress,
         bytes calldata defaultBtcPubKey,
         uint256 feeRate,
+        uint256 btcFeeRate,
         uint256 deadline) external;
 
     // Set operator information
@@ -62,6 +66,15 @@ interface IArbitratorManager {
      */
     function setArbitratorFeeRate(
         uint256 feeRate
+    ) external;
+
+    /**
+     * @notice Set arbitrator btc fee rate
+     * @dev Only callable by the arbitrator
+     * @param btcFeeRate The fee rate of the arbitrator
+     */
+    function setArbitratorBtcFeeRate(
+        uint256 btcFeeRate
     ) external;
 
     /**
@@ -108,6 +121,7 @@ interface IArbitratorManager {
 
     // Query interfaces
     function getArbitratorInfo(address arbitrator) external view returns (DataTypes.ArbitratorInfo memory);
+    function getArbitratorInfoExt(address arbitrator) external view returns (DataTypes.ArbitratorInfoExt memory);
     function isActiveArbitrator(address arbitrator) external view returns (bool);
     function getAvailableStake(address arbitrator) external view returns (uint256);
     function getTotalNFTStakeValue(address arbitrator) external view returns (uint256);
@@ -163,6 +177,11 @@ interface IArbitratorManager {
     );
 
     event ArbitratorFeeRateUpdated(
+        address indexed arbitrator,
+        uint256 feeRate
+    );
+
+    event ArbitratorBtcFeeRateUpdated(
         address indexed arbitrator,
         uint256 feeRate
     );

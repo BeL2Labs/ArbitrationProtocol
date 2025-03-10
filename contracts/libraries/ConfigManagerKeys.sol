@@ -8,6 +8,7 @@ library ConfigManagerKeys {
     bytes32 public constant MIN_TRANSACTION_DURATION = keccak256("MIN_TRANSACTION_DURATION");
     bytes32 public constant MAX_TRANSACTION_DURATION = keccak256("MAX_TRANSACTION_DURATION");
     bytes32 public constant TRANSACTION_MIN_FEE_RATE = keccak256("TRANSACTION_MIN_FEE_RATE");
+    bytes32 public constant TRANSACTION_MIN_BTC_FEE_RATE = keccak256("TRANSACTION_MIN_BTC_FEE_RATE");
     bytes32 public constant ARBITRATION_TIMEOUT = keccak256("ARBITRATION_TIMEOUT");
     bytes32 public constant ARBITRATION_FROZEN_PERIOD = keccak256("arbitrationFrozenPeriod");
     bytes32 public constant SYSTEM_FEE_RATE = keccak256("systemFeeRate");

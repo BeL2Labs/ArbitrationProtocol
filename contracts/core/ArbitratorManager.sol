@@ -45,6 +45,7 @@ contract ArbitratorManager is
 
     // Mapping of arbitrator addresses to their information
     mapping(address => DataTypes.ArbitratorInfo) private arbitrators;
+    mapping(address => DataTypes.ArbitratorInfoExt) private arbitratorsExt;
     
     // State variables
     address public transactionManager;
@@ -112,6 +113,7 @@ contract ArbitratorManager is
         string calldata revenueBtcAddress,
         bytes calldata revenueBtcPubKey,
         uint256 feeRate,
+        uint256 btcFeeRate,
         uint256 deadline
     ) private view {
         if (bytes(revenueBtcAddress).length == 0 || revenueBtcPubKey.length == 0 ) {
@@ -121,6 +123,10 @@ contract ArbitratorManager is
         // Validate fee rate
         uint256 minFeeRate = configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE());
         if (feeRate < minFeeRate) revert (Errors.INVALID_FEE_RATE);
+
+        // Validate btc fee rate
+        uint256 minBtcFeeRate = configManager.getConfig(configManager.TRANSACTION_MIN_BTC_FEE_RATE());
+        if (btcFeeRate < minBtcFeeRate) revert (Errors.INVALID_BTC_FEE_RATE);
 
         // Validate deadline
         if (deadline != 0 && deadline <= block.timestamp) revert (Errors.INVALID_DEADLINE);
@@ -141,35 +147,18 @@ contract ArbitratorManager is
         string calldata defaultBtcAddress,
         bytes calldata defaultBtcPubKey,
         uint256 feeRate,
+        uint256 btcFeeRate,
         uint256 deadline
     ) external payable {
-        _validateInputs(defaultBtcAddress, defaultBtcPubKey, feeRate, deadline);
-
+       DataTypes.ArbitratorInfo storage arbitrator = _initializeArbitrator(
+            msg.sender,
+            defaultBtcAddress,
+            defaultBtcPubKey,
+            feeRate,
+            btcFeeRate,
+            deadline
+        );
         _validateStakeAmount(msg.value, 0);
-
-        // Create a new arbitrator info struct
-        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator != address(0)) {
-            revert (Errors.ARBITRATOR_ALREADY_REGISTERED);
-        }
-        arbitrator.arbitrator = msg.sender;
-        // Set the arbitrator's operator
-        arbitrator.operator = msg.sender;//default use self as operator
-        // Set the arbitrator's revenue address
-        arbitrator.revenueETHAddress = msg.sender;
-        // Set the arbitrator and operator's Bitcoin address and public key
-        arbitrator.revenueBtcAddress = defaultBtcAddress;
-        arbitrator.revenueBtcPubKey = defaultBtcPubKey;
-        arbitrator.operatorBtcAddress = defaultBtcAddress;
-        arbitrator.operatorBtcPubKey = defaultBtcPubKey;
-
-        // Set the arbitrator's fee rate
-        arbitrator.currentFeeRate = feeRate;
-
-        // Set the arbitrator's deadline
-        arbitrator.deadLine = deadline;
-
-        // Update the arbitrator's ETH amount
         arbitrator.ethAmount += msg.value;
 
         // Emit an event to notify the registration
@@ -190,30 +179,20 @@ contract ArbitratorManager is
         string calldata defaultBtcAddress,
         bytes calldata defaultBtcPubKey,
         uint256 feeRate,
+        uint256 btcFeeRate,
         uint256 deadline
     ) external nonReentrant {
-        // Validate inputs
-        _validateInputs(defaultBtcAddress, defaultBtcPubKey, feeRate, deadline);
-
-        // Validate token IDs
+         // Validate token IDs
         if (tokenIds.length == 0) revert (Errors.EMPTY_TOKEN_IDS);
 
-        // Check arbitrator is not already registered
-        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator != address(0)) revert (Errors.ARBITRATOR_ALREADY_REGISTERED);
-        // Initialize arbitrator information
-        arbitrator.arbitrator = msg.sender;
-        // Default operator is the sender
-        arbitrator.operator = msg.sender;
-        // Default revenue ETH address is the sender
-        arbitrator.revenueETHAddress = msg.sender;
-        // Set the arbitrator and operator's Bitcoin address and public key
-        arbitrator.revenueBtcAddress = defaultBtcAddress;
-        arbitrator.revenueBtcPubKey = defaultBtcPubKey;
-        arbitrator.operatorBtcAddress = defaultBtcAddress;
-        arbitrator.operatorBtcPubKey = defaultBtcPubKey;
-        arbitrator.currentFeeRate = feeRate;
-        arbitrator.deadLine = deadline;
+        DataTypes.ArbitratorInfo storage arbitrator = _initializeArbitrator(
+            msg.sender,
+            defaultBtcAddress,
+            defaultBtcPubKey,
+            feeRate,
+            btcFeeRate,
+            deadline
+        );
 
         // Calculate total NFT value
         uint256 totalNftValue = _calculateNFTValue(tokenIds);
@@ -241,6 +220,46 @@ contract ArbitratorManager is
         );
     }
 
+    function _initializeArbitrator(
+        address arbitratorAddress,
+        string calldata defaultBtcAddress,
+        bytes calldata defaultBtcPubKey,
+        uint256 feeRate,
+        uint256 btcFeeRate,
+        uint256 deadline
+    ) internal returns (DataTypes.ArbitratorInfo storage) {
+        // Check if the arbitrator is already registered
+        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[arbitratorAddress];
+        if (arbitrator.arbitrator != address(0)) {
+            revert(Errors.ARBITRATOR_ALREADY_REGISTERED);
+        }
+
+        _validateInputs(
+            defaultBtcAddress,
+            defaultBtcPubKey,
+            feeRate,
+            btcFeeRate,
+            deadline
+        );
+
+        // Initialize basic information
+        arbitrator.arbitrator = arbitratorAddress;
+        arbitrator.operator = arbitratorAddress;
+        arbitrator.revenueETHAddress = arbitratorAddress;
+        arbitrator.revenueBtcAddress = defaultBtcAddress;
+        arbitrator.revenueBtcPubKey = defaultBtcPubKey;
+        arbitrator.operatorBtcAddress = defaultBtcAddress;
+        arbitrator.operatorBtcPubKey = defaultBtcPubKey;
+        arbitrator.currentFeeRate = feeRate;
+        arbitrator.deadLine = deadline;
+
+        // Initialize extension information
+        DataTypes.ArbitratorInfoExt storage arbitratorExt = arbitratorsExt[arbitratorAddress];
+        arbitratorExt.currentBTCFeeRate = btcFeeRate;
+
+        return arbitrator;
+    }
+    
     /**
      * @notice Stake ETH as collateral
      */
@@ -494,6 +513,23 @@ contract ArbitratorManager is
         emit ArbitratorFeeRateUpdated(msg.sender, feeRate);
     }
 
+    function setArbitratorBtcFeeRate(uint256 btcFeeRate) external override {
+        uint256 minBtcFeeRate = configManager.getConfig(configManager.TRANSACTION_MIN_BTC_FEE_RATE());
+        
+        require(btcFeeRate >= minBtcFeeRate, Errors.INVALID_BTC_FEE_RATE);
+        
+        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
+        if (arbitrator.arbitrator == address(0)) revert (Errors.ARBITRATOR_NOT_REGISTERED);
+        if (!isConfigModifiable(msg.sender)) {
+            revert (Errors.CONFIG_NOT_MODIFIABLE);
+        }
+
+        DataTypes.ArbitratorInfoExt storage arbitratorExt = arbitratorsExt[msg.sender];
+        arbitratorExt.currentBTCFeeRate = btcFeeRate;
+
+        emit ArbitratorBtcFeeRateUpdated(msg.sender, btcFeeRate);
+    }
+
     /**
      * @notice Set arbitrator deadline
      * @dev Only callable by arbitrator
@@ -548,6 +584,10 @@ contract ArbitratorManager is
         returns (DataTypes.ArbitratorInfo memory) 
     {
         return arbitrators[arbitratorAddress];
+    }
+
+    function getArbitratorInfoExt(address arbitrator) external view returns (DataTypes.ArbitratorInfoExt memory) {
+        return arbitratorsExt[arbitrator];
     }
 
     /**

@@ -91,11 +91,13 @@ describe("TransactionManager", function () {
         const btcScript = "0x76a9149b42587007f85e456b5d0d702e828f34ea1f55b188ac";
         const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
         const feeRate = 1000; // 10%
+        const btcFeeRate = 1000; // 10%
         console.log("Before Register arbitrator result:");
         let tx = await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
             btcAddress,
             btcPubKey,
             feeRate,
+            btcFeeRate,
             deadline,
             { value: STAKE_AMOUNT }
         );
