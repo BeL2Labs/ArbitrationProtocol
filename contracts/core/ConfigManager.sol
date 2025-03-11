@@ -210,8 +210,8 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
      * @return values Array of config values
      */
     function getAllConfigs() external view returns (bytes32[] memory keys, uint256[] memory values) {
-        keys = new bytes32[](12);
-        values = new uint256[](12);
+        keys = new bytes32[](13);
+        values = new uint256[](13);
 
         keys[0] = MIN_STAKE;
         keys[1] = MAX_STAKE;

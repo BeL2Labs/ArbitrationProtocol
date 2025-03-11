@@ -62,6 +62,10 @@ describe("TransactionManager", function () {
         // Deploy BTC Address Parser
         const BTCAddressParser = await ethers.getContractFactory("MockBtcAddress");
         btcAddressParser = await BTCAddressParser.deploy();
+
+        // Deploy MockAssetOracle
+        const MockOracle = await ethers.getContractFactory("MockAssetOracle");
+        const mockOracle = await MockOracle.deploy();
         // Deploy TransactionManager
         const TransactionManager = await ethers.getContractFactory("TransactionManager");
         transactionManager = await upgrades.deployProxy(TransactionManager, [
@@ -70,8 +74,8 @@ describe("TransactionManager", function () {
             configManager.address,
             compensationManager.address,
             btcUtils.address,
-            btcAddressParser.address
-
+            btcAddressParser.address,
+            mockOracle.address
         ], { initializer: 'initialize' });
 
         // Set transactionManager
@@ -90,7 +94,7 @@ describe("TransactionManager", function () {
         const btcPubKey = ethers.utils.arrayify("0x0250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19");
         const btcScript = "0x76a9149b42587007f85e456b5d0d702e828f34ea1f55b188ac";
         const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
-        const feeRate = 1000; // 10%
+        const feeRate = 0; // 10%
         const btcFeeRate = 1000; // 10%
         console.log("Before Register arbitrator result:");
         let tx = await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
@@ -116,7 +120,7 @@ describe("TransactionManager", function () {
         console.log("setTransactionManager:", tx.hash);
     });
    
-    describe("Transaction Registration", async function () {
+   describe("Transaction Registration", async function () {
         it ("Should get available stake", async function () {
             const availableStake = await arbitratorManager.getAvailableStake(arbitrator.address);
             expect(availableStake).to.equal(STAKE_AMOUNT);
@@ -165,23 +169,27 @@ describe("TransactionManager", function () {
             ).to.be.revertedWith("T3");
         });
 
-        it("Should fail to register transaction with insufficient fee", async function () {
+        it("Should success to register transaction with 0 ela fee", async function () {
             const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
-
             // Try to register with zero fee
-            await expect(
-                transactionManager.connect(dapp).registerTransaction(
+            const tx = await transactionManager.connect(dapp).registerTransaction(
                     arbitrator.address,
                     deadline,
                     compensationReceiver.address,
                     dapp.address,
                     { value: 0 } // Zero fee
-                )
-            ).to.be.revertedWith("T5");
+                );
+
+            const receipt = await tx.wait();
+            const event = receipt.events.find(e => e.event === "TransactionRegistered");
+            const txId = event.args[0];
+
+            const data = await transactionManager.connect(dapp).getTransactionDataById(txId);
+            expect(data.arbitratorBtcFee).to.equal(18);
         });
     });
 
-    describe("Transaction Upload utxos", function () {
+   describe("Transaction Upload utxos", function () {
         beforeEach(async function () {
             const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
 

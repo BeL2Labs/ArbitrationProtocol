@@ -9,6 +9,7 @@ import "../interfaces/IDAppRegistry.sol";
 import "../interfaces/IConfigManager.sol";
 import "../interfaces/IBTCUtils.sol";
 import "../interfaces/IBtcAddress.sol";
+import "../interfaces/IAssetOracle.sol";
 import "../core/ConfigManager.sol";
 import "../libraries/DataTypes.sol";
 import "../libraries/Errors.sol";
@@ -25,6 +26,8 @@ contract TransactionManager is
     // Constants
     uint256 private constant SECONDS_PER_YEAR = 365 days;
     uint256 private constant FEE_RATE_MULTIPLIER = 10000;
+    address private constant ETH_TOKEN = address(0x517E9e5d46C1EA8aB6f78677d6114Ef47F71f6c4);
+    address private constant BTC_TOKEN = address(0xDF4191Bfe8FAE019fD6aF9433E8ED6bfC4B90CA1);
 
     // Contract references
     IArbitratorManager public arbitratorManager;
@@ -46,6 +49,7 @@ contract TransactionManager is
     mapping(bytes32 => bytes) public transactionSignData;
     mapping(bytes32 => bytes32) public txHashToId;
     uint256 private _transactionIdCounter;
+    IAssetOracle public assetOracle;
 
     modifier onlyCompensationManager() {
         if (msg.sender != compensationManager) revert(Errors.NOT_COMPENSATION_MANAGER);
@@ -66,6 +70,7 @@ contract TransactionManager is
      * @param _compensationManager Address of the compensation manager contract
      * @param _btcUtils Address of the BTC utils contract
      * @param _btcAddressParser Address of the BTC address parser contract
+     * @param _assetOracle Address of the asset oracle contract
      */
     function initialize(
         address _arbitratorManager,
@@ -73,7 +78,8 @@ contract TransactionManager is
         address _configManager,
         address _compensationManager,
         address _btcUtils,
-        address _btcAddressParser
+        address _btcAddressParser,
+        address _assetOracle
     ) public initializer {
         __ReentrancyGuard_init();
         __Ownable_init(msg.sender);
@@ -83,7 +89,8 @@ contract TransactionManager is
             || _configManager == address(0)
             || _compensationManager == address(0)
             || _btcUtils == address(0)
-            || _btcAddressParser == address(0)) revert(Errors.ZERO_ADDRESS);
+            || _btcAddressParser == address(0)
+            || _assetOracle == address(0)) revert(Errors.ZERO_ADDRESS);
 
         arbitratorManager = IArbitratorManager(_arbitratorManager);
         dappRegistry = IDAppRegistry(_dappRegistry);
@@ -91,6 +98,7 @@ contract TransactionManager is
         compensationManager = _compensationManager;
         btcUtils = IBTCUtils(_btcUtils);
         btcAddressParser = IBtcAddress(_btcAddressParser);
+        assetOracle = IAssetOracle(_assetOracle);
     }
 
     /**
@@ -131,9 +139,8 @@ contract TransactionManager is
 
         // Calculate and validate fee
         // fee = stake * (duration / secondsPerYear) * (feeRate / feeRateMultiplier)
-        uint256 fee = this.getRegisterTransactionFee(deadline, arbitrator);
+        uint256 fee = getRegisterTransactionFee(deadline, arbitrator);
    
-        if (fee == 0) revert(Errors.INVALID_FEE);
         if (msg.value < fee) revert(Errors.INSUFFICIENT_FEE);
 
         // Generate transaction ID
@@ -145,7 +152,7 @@ contract TransactionManager is
                 _transactionIdCounter++
             )
         );
-
+        uint256 btcFee = getRegisterTransactionBtcFee(deadline, arbitrator);
         // Set arbitrator to working status
         arbitratorManager.setArbitratorWorking(arbitrator, id);
 
@@ -155,6 +162,7 @@ contract TransactionManager is
         transactionData.startTime = block.timestamp;
         transactionData.deadline = deadline;
         transactionData.depositedFee = msg.value;
+        transactionData.arbitratorBtcFee = btcFee;
         transactionData.status = DataTypes.TransactionStatus.Active;
         transactionParties.arbitrator = arbitrator;
         transactionParties.compensationReceiver = compensationReceiver;
@@ -532,7 +540,7 @@ contract TransactionManager is
      * @param deadline The deadline for the transaction
      * @return fee The calculated fee
      */
-    function getRegisterTransactionFee(uint256 deadline, address arbitrator) external view returns (uint256 fee) {
+    function getRegisterTransactionFee(uint256 deadline, address arbitrator) public view returns (uint256 fee) {
         // Calculate the duration from now to the deadline
         uint256 duration = deadline > block.timestamp ? deadline - block.timestamp : 0;
         if (duration < configManager.getConfig(ConfigManagerKeys.MIN_TRANSACTION_DURATION) ||
@@ -555,6 +563,29 @@ contract TransactionManager is
         return (totalStake * duration * arbitratorFeeRate) / (SECONDS_PER_YEAR * FEE_RATE_MULTIPLIER);
     }
 
+    function getRegisterTransactionBtcFee(uint256 deadline, address arbitrator) public view returns (uint256 fee) {
+        // Calculate the duration from now to the deadline
+        uint256 duration = deadline > block.timestamp ? deadline - block.timestamp : 0;
+        if (duration < configManager.getConfig(ConfigManagerKeys.MIN_TRANSACTION_DURATION) ||
+            duration > configManager.getConfig(ConfigManagerKeys.MAX_TRANSACTION_DURATION)) {
+            revert(Errors.INVALID_DURATION);
+        }
+
+        if (arbitrator == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
+        }
+        uint256 btcFeeRate = arbitratorManager.getArbitratorInfoExt(arbitrator).currentBTCFeeRate;
+        uint256 ethFee = _getFee(arbitrator, btcFeeRate, duration);
+        return ethToBTC(ethFee);
+    }
+
+    function ethToBTC(uint256 eth_amount) private view returns (uint256 satoshi) {
+        uint256 eth_price = assetOracle.assetPrices(ETH_TOKEN);
+        uint256 btc_price = assetOracle.assetPrices(BTC_TOKEN);
+        //(eth_amount * eth_price / 1e18)/(btc_price)*1e8
+        satoshi =  (eth_amount * eth_price * 1e8) / (btc_price * 1e18);
+    }
+
     function setArbitratorManager(address _arbitratorManager) external onlyOwner {
         arbitratorManager = IArbitratorManager(_arbitratorManager);
         emit SetArbitratorManager(_arbitratorManager);
@@ -568,6 +599,14 @@ contract TransactionManager is
         emit BTCAddressParserChanged(_btcAddressParser);
     }
 
+    function setAssetOracle(address _assetOracle) external onlyOwner {
+        if (_assetOracle == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
+        }
+        assetOracle = IAssetOracle(_assetOracle);
+        emit AssetOracleUpdated(_assetOracle);
+    }
+
     // Add a gap for future storage variables
-    uint256[48] private __gap;
+    uint256[47] private __gap;
 }
