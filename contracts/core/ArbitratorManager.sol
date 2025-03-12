@@ -45,12 +45,12 @@ contract ArbitratorManager is
 
     // Mapping of arbitrator addresses to their information
     mapping(address => DataTypes.ArbitratorInfo) private arbitrators;
-    mapping(address => DataTypes.ArbitratorInfoExt) private arbitratorsExt;
     
     // State variables
     address public transactionManager;
     address public compensationManager;
     bool private initialized;
+    mapping(address => DataTypes.ArbitratorInfoExt) private arbitratorsExt;
 
     /**
      * @notice Ensures arbitrator is not currently handling any transactions
@@ -861,5 +861,5 @@ contract ArbitratorManager is
     }
 
     // Add a gap for future storage variables
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 }
