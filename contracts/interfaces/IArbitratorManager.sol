@@ -60,22 +60,11 @@ interface IArbitratorManager {
     ) external;
     
     /**
-     * @notice Set arbitrator fee rate
-     * @dev Only callable by the arbitrator
-     * @param feeRate The fee rate of the arbitrator
+     * @dev Sets the fee rates for Ethereum and Bitcoin transactions.
+     * @param ethFeeRate The fee rate for Ethereum transactions.
+     * @param btcFeeRate The fee rate for Bitcoin transactions.
      */
-    function setArbitratorFeeRate(
-        uint256 feeRate
-    ) external;
-
-    /**
-     * @notice Set arbitrator btc fee rate
-     * @dev Only callable by the arbitrator
-     * @param btcFeeRate The fee rate of the arbitrator
-     */
-    function setArbitratorBtcFeeRate(
-        uint256 btcFeeRate
-    ) external;
+    function setFeeRates(uint256 ethFeeRate, uint256 btcFeeRate) external;
 
     /**
      * @notice Set arbitrator deadline
@@ -178,12 +167,8 @@ interface IArbitratorManager {
 
     event ArbitratorFeeRateUpdated(
         address indexed arbitrator,
-        uint256 feeRate
-    );
-
-    event ArbitratorBtcFeeRateUpdated(
-        address indexed arbitrator,
-        uint256 feeRate
+        uint256 ethFeeRate,
+        uint256 btcFeeRate
     );
 
     event ArbitratorDeadlineUpdated(address indexed arbitrator, uint256 deadline);
