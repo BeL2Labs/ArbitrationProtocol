@@ -15,37 +15,32 @@ import { cn } from "@/utils/shadcn";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { FC, useMemo, useState } from "react";
 
-export type StakeType = "coin" | "nft" | "unstake";
+export type FeeRateType = "ela" | "btc";
 
-export const StakeTypePicker: FC<{
-  canUnstake?: boolean;
-  value: StakeType;
+/**
+ * Lets user choose between ELA fee rate and BTC fee rate when registering or editing an arbiter.
+ */
+export const FeeRateTypePicker: FC<{
+  value: FeeRateType;
   className?: string;
-  onChange: (value: StakeType) => void;
-}> = ({ value, onChange, canUnstake = false, className }) => {
+  onChange: (value: FeeRateType) => void;
+}> = ({ value, onChange, className }) => {
   const activeChain = useActiveEVMChainConfig();
 
-  const stakeTypes: { value: StakeType, label: string }[] = useMemo(() => {
-    const types: { value: StakeType, label: string }[] = [
+  const feeRateTypes: { value: FeeRateType, label: string }[] = useMemo(() => {
+    const types: { value: FeeRateType, label: string }[] = [
       {
-        value: "coin",
-        label: `Stake ${activeChain?.nativeCurrency.symbol}`,
+        value: "ela",
+        label: `Fee rate in ${activeChain?.nativeCurrency.symbol}`,
       },
       {
-        value: "nft",
-        label: "Stake NFT",
+        value: "btc",
+        label: "Fee rate in BTC",
       }
     ];
 
-    if (canUnstake) {
-      types.push({
-        value: "unstake",
-        label: "Withdraw everything",
-      });
-    }
-
     return types;
-  }, [activeChain, canUnstake]);
+  }, [activeChain]);
 
   const [open, setOpen] = useState(false);
 
@@ -59,8 +54,8 @@ export const StakeTypePicker: FC<{
           className={cn("w-full justify-between", className)}
         >
           {value
-            ? stakeTypes.find((framework) => framework.value === value)?.label
-            : "Select Stake Type"}
+            ? feeRateTypes.find((framework) => framework.value === value)?.label
+            : "Select Fee Rate Type"}
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -68,12 +63,12 @@ export const StakeTypePicker: FC<{
         <Command>
           <CommandList>
             <CommandGroup>
-              {stakeTypes.map((framework) => (
+              {feeRateTypes.map((framework) => (
                 <CommandItem
                   key={framework.value}
                   value={framework.value}
                   onSelect={(currentValue) => {
-                    onChange(currentValue as StakeType);
+                    onChange(currentValue as FeeRateType);
                     setOpen(false);
                   }}
                 >

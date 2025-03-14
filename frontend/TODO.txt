@@ -1,4 +1,6 @@
-- Show compensation date in the componesation detail popup ?
+- registerArbiterByStakeETH with btc fee rate:
+  - Registration: TBD
+  - Edition: TBD
 
 ------------------------------------------
 

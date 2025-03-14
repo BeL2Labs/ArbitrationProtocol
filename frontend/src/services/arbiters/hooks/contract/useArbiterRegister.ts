@@ -20,6 +20,7 @@ export const useArbiterRegister = () => {
     btcAddress: string,
     btcPubKey: string,
     feeRate: number,
+    btcFeeRate: number,
     deadline: number
   ): Promise<boolean> => {
     const { hash, receipt } = await writeContract({
@@ -30,6 +31,7 @@ export const useArbiterRegister = () => {
         btcAddress,
         `0x${btcPubKey}`,
         feeRate * 100, // 1% must be encoded as 100
+        btcFeeRate * 100, // 1% must be encoded as 100
         deadline
       ],
       value: parseEther(stakeAmount.toString())
@@ -47,6 +49,7 @@ export const useArbiterRegister = () => {
     btcAddress: string,
     btcPubKey: string,
     feeRate: number,
+    btcFeeRate: number,
     deadline: number
   ): Promise<boolean> => {
     const { hash, receipt } = await writeContract({
@@ -58,6 +61,7 @@ export const useArbiterRegister = () => {
         btcAddress,
         `0x${btcPubKey}`,
         feeRate * 100, // 1% must be encoded as 100
+        btcFeeRate * 100, // 1% must be encoded as 100
         deadline
       ]
     });

@@ -1,3 +1,4 @@
+import { FeeRateType, FeeRateTypePicker } from '@/components/arbiters/FeeRateTypePicker';
 import { BoxTitle } from '@/components/base/BoxTitle';
 import { EnsureWalletNetwork } from '@/components/base/EnsureWalletNetwork/EnsureWalletNetwork';
 import { IconTooltip } from '@/components/base/IconTooltip';
@@ -31,11 +32,13 @@ import { z } from 'zod';
 import { StakeCoinForm } from './StakeCoinForm';
 import { StakeNFTForm } from './StakeNFTForm';
 
-export const RegistrationForm: FC<{
-  onOperationComplete?: () => void; // A chain operation has just completed (stake, unstake...)
-}> = ({ onOperationComplete }) => {
+export const DefaultELAFeeRate = 0.1;
+export const DefaultBTCFeeRate = 0.1;
+
+export const RegistrationForm: FC = () => {
   const activeChain = useActiveEVMChainConfig();
   const [stakeType, setStakeType] = useState<StakeType>("coin");
+  const [feeRateType, setFeeRateType] = useState<FeeRateType>("btc");
   const { successToast } = useToasts();
   const navigate = useNavigate();
   const { configSettings } = useConfigManager();
@@ -48,10 +51,15 @@ export const RegistrationForm: FC<{
 
   useInterval(checkApproved, 3000);
 
+  /**
+   * NOTE: ELA and BTC fee rates are exlusive. Arbiter owner must choose one or the other. When one of them
+   * is set, the other value must be reset to 0.
+   */
   const baseSchema = z.object({
     operatorBTCAddress: z.string().refine(isValidBitcoinAddress, "Not a valid Bitcoin address"),
     operatorBTCPubKey: z.string().refine(isValidBitcoinPublicKey, "Not a valid Bitcoin public key"),
-    feeRate: z.coerce.number().min(1).max(100),
+    feeRate: z.coerce.number().min(0).max(100), // ELA fee rate
+    btcFeeRate: z.coerce.number().min(0).max(100), // BTC fee rate
     deadline: z.date().min(new Date())
   });
 
@@ -75,14 +83,17 @@ export const RegistrationForm: FC<{
     return schema;
   }, [baseSchema, coinSchemaExtension, nftSchemaExtension, stakeType]);
 
-  type PartialSchema = typeof formSchema & Partial<typeof coinSchemaExtension> & Partial<typeof nftSchemaExtension>;
+  type PartialSchema = typeof formSchema &
+    Partial<typeof coinSchemaExtension> &
+    Partial<typeof nftSchemaExtension>;
 
   const form = useForm<z.infer<PartialSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       operatorBTCAddress: '',
       operatorBTCPubKey: '',
-      feeRate: 1,
+      feeRate: DefaultELAFeeRate,
+      btcFeeRate: DefaultBTCFeeRate,
       deadline: new Date(),
       // Native coin
       coinAmount: 1,
@@ -116,7 +127,8 @@ export const RegistrationForm: FC<{
           new BigNumber(values.coinAmount),
           values.operatorBTCAddress,
           values.operatorBTCPubKey,
-          values.feeRate,
+          feeRateType === "ela" ? values.feeRate : 0,
+          feeRateType === "btc" ? values.btcFeeRate : 0,
           Math.floor(values.deadline.getTime() / 1000)
         )) {
           successToast(`Arbiter successfully registered!`);
@@ -130,7 +142,8 @@ export const RegistrationForm: FC<{
           values.tokenIds,
           values.operatorBTCAddress,
           values.operatorBTCPubKey,
-          values.feeRate,
+          feeRateType === "ela" ? values.feeRate : 0,
+          feeRateType === "btc" ? values.btcFeeRate : 0,
           Math.floor(values.deadline.getTime() / 1000)
         )) {
           successToast(`Arbiter successfully registered!`);
@@ -140,7 +153,7 @@ export const RegistrationForm: FC<{
     } catch (error) {
       console.error('Error during arbiter registration:', error);
     }
-  }, [navigate, registerArbiterByStakeETH, registerArbiterByStakeNFT, stakeType, successToast]);
+  }, [feeRateType, navigate, registerArbiterByStakeETH, registerArbiterByStakeNFT, stakeType, successToast]);
 
   const handleImportOperatorFromWallet = useCallback(async () => {
     const pubKey = await getPublicKey();
@@ -163,18 +176,41 @@ export const RegistrationForm: FC<{
         <div className="relative bg-white rounded-lg p-8 max-w-md w-full mx-4">
           <BoxTitle>Settings</BoxTitle>
 
-          {/* Fee rate */}
-          <FormField
-            control={form.control}
-            name="feeRate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Fee rate (1-100%) <IconTooltip title="Fee rate" tooltip={tooltips.arbiterFeeRate} iconClassName='ml-1' iconSize={12} /></FormLabel>
-                <Input type='number' step="0.01" {...field} />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Fee rate selection */}
+          <FormItem>
+            <FormLabel>Fee rate</FormLabel>
+            <FeeRateTypePicker value={feeRateType} onChange={setFeeRateType} />
+          </FormItem>
+
+          {/* ELA Fee Rate */}
+          {feeRateType === "ela" &&
+            <FormField
+              control={form.control}
+              name="feeRate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fee rate (1-100%) <IconTooltip title="Fee rate" tooltip={tooltips.arbiterFeeRate} iconClassName='ml-1' iconSize={12} /></FormLabel>
+                  <Input type='number' step="0.01" {...field} />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          }
+
+          {/* BTC Fee rate */}
+          {feeRateType === "btc" &&
+            <FormField
+              control={form.control}
+              name="btcFeeRate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>BTC Fee rate (1-100%)</FormLabel>
+                  <Input type='number' step="0.01" {...field} />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          }
 
           {/* Deadline */}
           <FormField
