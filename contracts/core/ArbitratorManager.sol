@@ -492,42 +492,21 @@ contract ArbitratorManager is
         emit RevenueAddressesSet(msg.sender, ethAddress, btcPubKey, btcAddress);
     }
 
-    /**
-     * @notice Set arbitrator fee rate
-     * @dev Only callable by the arbitrator
-     * @param feeRate The fee rate of the arbitrator
-     */
-    function setArbitratorFeeRate(
-        uint256 feeRate
-    ) external override {
-        require(feeRate >= configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE()), "FeeTooLow");
-        
+    function setFeeRates(uint256 ethFeeRate, uint256 btcFeeRate) external override {
+        require(ethFeeRate >= configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE()), "FeeTooLow");
+        require(btcFeeRate >= configManager.getConfig(configManager.TRANSACTION_MIN_BTC_FEE_RATE()), Errors.INVALID_BTC_FEE_RATE);
+
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
         if (arbitrator.arbitrator == address(0)) revert (Errors.ARBITRATOR_NOT_REGISTERED);
         if (!isConfigModifiable(msg.sender)) {
             revert (Errors.CONFIG_NOT_MODIFIABLE);
         }
 
-        arbitrator.currentFeeRate = feeRate;
-
-        emit ArbitratorFeeRateUpdated(msg.sender, feeRate);
-    }
-
-    function setArbitratorBtcFeeRate(uint256 btcFeeRate) external override {
-        uint256 minBtcFeeRate = configManager.getConfig(configManager.TRANSACTION_MIN_BTC_FEE_RATE());
-        
-        require(btcFeeRate >= minBtcFeeRate, Errors.INVALID_BTC_FEE_RATE);
-        
-        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        if (arbitrator.arbitrator == address(0)) revert (Errors.ARBITRATOR_NOT_REGISTERED);
-        if (!isConfigModifiable(msg.sender)) {
-            revert (Errors.CONFIG_NOT_MODIFIABLE);
-        }
-
+        arbitrator.currentFeeRate = ethFeeRate;
         DataTypes.ArbitratorInfoExt storage arbitratorExt = arbitratorsExt[msg.sender];
         arbitratorExt.currentBTCFeeRate = btcFeeRate;
 
-        emit ArbitratorBtcFeeRateUpdated(msg.sender, btcFeeRate);
+        emit ArbitratorFeeRateUpdated(msg.sender, ethFeeRate, btcFeeRate);
     }
 
     /**
