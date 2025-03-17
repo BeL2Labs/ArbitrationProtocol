@@ -12,8 +12,8 @@ async function main() {
     const ConfigManager = await ethers.getContractFactory("ConfigManager", deployer);
     const configManager = ConfigManager.attach(contractAddress);
 
-    // 设置BTC交易最低费率为1%（100 basis points）
-    const tx = await configManager.setTransactionMinBTCFeeRate(100);
+    // 设置BTC交易最低费率为0%（0 basis points）
+    const tx = await configManager.setTransactionMinBTCFeeRate(0);
     console.log("Transaction hash:", tx.hash);
 
     await tx.wait();
