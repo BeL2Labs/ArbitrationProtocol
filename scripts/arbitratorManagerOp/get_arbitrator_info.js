@@ -23,11 +23,13 @@ async function main() {
   const arbitratorManager = await ArbitratorManager.attach(arbitratorManagerAddress).connect(deployer);
 
   // Get arbitrator info for the deployer address
-  const arbitratorAddress = "0xcD869291a10B3070Cf9bC6bb9e67Ef60F34b10B5";//deployer.address;
+  const arbitratorAddress = "0x3Cf0BB575527cACf9e274a6eE879f876Dae0BC40";//deployer.address;
   console.log("\nGetting arbitrator info for address:", arbitratorAddress);
   console.log("Account balance:", ethers.utils.formatEther(await deployer.provider.getBalance(deployer.address)).toString());
   const info = await arbitratorManager.getArbitratorInfo(arbitratorAddress);
   console.log("info:", info);
+  const infoExt = await arbitratorManager.getArbitratorInfoExt(arbitratorAddress);
+  console.log("infoExt=", infoExt);
   // Format and display the information
   console.log("\nArbitrator Information:");
   console.log("------------------------");

@@ -46,7 +46,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
         configs[MIN_TRANSACTION_DURATION] = 1 days;
         configs[MAX_TRANSACTION_DURATION] = 30 days;
         configs[TRANSACTION_MIN_FEE_RATE] = 0; // 0% in basis points
-        configs[TRANSACTION_MIN_BTC_FEE_RATE] = 100; // 1% in basis points
+        configs[TRANSACTION_MIN_BTC_FEE_RATE] = 0; // 1% in basis points
         configs[ARBITRATION_TIMEOUT] = 24 hours; //Deadline for submitting signatures
         configs[ARBITRATION_FROZEN_PERIOD] = 30 minutes;//The freezing period after the end of the transaction, during which transaction cannot be accepted or exited
         configs[SYSTEM_FEE_RATE] = 500; // 5% in basis points

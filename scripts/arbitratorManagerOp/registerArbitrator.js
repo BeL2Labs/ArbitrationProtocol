@@ -1,5 +1,5 @@
-const { ethers } = require("hardhat");
-const { readConfig, writeConfig } = require("./helper.js");
+const { ethers,network } = require("hardhat");
+const { readConfig, writeConfig } = require("../helper.js");
 const bitcoin = require('bitcoinjs-lib');
 const {publicKeyCreate} = require("secp256k1");
 
@@ -35,8 +35,8 @@ async function getBitcoinCredentials(privateKey) {
   }
 async function main() {
     // Get the signer (first account)
-    const [signer, operator] = await ethers.getSigners();
-    console.log("Registering arbitrator with address:", signer.address);
+    const [, operator] = await ethers.getSigners();
+    console.log("Registering arbitrator with address:", operator.address);
 
     // Read ArbitratorManager address from config
     const arbitratorManagerAddress = await readConfig(network.name, "ARBITRATOR_MANAGER");
@@ -49,14 +49,14 @@ async function main() {
     const ConfigManagerFactory = await ethers.getContractFactory("ConfigManager");
 
     // Create contract instances
-    const arbitratorManager = ArbitratorManagerFactory.attach(arbitratorManagerAddress).connect(signer);
-    const configManager = ConfigManagerFactory.attach(configManagerAddress).connect(signer);
+    const arbitratorManager = ArbitratorManagerFactory.attach(arbitratorManagerAddress).connect(operator);
+    const configManager = ConfigManagerFactory.attach(configManagerAddress).connect(operator);
 
     // Get minimum stake requirement
     const minStake = await configManager.getConfig(await configManager.MIN_STAKE());
     console.log("Minimum Stake Requirement:", ethers.utils.formatEther(minStake), "ETH");
 
-    let arbitrator_index = 0;
+    let arbitrator_index = 1;
     const accounts = network.config.accounts;
     let privateKey;
     if (typeof accounts === 'string') {
@@ -72,13 +72,14 @@ async function main() {
 
     // Prepare arbitrator registration parameters
     let { btcPubKey, btcAddress } = await getBitcoinCredentials(privateKey);
-    const feeRate = ethers.utils.parseUnits("0.05", 4); // 0.5% fee rate (4 decimal places)
+    const feeRate = ethers.utils.parseUnits("0", 4); // 0.1% fee rate (4 decimal places)
+    const btcFeeRate = ethers.utils.parseUnits("0.1", 4); // 0.1% fee rate (4 decimal places)
     const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
     btcPubKey = "0x" + btcPubKey;
     try {
         // Estimate gas for the transaction
         const gasEstimate = await arbitratorManager.estimateGas.registerArbitratorByStakeETH(
-            btcAddress, btcPubKey, feeRate, deadline,
+            btcAddress, btcPubKey, feeRate, btcFeeRate, deadline,
             {
                  value: minStake
             });
@@ -86,7 +87,7 @@ async function main() {
 
         // Send transaction to register arbitrator
         const tx = await arbitratorManager.registerArbitratorByStakeETH(
-            btcAddress, btcPubKey, feeRate, deadline,
+            btcAddress, btcPubKey, feeRate, btcFeeRate, deadline,
             {
                 value: minStake,
                 gasLimit: gasEstimate.mul(2) // Add some buffer
