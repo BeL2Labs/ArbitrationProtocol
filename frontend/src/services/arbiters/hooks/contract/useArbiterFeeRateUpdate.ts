@@ -8,20 +8,28 @@ export const useArbiterFeeRateUpdate = () => {
   const { writeContract, isPending, isSuccess, error } = useContractCall();
 
   /**
+   * Updates the fee rate in ELA and in BTC.
+   * While both fee rates can be non 0 at the same time on the contract side, we force one or another
+   * on the UI side for now.
+   * 
    * @param feeRate Human readable, 1 for 1%
    */
-  const updateFeeRate = useCallback(async (feeRate: number): Promise<boolean> => {
+  const setFeeRates = useCallback(async (elaFeeRate: number, btcFeeRate: number): Promise<boolean> => {
+    console.log("Setting fee rates (human readable):", elaFeeRate, btcFeeRate);
+
     const { hash, receipt } = await writeContract({
       contractAddress: activeChain?.contracts.arbitratorManager,
       abi,
-      functionName: 'setArbitratorFeeRate',
-      // 1% must be encoded as 100
-      args: [Math.round(feeRate * 100)]
+      functionName: 'setFeeRates',
+      args: [
+        Math.round(elaFeeRate * 100), // 1% must be encoded as 100
+        Math.round(btcFeeRate * 100)
+      ]
     });
 
     console.log("Update fee rate result:", hash, receipt)
     return !!receipt;
   }, [activeChain, writeContract]);
 
-  return { updateFeeRate, isPending, isSuccess, error };
+  return { setFeeRates, isPending, isSuccess, error };
 };

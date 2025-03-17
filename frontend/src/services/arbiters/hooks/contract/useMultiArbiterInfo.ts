@@ -2,7 +2,7 @@ import { useActiveEVMChainConfig } from '@/services/chains/hooks/useActiveEVMCha
 import { useMulticall } from '@/services/multicall/hooks/contract/useMulticall';
 import { useCallback } from 'react';
 import { abi } from "../../../../../contracts/core/ArbitratorManager.sol/ArbitratorManager.json";
-import { ContractArbiterInfo } from '../../dto/contract-arbiter-info';
+import { ContractArbiterInfo, ContractArbiterInfoExt } from '../../dto/contract-arbiter-info';
 import { ArbiterInfo } from '../../model/arbiter-info';
 
 /**
@@ -13,17 +13,25 @@ export const useMultiArbiterInfo = () => {
   const { singleContractMulticall } = useMulticall();
 
   const fetchMultiArbiterInfo = useCallback(async (arbiterIds: string[]): Promise<ArbiterInfo[]> => {
-    const contractArbiters = await singleContractMulticall<ContractArbiterInfo>(
+    const multiCallParams = arbiterIds.flatMap(arbiterId => ([
+      { functionName: "getArbitratorInfo", multiArgs: [arbiterId] },
+      { functionName: "getArbitratorInfoExt", multiArgs: [arbiterId] }
+    ]));
+
+    const dualContractArbiters = await singleContractMulticall<ContractArbiterInfo | ContractArbiterInfoExt>(
       abi,
       activeChain!.contracts.arbitratorManager,
-      "getArbitratorInfo",
-      arbiterIds.map(arbiterId => [arbiterId])
+      multiCallParams
     );
 
-    if (!contractArbiters)
+    if (!dualContractArbiters)
       return undefined;
 
-    return contractArbiters.map((contractArbiter, i) => ArbiterInfo.fromContractArbiterInfo(contractArbiter));
+    // Multicall results for the same arbiter (2 methods) are every 2 elements. We sotr this out.
+    const contractArbiterInfo = dualContractArbiters.filter((_, i) => i % 2 === 0) as ContractArbiterInfo[];
+    const contractArbiterInfoExt = dualContractArbiters.filter((_, i) => i % 2 === 1) as ContractArbiterInfoExt[];
+
+    return contractArbiterInfo.map((contractArbiterInfo, i) => ArbiterInfo.fromContractArbiterInfo(contractArbiterInfo, contractArbiterInfoExt[i]));
   }, [activeChain, singleContractMulticall]);
 
   return { fetchMultiArbiterInfo };

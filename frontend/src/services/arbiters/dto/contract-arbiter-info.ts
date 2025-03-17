@@ -19,3 +19,7 @@ export type ContractArbiterInfo = {
   revenueETHAddress: string;
   status: number;
 }
+
+export type ContractArbiterInfoExt = {
+  currentBTCFeeRate: bigint;
+}

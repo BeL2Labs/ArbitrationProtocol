@@ -14,8 +14,7 @@ export const useMultiArbiterIsActive = () => {
     const isActives = await singleContractMulticall<boolean>(
       abi,
       activeChain!.contracts.arbitratorManager,
-      "isActiveArbitrator",
-      arbiterIds.map(arbiterId => [arbiterId])
+      arbiterIds.map(arbiterId => ({ functionName: "isActiveArbitrator", multiArgs: [arbiterId] }))
     );
 
     return isActives;

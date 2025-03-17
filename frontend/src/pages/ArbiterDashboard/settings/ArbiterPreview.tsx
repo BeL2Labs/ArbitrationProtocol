@@ -42,6 +42,8 @@ export const ArbiterPreview: FC<{
   const { fetchOwnedArbiter } = useOwnedArbiter();
   const isArbiterConfigModifiable = useArbiterConfigModifiable(arbiter);
   const { fetchBackendArbiterStatus, status: backendArbiterStatus, isFetchingStatus: isFetchingBackendArbiterStatus } = useBackendArbiter(arbiter.address);
+  const [feeRateLabel, setFeeRateLabel] = useState<string>(undefined);
+  const [feeRateValue, setFeeRateValue] = useState<number>(undefined);
 
   const handleArbiterUpdated = useCallback(() => {
     void fetchOwnedArbiter();
@@ -50,6 +52,14 @@ export const ArbiterPreview: FC<{
   useEffect(() => {
     void fetchBackendArbiterStatus();
   }, [fetchBackendArbiterStatus]);
+
+  useEffect(() => {
+    // Auto-detect current fee rate type when dialog opens.
+    if (arbiter) {
+      setFeeRateLabel(arbiter.currentFeeRate > 0 ? "Fee rate in ELA" : "Fee rate in BTC");
+      setFeeRateValue(arbiter.currentFeeRate > 0 ? arbiter.currentFeeRate / 100 : arbiter.currentBTCFeeRate / 100);
+    }
+  }, [arbiter]);
 
   return (
     <div className="space-y-6">
@@ -87,7 +97,7 @@ export const ArbiterPreview: FC<{
 
         {/* Fee rate */}
         <div className="flex flex-row justify-between items-center pr-4">
-          <InfoRow title="Fee Rate" value={`${arbiter.currentFeeRate / 100}%`} />
+          <InfoRow title={feeRateLabel} value={`${feeRateValue}%`} />
           <EnsureWalletNetwork continuesTo="Edit" evmConnectedNeeded supportedNetworkNeeded>
             <Button disabled={!isArbiterConfigModifiable} onClick={() => setOpenDialog("EditFeeRate")}><DollarSignIcon />Edit</Button>
           </EnsureWalletNetwork>

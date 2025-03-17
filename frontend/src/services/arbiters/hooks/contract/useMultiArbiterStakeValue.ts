@@ -16,8 +16,7 @@ export const useMultiArbiterStakeValue = () => {
     const stakes = await singleContractMulticall<BigNumber>(
       abi,
       activeChain!.contracts.arbitratorManager,
-      "getAvailableStake",
-      arbiterIds.map(arbiterId => [arbiterId])
+      arbiterIds.map(arbiterId => ({ functionName: "getAvailableStake", multiArgs: [arbiterId] }))
     );
 
     return stakes.map(stake => tokenToReadableValue(stake, 18));

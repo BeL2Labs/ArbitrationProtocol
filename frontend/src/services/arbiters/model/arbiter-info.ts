@@ -5,7 +5,7 @@ import BigNumber from "bignumber.js";
 import { Expose, Transform, Type } from "class-transformer";
 import moment, { Moment } from "moment";
 import { zeroAddress } from "viem";
-import { ContractArbiterInfo } from "../dto/contract-arbiter-info";
+import { ContractArbiterInfo, ContractArbiterInfoExt } from "../dto/contract-arbiter-info";
 
 /**
  * class-transformer is used for SUBGRAPH dtos, not contract ones.
@@ -19,6 +19,7 @@ export class ArbiterInfo implements Omit<ArbiterInfoDTO, "ethAmount" | "createdA
   @Expose() @Transform(({ value }) => new Date(value * 1000)) public createdAt: Date;
   @Expose({ name: "deadLine" }) public deadline: number;
   @Expose() @Type(() => Number) public currentFeeRate: number; // Fee rate with 100 basis. 100 means 1%
+  @Expose() @Type(() => Number) public currentBTCFeeRate: number; // Fee rate with 100 basis. 100 means 1%
   @Expose() @Type(() => Number) public pendingFeeRate: number;
   @Expose() public activeTransactionId: string;
   @Expose() public operatorEvmAddress: string;
@@ -58,11 +59,13 @@ export class ArbiterInfo implements Omit<ArbiterInfoDTO, "ethAmount" | "createdA
     this.nftValue = value;
   }
 
-  public static fromContractArbiterInfo(contractInfo: ContractArbiterInfo): ArbiterInfo {
+  public static fromContractArbiterInfo(contractInfo: ContractArbiterInfo, contractInfoExt: ContractArbiterInfoExt): ArbiterInfo {
     if (contractInfo?.arbitrator === zeroAddress)
       return undefined;
 
     const arbiter = new ArbiterInfo();
+
+    console.log("contractInfo", contractInfo)
 
     arbiter.id = contractInfo.arbitrator;
     arbiter.address = contractInfo.arbitrator;
@@ -71,6 +74,7 @@ export class ArbiterInfo implements Omit<ArbiterInfoDTO, "ethAmount" | "createdA
     arbiter.paused = contractInfo.paused;
     arbiter.deadline = Number(contractInfo.deadLine);
     arbiter.currentFeeRate = Number(contractInfo.currentFeeRate);
+    arbiter.currentBTCFeeRate = Number(contractInfoExt.currentBTCFeeRate);
     arbiter.activeTransactionId = !isEVMNullAddress(contractInfo.activeTransactionId) ? contractInfo.activeTransactionId : null;
     arbiter.operatorEvmAddress = contractInfo.operator;
     arbiter.operatorBtcAddress = contractInfo.operatorBtcAddress;

@@ -12,8 +12,8 @@ export const useMulticall = () => {
   const activeChain = useActiveEVMChainConfig();
   const { readContract } = useContractCall();
 
-  const singleContractMulticall = useCallback(async <ReturnType>(abi: any, contractAddress: string, functionName: string, multiArgs: any[][]): Promise<ReturnType[]> => {
-    const input = multiArgs.map(args => ({
+  const singleContractMulticall = useCallback(async <ReturnType>(abi: any, contractAddress: string, callParams: { functionName: string, multiArgs: any[] }[]): Promise<ReturnType[]> => {
+    const input = callParams.map(({ functionName, multiArgs: args }) => ({
       target: contractAddress,
       allowFailure: true,
       callData: encodeFunctionData({ abi, functionName, args })
@@ -29,8 +29,8 @@ export const useMulticall = () => {
     if (!callResult)
       return undefined;
 
-    const decodedResults = callResult.map(callResult => decodeFunctionResult({
-      abi, data: callResult.returnData, functionName
+    const decodedResults = callResult.map((callResult, i) => decodeFunctionResult({
+      abi, data: callResult.returnData, functionName: callParams[i].functionName
     })) as ReturnType[];
 
     return decodedResults;

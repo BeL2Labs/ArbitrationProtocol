@@ -15,8 +15,7 @@ export const useMultiTransactionStatus = () => {
     const statuses = await singleContractMulticall<number>(
       abi,
       activeChain!.contracts.transactionManager,
-      "getTransactionStatus",
-      transactionIds.map(transactionId => [transactionId])
+      transactionIds.map(transactionId => ({ functionName: "getTransactionStatus", multiArgs: [transactionId] }))
     );
 
     if (!statuses)

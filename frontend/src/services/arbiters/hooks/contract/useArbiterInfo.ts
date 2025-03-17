@@ -1,8 +1,9 @@
 import { useActiveEVMChainConfig } from '@/services/chains/hooks/useActiveEVMChainConfig';
 import { useContractCall } from '@/services/evm/hooks/useContractCall';
+import { useMulticall } from '@/services/multicall/hooks/contract/useMulticall';
 import { useCallback } from 'react';
 import { abi } from "../../../../../contracts/core/ArbitratorManager.sol/ArbitratorManager.json";
-import { ContractArbiterInfo } from '../../dto/contract-arbiter-info';
+import { ContractArbiterInfo, ContractArbiterInfoExt } from '../../dto/contract-arbiter-info';
 import { ArbiterInfo } from '../../model/arbiter-info';
 import { useArbiterIsActive } from './useArbiterIsActive';
 import { useArbiterNFTStakeValue } from './useArbiterNFTStakeValue';
@@ -19,21 +20,29 @@ export const useArbiterInfo = (arbiterAddress: string) => {
   const { fetchArbiterNFTStakeValue } = useArbiterNFTStakeValue();
   const { fetchArbiterIsActive } = useArbiterIsActive();
   const { fetchMultiArbiterStakeValue } = useMultiArbiterStakeValue();
+  const { singleContractMulticall } = useMulticall();
 
   const fetchArbiterInfo = useCallback(async (): Promise<ArbiterInfo> => {
-    const contractArbiterInfo: ContractArbiterInfo = await readContract({
-      contractAddress: activeChain.contracts.arbitratorManager,
+    const multiCallParams = [
+      { functionName: "getArbitratorInfo", multiArgs: [arbiterAddress] },
+      { functionName: "getArbitratorInfoExt", multiArgs: [arbiterAddress] }
+    ];
+    const dualContractArbiter = await singleContractMulticall<ContractArbiterInfo | ContractArbiterInfoExt>(
       abi,
-      functionName: 'getArbitratorInfo',
-      args: [arbiterAddress]
-    });
+      activeChain!.contracts.arbitratorManager,
+      multiCallParams
+    );
 
-    if (!contractArbiterInfo)
+    if (!dualContractArbiter)
       return undefined;
 
     const nftValue = await fetchArbiterNFTStakeValue(arbiterAddress);
 
-    const arbiter = ArbiterInfo.fromContractArbiterInfo(contractArbiterInfo);
+    const arbiter = ArbiterInfo.fromContractArbiterInfo(
+      dualContractArbiter[0] as ContractArbiterInfo,
+      dualContractArbiter[1] as ContractArbiterInfoExt
+    );
+
     if (arbiter) {
       arbiter.setNFTValue(nftValue);
       arbiter.isActive = await fetchArbiterIsActive(arbiterAddress);
@@ -44,7 +53,7 @@ export const useArbiterInfo = (arbiterAddress: string) => {
     console.log("Fetched arbiter info:", arbiter);
 
     return arbiter;
-  }, [readContract, activeChain, arbiterAddress, fetchArbiterNFTStakeValue, fetchMultiArbiterStakeValue, fetchArbiterIsActive]);
+  }, [arbiterAddress, singleContractMulticall, activeChain, fetchArbiterNFTStakeValue, fetchArbiterIsActive, fetchMultiArbiterStakeValue]);
 
   return { fetchArbiterInfo };
 };

@@ -15,25 +15,6 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "feeRate",
-          "type": "uint256"
-        }
-      ],
-      "name": "ArbitratorBtcFeeRateUpdated",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "arbitrator",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
           "name": "deadline",
           "type": "uint256"
         }
@@ -53,7 +34,13 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "feeRate",
+          "name": "ethFeeRate",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "btcFeeRate",
           "type": "uint256"
         }
       ],
@@ -789,37 +776,11 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "btcFeeRate",
-          "type": "uint256"
-        }
-      ],
-      "name": "setArbitratorBtcFeeRate",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
           "name": "deadline",
           "type": "uint256"
         }
       ],
       "name": "setArbitratorDeadline",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "feeRate",
-          "type": "uint256"
-        }
-      ],
-      "name": "setArbitratorFeeRate",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -851,6 +812,24 @@
         }
       ],
       "name": "setCompensationManager",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "ethFeeRate",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "btcFeeRate",
+          "type": "uint256"
+        }
+      ],
+      "name": "setFeeRates",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
