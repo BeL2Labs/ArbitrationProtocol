@@ -78,11 +78,17 @@ Set revenue receiver information:
 - `btcAddress`: Revenue receiver's Bitcoin address
 
 ```solidity
-function setArbitratorFeeRate(uint256 feeRate) external;
+function setFeeRates(uint256 ethFeeRate, uint256 btcFeeRate) external;
+```
+Update ETH and BTC fee rates:
+- `ethFeeRate`: New ETH service fee rate
+- `btcFeeRate`: New BTC service fee rate
+- Must meet minimum fee rate requirements
+
+```solidity
 function setArbitratorDeadline(uint256 deadline) external;
 ```
-Update fee rate and deadline:
-- `feeRate`: New service fee rate
+Update deadline:
 - `deadline`: New deadline
 
 ### Status Management
