@@ -78,11 +78,17 @@ function setRevenueAddresses(
 - `btcAddress`: 收益接收者的比特币地址
 
 ```solidity
-function setArbitratorFeeRate(uint256 feeRate) external;
+function setFeeRates(uint256 ethFeeRate, uint256 btcFeeRate) external;
+```
+更新ETH和BTC的费率：
+- `ethFeeRate`: 新的ETH服务费率
+- `btcFeeRate`: 新的BTC服务费率
+- 必须满足最低费率要求
+
+```solidity
 function setArbitratorDeadline(uint256 deadline) external;
 ```
-更新费率和截止时间：
-- `feeRate`: 新的服务费率
+更新截止时间：
 - `deadline`: 新的截止时间
 
 ### 状态管理
