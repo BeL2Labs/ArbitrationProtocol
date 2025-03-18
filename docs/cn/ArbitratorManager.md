@@ -30,7 +30,7 @@ function registerArbitratorByStakeETH(
 - `deadline`: 服务截止时间戳（0表示无截止时间）
 - 注册时必须满足最低ETH质押要求
 - 默认将发送者设置为操作者和收益接收者
-- 注册成功后会触发 ArbitratorStatusChanged 事件
+- 注册成功后会触发 ArbitratorRegistered 事件
 
 ```solidity
 function registerArbitratorByStakeNFT(
@@ -49,7 +49,7 @@ function registerArbitratorByStakeNFT(
 - `deadline`: 服务截止时间戳（0表示无截止时间）
 - 必须质押足够数量的NFT
 - 默认将发送者设置为操作者和收益接收者
-- 注册成功后会触发 ArbitratorStatusChanged 事件
+- 注册成功后会触发 ArbitratorRegistered 事件
 
 ### 配置管理
 
@@ -66,20 +66,20 @@ function setOperator(
 - `btcAddress`: 操作者的比特币地址
 
 ```solidity
-function setRevenue(
-    address revenue,
+function setRevenueAddresses(
+    address ethAddress,
     bytes calldata btcPubKey,
     string calldata btcAddress
 ) external;
 ```
 设置收益接收者信息：
-- `revenue`: 收益接收者地址
+- `ethAddress`: 收益接收者以太坊地址
 - `btcPubKey`: 收益接收者的比特币公钥
 - `btcAddress`: 收益接收者的比特币地址
 
 ```solidity
-function setFeeRate(uint256 feeRate) external;
-function setDeadline(uint256 deadline) external;
+function setArbitratorFeeRate(uint256 feeRate) external;
+function setArbitratorDeadline(uint256 deadline) external;
 ```
 更新费率和截止时间：
 - `feeRate`: 新的服务费率

@@ -20,7 +20,7 @@ function registerTransaction(
 - `deadline`: 交易截止时间戳
 - `compensationReceiver`: 补偿接收地址
 - `refundAddress`: 退款地址
-- `msg.value`: 必须等于所需的注册费用
+- `msg.value`: 必须等于所需的注册费用，可通过 `getRegisterTransactionFee` 查询
 - 返回值: 唯一交易ID
 
 ```solidity
@@ -52,19 +52,11 @@ function isAbleCompletedTransaction(bytes32 id) external view returns (bool);
 
 ```solidity
 function requestArbitration(
-    bytes32 id,
-    bytes calldata signData,
-    DataTypes.SignDataType signDataType,
-    bytes calldata script,
-    address timeoutCompensationReceiver
+    DataTypes.ArbitrationData calldata data
 ) external;
 ```
 请求交易仲裁。必须先上传UTXO数据。
-- `id`: 交易ID
-- `signData`: 待签名数据
-- `signDataType`: 签名数据类型，目前仅支持Witness
-- `script`: 交易脚本数据
-- `timeoutCompensationReceiver`: 超时补偿接收地址
+- `data`: 仲裁数据，包含交易ID、原始数据、脚本等信息
 
 ```solidity
 function submitArbitration(
@@ -79,13 +71,27 @@ function submitArbitration(
 ### 3. 查询功能
 
 ```solidity
-function getTransactionById(bytes32 id) external view returns (DataTypes.Transaction memory);
-function getTransaction(bytes32 txHash) external view returns (DataTypes.Transaction memory);
+function getTransactionDataById(bytes32 id) external view returns (DataTypes.TransactionData memory);
+function getTransactionDataByTxHash(bytes32 txHash) external view returns (DataTypes.TransactionData memory);
+function getTransactionStatus(bytes32 id) external view returns (DataTypes.TransactionStatus);
+function getTransactionPartiesById(bytes32 id) external view returns (DataTypes.TransactionParties memory);
+function getTransactionPartiesByTxHash(bytes32 txHash) external view returns (DataTypes.TransactionParties memory);
+function getTransactionUTXOsById(bytes32 id) external view returns (DataTypes.UTXO[] memory);
+function getTransactionSignatureById(bytes32 id) external view returns (bytes memory);
+function getTransactionSignatureByTxHash(bytes32 txHash) external view returns (bytes memory);
+function getTransactionBtcRawDataById(bytes32 id) external view returns (bytes memory);
+function getTransactionSignHashById(bytes32 id) external view returns (bytes32);
 function txHashToId(bytes32 txHash) external view returns (bytes32);
 ```
 交易信息查询功能：
-- 通过ID或哈希获取交易信息
-- 将交易哈希转换为ID
+- `getTransactionDataById`/`getTransactionDataByTxHash`: 获取交易基本数据
+- `getTransactionStatus`: 获取交易状态
+- `getTransactionPartiesById`/`getTransactionPartiesByTxHash`: 获取交易相关方信息
+- `getTransactionUTXOsById`: 获取交易UTXO数据
+- `getTransactionSignatureById`/`getTransactionSignatureByTxHash`: 获取交易签名
+- `getTransactionBtcRawDataById`: 获取交易原始数据
+- `getTransactionSignHashById`: 获取交易签名哈希
+- `txHashToId`: 将交易哈希转换为ID
 
 ```solidity
 function getRegisterTransactionFee(uint256 deadline, address arbitrator) external view returns (uint256 fee);
@@ -103,13 +109,15 @@ function transferArbitrationFee(
 - 仅可由CompensationManager调用
 - 返回仲裁人费用和系统费用金额
 
-### 5. 初始化和配置
+### 5. 配置
 
 ```solidity
-function initialize(address _arbitratorManager, address _dappRegistry, address _configManager, address _compensationManager) external;
 function setArbitratorManager(address _arbitratorManager) external;
+function setBTCAddressParser(address _btcAddressParser) external;
 ```
-系统初始化和配置功能。
+系统配置功能：
+- `setArbitratorManager`: 设置仲裁人管理器地址
+- `setBTCAddressParser`: 设置BTC地址解析器地址
 
 ## 事件系统
 
@@ -137,7 +145,7 @@ event ArbitrationRequested(
     bytes32 indexed txId,
     address indexed dapp,
     address arbitrator,
-    bytes signData,
+    bytes rawData,
     bytes script,
     address timeoutCompensationReceiver
 );
@@ -151,6 +159,18 @@ event ArbitrationSubmitted(
 
 event SetArbitratorManager(
     address indexed arbitratorManager
+);
+
+event BTCAddressParserChanged(
+    address indexed newParser
+);
+
+event DepositFeeTransfer(
+    bytes32 indexed txId,
+    address indexed revenueETHAddress,
+    uint256 arbitratorFee,
+    uint256 systemFee,
+    uint256 refundedFee
 );
 ```
 

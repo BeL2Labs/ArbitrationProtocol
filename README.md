@@ -41,7 +41,7 @@ The Decentralized Arbitration Protocol is a trustless guarantee system for Bitco
    - Access management
 
 2. **Arbiter Management**
-   - Arbiter registration with ELA/DPoS NFT staking
+   - Arbiter registration with ETH/DPoS NFT staking
    - Bitcoin credential management
    - Performance tracking
 
@@ -64,20 +64,21 @@ contracts/
 │   ├── ArbitratorManager.sol # Arbiter handling
 │   ├── TransactionManager.sol# Transaction processing
 │   ├── CompensationManager.sol# Dispute resolution
-│   └── ZkService.sol         # Proof verification
+│   └── ConfigManager.sol      # Configuration management
 ├── interfaces/            
 │   ├── IDAppRegistry.sol
 │   ├── IArbitratorManager.sol
 │   ├── ITransactionManager.sol
-│   └── IZkService.sol
+│   ├── ICompensationManager.sol
+│   └── IConfigManager.sol
 └── libraries/            
-    ├── DataTypes.sol    
+    ├── DataTypes.sol
     └── Errors.sol      
 ```
 
 ## Security Features
 
-- Staked Assets: Arbiters must stake ELA or DPoS voting NFTs
+- Staked Assets: Arbiters must stake ETH or DPoS voting NFTs
 - Zero-Knowledge Proofs: Automated verification of claims
 - Smart Contract Automation: No manual intervention needed
 - Multi-Chain Support: Works across ESC and other EVM chains
@@ -108,8 +109,3 @@ We welcome contributions!
 ## License
 
 MIT License
-
-## Contact
-
-- GitHub Issues
-- Email

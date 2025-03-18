@@ -37,12 +37,14 @@ function setSystemFeeRate(uint256 rate) external;
 function getSystemFeeRate() external view returns (uint256);
 function setSystemCompensationFeeRate(uint256 rate) external;
 function getSystemCompensationFeeRate() external view returns (uint256);
+function getArbitrationBTCFeeRate() external view returns (uint256);
 ```
 - `setTransactionMinFeeRate`: 设置最低交易费率（默认：1%，以基点表示，100 = 1%）
 - `setSystemFeeRate`: 设置系统费率（默认：5%，以基点表示，500 = 5%）
 - `getSystemFeeRate`: 获取当前系统费率
 - `setSystemCompensationFeeRate`: 设置系统补偿费率（默认：2%，以基点表示，200 = 2%）
 - `getSystemCompensationFeeRate`: 获取当前系统补偿费率
+- `getArbitrationBTCFeeRate`: 获取仲裁BTC费率
 
 ### 仲裁相关配置
 
@@ -87,6 +89,7 @@ bytes32 public constant ARBITRATION_FROZEN_PERIOD = keccak256("arbitrationFrozen
 bytes32 public constant SYSTEM_FEE_RATE = keccak256("systemFeeRate");
 bytes32 public constant SYSTEM_COMPENSATION_FEE_RATE = keccak256("SYSTEM_COMPENSATION_FEE_RATE");
 bytes32 public constant SYSTEM_FEE_COLLECTOR = keccak256("SYSTEM_FEE_COLLECTOR");
+bytes32 public constant ARBITRATION_BTC_FEE_RATE = keccak256("ARBITRATION_BTC_FEE_RATE");
 ```
 
 ### 事件
@@ -111,3 +114,4 @@ event ConfigUpdated(
 - 仲裁冻结期：30分钟
 - 系统费率：5%（500基点）
 - 系统补偿费率：2%（200基点）
+- 仲裁BTC费率：1%（100基点）

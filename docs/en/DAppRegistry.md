@@ -15,12 +15,14 @@ DAppRegistry is the DApp registration and management component in the arbitratio
 ### 1. DApp Registration
 Register a new DApp to the arbitration protocol:
 ```solidity
-function registerDApp(address dapp) external payable;
+function registerDApp(address dappContract) external payable;
 ```
 
 Parameters:
-- dapp: DApp contract address
-- msg.value: Registration fee, must equal REGISTRATION_FEE
+- `dappContract`: DApp contract address
+- `msg.value`: Registration fee, must equal `REGISTRATION_FEE` (10 ETH)
+
+The registration fee will be sent to the system fee collector. After registration, the DApp must be authorized using the `authorizeDApp` function before it can use the arbitration service.
 
 ### 2. DApp Deregistration
 Deregister a DApp from the arbitration protocol:
@@ -29,7 +31,9 @@ function deregisterDApp(address dapp) external;
 ```
 
 Parameters:
-- dapp: Address of the DApp to deregister
+- `dapp`: Address of the DApp to deregister
+
+Deregistration sets the DApp status to Terminated. The registration fee is not refunded.
 
 ### 3. DApp Authorization
 Authorize a DApp to use the arbitration service:
@@ -38,7 +42,9 @@ function authorizeDApp(address dapp) external;
 ```
 
 Parameters:
-- dapp: Address of the DApp to authorize
+- `dapp`: Address of the DApp to authorize
+
+After authorization, the DApp status will change to Active and it can start using the arbitration service.
 
 ### 4. DApp Status Query
 Query the status of a DApp:
@@ -47,6 +53,10 @@ function getDAppStatus(address dapp) external view returns (DataTypes.DAppStatus
 function isRegistered(address dapp) external view returns (bool);
 function isActiveDApp(address dapp) external view returns (bool);
 ```
+
+- `getDAppStatus`: Get the detailed status of a DApp
+- `isRegistered`: Check if a DApp is registered
+- `isActiveDApp`: Check if a DApp is authorized and active
 
 ### 5. DApp Owner Query
 Query the owner of a DApp:
@@ -59,6 +69,8 @@ Query the required fee for DApp registration:
 ```solidity
 function REGISTRATION_FEE() external view returns (uint256);
 ```
+
+Returns the registration fee amount (10 ETH). This fee must be paid during registration and will be sent to the system fee collector.
 
 ## Event System
 ```solidity

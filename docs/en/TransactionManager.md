@@ -20,7 +20,7 @@ Registers a new transaction.
 - `deadline`: Transaction deadline timestamp
 - `compensationReceiver`: Address to receive compensation if needed
 - `refundAddress`: Address to receive refunds
-- `msg.value`: Must equal the required registration fee
+- `msg.value`: Must equal the required registration fee, can be queried via `getRegisterTransactionFee`
 - Returns: Unique transaction ID
 
 ```solidity
@@ -52,19 +52,11 @@ Checks if a transaction can be completed.
 
 ```solidity
 function requestArbitration(
-    bytes32 id,
-    bytes calldata signData,
-    DataTypes.SignDataType signDataType,
-    bytes calldata script,
-    address timeoutCompensationReceiver
+    DataTypes.ArbitrationData calldata data
 ) external;
 ```
 Requests arbitration for a transaction. UTXO data must be uploaded first.
-- `id`: Transaction ID
-- `signData`: Data to be signed
-- `signDataType`: Type of signature data, currently only supports Witness
-- `script`: Transaction script data
-- `timeoutCompensationReceiver`: Address to receive timeout compensation
+- `data`: Arbitration data containing transaction ID, raw data, script, and other informationout compensation
 
 ```solidity
 function submitArbitration(
@@ -79,13 +71,27 @@ Submits arbitration result with signature, only callable by the arbitrator.
 ### 3. Query Functions
 
 ```solidity
-function getTransactionById(bytes32 id) external view returns (DataTypes.Transaction memory);
-function getTransaction(bytes32 txHash) external view returns (DataTypes.Transaction memory);
+function getTransactionDataById(bytes32 id) external view returns (DataTypes.TransactionData memory);
+function getTransactionDataByTxHash(bytes32 txHash) external view returns (DataTypes.TransactionData memory);
+function getTransactionStatus(bytes32 id) external view returns (DataTypes.TransactionStatus);
+function getTransactionPartiesById(bytes32 id) external view returns (DataTypes.TransactionParties memory);
+function getTransactionPartiesByTxHash(bytes32 txHash) external view returns (DataTypes.TransactionParties memory);
+function getTransactionUTXOsById(bytes32 id) external view returns (DataTypes.UTXO[] memory);
+function getTransactionSignatureById(bytes32 id) external view returns (bytes memory);
+function getTransactionSignatureByTxHash(bytes32 txHash) external view returns (bytes memory);
+function getTransactionBtcRawDataById(bytes32 id) external view returns (bytes memory);
+function getTransactionSignHashById(bytes32 id) external view returns (bytes32);
 function txHashToId(bytes32 txHash) external view returns (bytes32);
 ```
 Functions to query transaction information:
-- Get transaction by ID or hash
-- Convert transaction hash to ID
+- `getTransactionDataById`/`getTransactionDataByTxHash`: Get basic transaction data
+- `getTransactionStatus`: Get transaction status
+- `getTransactionPartiesById`/`getTransactionPartiesByTxHash`: Get transaction parties information
+- `getTransactionUTXOsById`: Get transaction UTXO data
+- `getTransactionSignatureById`/`getTransactionSignatureByTxHash`: Get transaction signature
+- `getTransactionBtcRawDataById`: Get transaction raw data
+- `getTransactionSignHashById`: Get transaction signature hash
+- `txHashToId`: Convert transaction hash to ID
 
 ```solidity
 function getRegisterTransactionFee(uint256 deadline, address arbitrator) external view returns (uint256 fee);
@@ -103,13 +109,15 @@ Transfers arbitration fees to arbitrator and system.
 - Only callable by CompensationManager
 - Returns both arbitrator and system fee amounts
 
-### 5. Initialization and Configuration
+### 5. Configuration
 
 ```solidity
-function initialize(address _arbitratorManager, address _dappRegistry, address _configManager, address _compensationManager) external;
 function setArbitratorManager(address _arbitratorManager) external;
+function setBTCAddressParser(address _btcAddressParser) external;
 ```
-System initialization and configuration functions.
+System configuration functions:
+- `setArbitratorManager`: Set arbitrator manager address
+- `setBTCAddressParser`: Set BTC address parser address
 
 ## Event System
 
@@ -137,7 +145,7 @@ event ArbitrationRequested(
     bytes32 indexed txId,
     address indexed dapp,
     address arbitrator,
-    bytes signData,
+    bytes rawData,
     bytes script,
     address timeoutCompensationReceiver
 );
@@ -151,6 +159,18 @@ event ArbitrationSubmitted(
 
 event SetArbitratorManager(
     address indexed arbitratorManager
+);
+
+event BTCAddressParserChanged(
+    address indexed newParser
+);
+
+event DepositFeeTransfer(
+    bytes32 indexed txId,
+    address indexed revenueETHAddress,
+    uint256 arbitratorFee,
+    uint256 systemFee,
+    uint256 refundedFee
 );
 ```
 

@@ -15,7 +15,7 @@ function claimIllegalSignatureCompensation(
 ```
 申请非法签名补偿：
 - `arbitrator`: 仲裁人地址
-- `evidence`: zkProof证据哈希
+- `evidence`: 证据哈希
 - 返回: 补偿申请ID
 
 ```solidity
@@ -33,7 +33,7 @@ function claimFailedArbitrationCompensation(
 ) external returns (bytes32 claimId);
 ```
 申请仲裁失败补偿：
-- `evidence`: zkProof证据哈希
+- `evidence`: 证据哈希
 - 返回: 补偿申请ID
 
 ```solidity
@@ -55,13 +55,18 @@ function claimArbitratorFee(
 
 ```solidity
 function withdrawCompensation(bytes32 claimId) external payable;
+function getWithdrawCompensationFee(bytes32 claimId) external view returns (uint256);
 ```
 提取补偿：
-- `claimId`: 补偿申请ID
-- 要求：
-  - 补偿未被提取
-  - 有可用的补偿金额
-  - 接收补偿地址不为零地址
+- `withdrawCompensation`: 提取补偿
+  - `claimId`: 补偿申请ID
+  - 要求：
+    - 补偿未被提取
+    - 有可用的补偿金额
+    - 接收补偿地址不为零地址
+- `getWithdrawCompensationFee`: 获取提取补偿所需的手续费
+  - `claimId`: 补偿申请ID
+  - 返回: 提取补偿所需的手续费金额
 
 ### 查询功能
 

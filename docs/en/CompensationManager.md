@@ -15,7 +15,7 @@ function claimIllegalSignatureCompensation(
 ```
 Claim compensation for illegal signature:
 - `arbitrator`: Arbitrator address
-- `evidence`: zkProof evidence hash
+- `evidence`: Evidence hash
 - Returns: Compensation claim ID
 
 ```solidity
@@ -33,7 +33,7 @@ function claimFailedArbitrationCompensation(
 ) external returns (bytes32 claimId);
 ```
 Claim compensation for failed arbitration:
-- `evidence`: zkProof evidence hash
+- `evidence`: Evidence hash
 - Returns: Compensation claim ID
 
 ```solidity
@@ -55,13 +55,18 @@ Claim arbitrator fee compensation:
 
 ```solidity
 function withdrawCompensation(bytes32 claimId) external payable;
+function getWithdrawCompensationFee(bytes32 claimId) external view returns (uint256);
 ```
-Withdraw compensation:
-- `claimId`: Compensation claim ID
-- Requirements:
-  - Compensation not withdrawn
-  - Available compensation amount
-  - Compensation receiver address not zero
+Compensation withdrawal functions:
+- `withdrawCompensation`: Withdraw compensation
+  - `claimId`: Compensation claim ID
+  - Requirements:
+    - Compensation not withdrawn
+    - Available compensation amount
+    - Compensation receiver address not zero
+- `getWithdrawCompensationFee`: Get the fee required to withdraw compensation
+  - `claimId`: Compensation claim ID
+  - Returns: Fee amount required to withdraw compensation
 
 ### Query Functions
 

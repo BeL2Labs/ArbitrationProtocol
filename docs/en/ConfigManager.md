@@ -37,12 +37,14 @@ function setSystemFeeRate(uint256 rate) external;
 function getSystemFeeRate() external view returns (uint256);
 function setSystemCompensationFeeRate(uint256 rate) external;
 function getSystemCompensationFeeRate() external view returns (uint256);
+function getArbitrationBTCFeeRate() external view returns (uint256);
 ```
 - `setTransactionMinFeeRate`: Set minimum transaction fee rate (default: 1%, expressed in basis points, 100 = 1%)
 - `setSystemFeeRate`: Set system fee rate (default: 5%, expressed in basis points, 500 = 5%)
 - `getSystemFeeRate`: Get current system fee rate
 - `setSystemCompensationFeeRate`: Set system compensation fee rate (default: 2%, expressed in basis points, 200 = 2%)
 - `getSystemCompensationFeeRate`: Get current system compensation fee rate
+- `getArbitrationBTCFeeRate`: Get arbitration BTC fee rate
 
 ### Arbitration Related Configurations
 
@@ -87,6 +89,7 @@ bytes32 public constant ARBITRATION_FROZEN_PERIOD = keccak256("arbitrationFrozen
 bytes32 public constant SYSTEM_FEE_RATE = keccak256("systemFeeRate");
 bytes32 public constant SYSTEM_COMPENSATION_FEE_RATE = keccak256("SYSTEM_COMPENSATION_FEE_RATE");
 bytes32 public constant SYSTEM_FEE_COLLECTOR = keccak256("SYSTEM_FEE_COLLECTOR");
+bytes32 public constant ARBITRATION_BTC_FEE_RATE = keccak256("ARBITRATION_BTC_FEE_RATE");
 ```
 
 ### Events
@@ -111,6 +114,7 @@ event ConfigUpdated(
 - Arbitration frozen period: 30 minutes
 - System fee rate: 5% (500 basis points)
 - System compensation fee rate: 2% (200 basis points)
+- Arbitration BTC fee rate: 1% (100 basis points)
 
 ## Security Considerations
 

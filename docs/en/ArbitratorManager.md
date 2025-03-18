@@ -30,7 +30,7 @@ Register as an arbitrator using ETH stake:
 - `deadline`: Service deadline timestamp (0 means no deadline)
 - Must meet minimum ETH staking requirement
 - Sender is set as operator and revenue receiver by default
-- Successful registration triggers ArbitratorStatusChanged event
+- Successful registration triggers ArbitratorRegistered event
 
 ```solidity
 function registerArbitratorByStakeNFT(
@@ -49,7 +49,7 @@ Register as an arbitrator using NFT stake:
 - `deadline`: Service deadline timestamp (0 means no deadline)
 - Must stake sufficient number of NFTs
 - Sender is set as operator and revenue receiver by default
-- Successful registration triggers ArbitratorStatusChanged event
+- Successful registration triggers ArbitratorRegistered event
 
 ### Configuration Management
 
@@ -66,20 +66,20 @@ Set operator information:
 - `btcAddress`: Operator's Bitcoin address
 
 ```solidity
-function setRevenue(
-    address revenue,
+function setRevenueAddresses(
+    address ethAddress,
     bytes calldata btcPubKey,
     string calldata btcAddress
 ) external;
 ```
 Set revenue receiver information:
-- `revenue`: Revenue receiver address
+- `ethAddress`: Revenue receiver's Ethereum address
 - `btcPubKey`: Revenue receiver's Bitcoin public key
 - `btcAddress`: Revenue receiver's Bitcoin address
 
 ```solidity
-function setFeeRate(uint256 feeRate) external;
-function setDeadline(uint256 deadline) external;
+function setArbitratorFeeRate(uint256 feeRate) external;
+function setArbitratorDeadline(uint256 deadline) external;
 ```
 Update fee rate and deadline:
 - `feeRate`: New service fee rate

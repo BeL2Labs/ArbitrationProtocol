@@ -15,12 +15,14 @@ DAppRegistry 是仲裁协议中的 DApp 注册和管理组件。它负责管理�
 ### 1. DApp 注册
 注册新的 DApp 到仲裁协议：
 ```solidity
-function registerDApp(address dapp) external payable;
+function registerDApp(address dappContract) external payable;
 ```
 
 参数说明：
-- dapp: DApp 合约地址
-- msg.value: 注册费用，必须等于 REGISTRATION_FEE
+- `dappContract`: DApp 合约地址
+- `msg.value`: 注册费用，必须等于 `REGISTRATION_FEE` (10 ETH)
+
+注册费用将发送到系统费用收集器地址。注册后需要通过 `authorizeDApp` 函数进行授权才能使用仲裁服务。
 
 ### 2. DApp 注销
 从仲裁协议中注销 DApp：
@@ -29,7 +31,9 @@ function deregisterDApp(address dapp) external;
 ```
 
 参数说明：
-- dapp: 要注销的 DApp 地址
+- `dapp`: 要注销的 DApp 地址
+
+注销操作会将 DApp 状态设置为 Terminated。注册费用不会被退还。
 
 ### 3. DApp 授权
 授权 DApp 使用仲裁服务：
@@ -38,7 +42,9 @@ function authorizeDApp(address dapp) external;
 ```
 
 参数说明：
-- dapp: 要授权的 DApp 地址
+- `dapp`: 要授权的 DApp 地址
+
+授权后 DApp 状态将变为 Active，可以开始使用仲裁服务。
 
 ### 4. DApp 状态查询
 查询 DApp 的状态：
@@ -47,6 +53,10 @@ function getDAppStatus(address dapp) external view returns (DataTypes.DAppStatus
 function isRegistered(address dapp) external view returns (bool);
 function isActiveDApp(address dapp) external view returns (bool);
 ```
+
+- `getDAppStatus`: 获取 DApp 的详细状态
+- `isRegistered`: 检查 DApp 是否已注册
+- `isActiveDApp`: 检查 DApp 是否已授权并处于活跃状态
 
 ### 5. DApp 所有者查询
 查询 DApp 的所有者：
