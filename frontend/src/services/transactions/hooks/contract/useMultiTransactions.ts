@@ -13,17 +13,15 @@ export const useMultiTransactions = () => {
   const { singleContractMulticall } = useMulticall();
 
   const fetchTransactions = useCallback(async (transactionIds: string[]): Promise<Transaction[]> => {
-    const transactionIdsArrays = transactionIds.map(transactionId => [transactionId]);
-
     const [data, parties, signHashes] = await Promise.all([
       singleContractMulticall<ContractTransactionData>(
-        abi, activeChain!.contracts.transactionManager, transactionIdsArrays.map(id => ({ functionName: "getTransactionDataById", multiArgs: [id] }))
+        abi, activeChain!.contracts.transactionManager, transactionIds.map(id => ({ functionName: "getTransactionDataById", multiArgs: [id] }))
       ),
       singleContractMulticall<ContractTransactionParties>(
-        abi, activeChain!.contracts.transactionManager, transactionIdsArrays.map(id => ({ functionName: "getTransactionPartiesById", multiArgs: [id] }))
+        abi, activeChain!.contracts.transactionManager, transactionIds.map(id => ({ functionName: "getTransactionPartiesById", multiArgs: [id] }))
       ),
       singleContractMulticall<string>(
-        abi, activeChain!.contracts.transactionManager, transactionIdsArrays.map(id => ({ functionName: "getTransactionSignHashById", multiArgs: [id] }))
+        abi, activeChain!.contracts.transactionManager, transactionIds.map(id => ({ functionName: "getTransactionSignHashById", multiArgs: [id] }))
       )
     ])
 

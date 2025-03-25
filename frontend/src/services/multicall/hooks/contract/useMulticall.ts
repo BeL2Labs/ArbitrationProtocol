@@ -13,27 +13,35 @@ export const useMulticall = () => {
   const { readContract } = useContractCall();
 
   const singleContractMulticall = useCallback(async <ReturnType>(abi: any, contractAddress: string, callParams: { functionName: string, multiArgs: any[] }[]): Promise<ReturnType[]> => {
-    const input = callParams.map(({ functionName, multiArgs: args }) => ({
-      target: contractAddress,
-      allowFailure: true,
-      callData: encodeFunctionData({ abi, functionName, args })
-    }));
+    try {
+      const input = callParams.map(({ functionName, multiArgs: args }) => {
+        return {
+          target: contractAddress,
+          allowFailure: true,
+          callData: encodeFunctionData({ abi, functionName, args })
+        }
+      });
 
-    const callResult: { success: boolean, returnData: any }[] = await readContract({
-      contractAddress: activeChain.contracts.multicall3,
-      abi: multicallAbi,
-      functionName: 'aggregate3',
-      args: [input]
-    });
+      const callResult: { success: boolean, returnData: any }[] = await readContract({
+        contractAddress: activeChain.contracts.multicall3,
+        abi: multicallAbi,
+        functionName: 'aggregate3',
+        args: [input]
+      });
 
-    if (!callResult)
+      if (!callResult)
+        return undefined;
+
+      const decodedResults = callResult.map((callResult, i) => decodeFunctionResult({
+        abi, data: callResult.returnData, functionName: callParams[i].functionName
+      })) as ReturnType[];
+
+      return decodedResults;
+    }
+    catch (e) {
+      console.error("Error calling multicall:", e);
       return undefined;
-
-    const decodedResults = callResult.map((callResult, i) => decodeFunctionResult({
-      abi, data: callResult.returnData, functionName: callParams[i].functionName
-    })) as ReturnType[];
-
-    return decodedResults;
+    }
   }, [readContract, activeChain]);
 
   return { singleContractMulticall };
