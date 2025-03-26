@@ -575,15 +575,22 @@ contract TransactionManager is
             revert(Errors.ZERO_ADDRESS);
         }
         uint256 btcFeeRate = arbitratorManager.getArbitratorInfoExt(arbitrator).currentBTCFeeRate;
-        uint256 ethFee = _getFee(arbitrator, btcFeeRate, duration);
-        return ethToBTC(ethFee);
+        if (btcFeeRate > 0) {
+            uint256 ethFee = _getFee(arbitrator, btcFeeRate, duration);
+            return ethToBTC(ethFee);
+        }
+        return 0;
     }
 
-    function ethToBTC(uint256 eth_amount) private view returns (uint256 satoshi) {
+    function ethToBTC(uint256 eth_amount) private view returns (uint256) {
         uint256 eth_price = assetOracle.assetPrices(ETH_TOKEN);
         uint256 btc_price = assetOracle.assetPrices(BTC_TOKEN);
         //(eth_amount * eth_price / 1e18)/(btc_price)*1e8
-        satoshi =  (eth_amount * eth_price * 1e8) / (btc_price * 1e18);
+        uint256 satoshi =  (eth_amount * eth_price * 1e8) / (btc_price * 1e18);
+        if(satoshi < 546) {
+            satoshi = 546;
+        }
+        return satoshi;
     }
 
     function setArbitratorManager(address _arbitratorManager) external onlyOwner {
