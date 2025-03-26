@@ -587,8 +587,8 @@ contract TransactionManager is
         uint256 btc_price = assetOracle.assetPrices(BTC_TOKEN);
         //(eth_amount * eth_price / 1e18)/(btc_price)*1e8
         uint256 satoshi =  (eth_amount * eth_price * 1e8) / (btc_price * 1e18);
-        if(satoshi < 546) {
-            satoshi = 546;
+        if(satoshi < 1000) {
+            satoshi = 1000;
         }
         return satoshi;
     }
