@@ -185,7 +185,7 @@ describe("TransactionManager", function () {
             const txId = event.args[0];
 
             const data = await transactionManager.connect(dapp).getTransactionDataById(txId);
-            expect(data.arbitratorBtcFee).to.equal(18);
+            expect(data.arbitratorBtcFee).to.equal(546);
         });
     });
 
