@@ -15,4 +15,5 @@ library ConfigManagerKeys {
     bytes32 public constant SYSTEM_COMPENSATION_FEE_RATE = keccak256("SYSTEM_COMPENSATION_FEE_RATE");
     bytes32 public constant SYSTEM_FEE_COLLECTOR = keccak256("SYSTEM_FEE_COLLECTOR");
     bytes32 public constant ARBITRATION_BTC_FEE_RATE = keccak256("ARBITRATION_BTC_FEE_RATE");
+    bytes32 public constant DAPP_BTC_FEE_PAYMENT_TIMEOUT = keccak256("DAPP_BTC_FEE_PAYMENT_TIMEOUT");
 }

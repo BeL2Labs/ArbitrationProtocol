@@ -29,6 +29,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
     bytes32 public constant SYSTEM_COMPENSATION_FEE_RATE = ConfigManagerKeys.SYSTEM_COMPENSATION_FEE_RATE;
     bytes32 public constant SYSTEM_FEE_COLLECTOR = ConfigManagerKeys.SYSTEM_FEE_COLLECTOR;
     bytes32 public constant ARBITRATION_BTC_FEE_RATE = ConfigManagerKeys.ARBITRATION_BTC_FEE_RATE;
+    bytes32 public constant DAPP_BTC_FEE_PAYMENT_TIMEOUT = ConfigManagerKeys.DAPP_BTC_FEE_PAYMENT_TIMEOUT;
 
     ///@custom:oz-upgrades-unsafe-allow constructor
     constructor() { _disableInitializers(); }
@@ -52,6 +53,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
         configs[SYSTEM_FEE_RATE] = 500; // 5% in basis points
         configs[SYSTEM_COMPENSATION_FEE_RATE] = 200; // 2% in basis points
         configs[ARBITRATION_BTC_FEE_RATE] = 1000;// 0.1% in basis points
+        configs[DAPP_BTC_FEE_PAYMENT_TIMEOUT] = 6 hours; // Default 6 hours for DApp to pay BTC fee
     }
 
     /**
@@ -210,8 +212,8 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
      * @return values Array of config values
      */
     function getAllConfigs() external view returns (bytes32[] memory keys, uint256[] memory values) {
-        keys = new bytes32[](13);
-        values = new uint256[](13);
+        keys = new bytes32[](14);
+        values = new uint256[](14);
 
         keys[0] = MIN_STAKE;
         keys[1] = MAX_STAKE;
@@ -226,6 +228,7 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
         keys[10] = SYSTEM_FEE_COLLECTOR;
         keys[11] = ARBITRATION_BTC_FEE_RATE;
         keys[12] = TRANSACTION_MIN_BTC_FEE_RATE;
+        keys[13] = DAPP_BTC_FEE_PAYMENT_TIMEOUT;
 
         for (uint256 i = 0; i < keys.length; i++) {
             values[i] = configs[keys[i]];
@@ -294,6 +297,24 @@ contract ConfigManager is IConfigManager, OwnableUpgradeable {
      */
     function getArbitrationBTCFeeRate() external view returns (uint256) {
         return configs[ARBITRATION_BTC_FEE_RATE];
+    }
+
+    /**
+     * @notice Get the timeout duration for DApp to pay BTC fee
+     * @return The timeout duration in seconds
+     */
+    function getDappBtcFeePaymentTimeout() external view override returns (uint256) {
+        return configs[DAPP_BTC_FEE_PAYMENT_TIMEOUT];
+    }
+
+    /**
+     * @notice Set the timeout duration for DApp to pay BTC fee
+     * @param timeout The timeout duration in seconds
+     */
+    function setDappBtcFeePaymentTimeout(uint256 timeout) external override onlyOwner {
+        uint256 oldValue = configs[DAPP_BTC_FEE_PAYMENT_TIMEOUT];
+        configs[DAPP_BTC_FEE_PAYMENT_TIMEOUT] = timeout;
+        emit ConfigUpdated(DAPP_BTC_FEE_PAYMENT_TIMEOUT, oldValue, timeout);
     }
 
     // Add a gap for future storage variables

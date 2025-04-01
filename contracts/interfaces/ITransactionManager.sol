@@ -3,14 +3,18 @@ pragma solidity ^0.8.20;
 
 import "../libraries/DataTypes.sol";
 
-interface ITransactionManager {   
+interface ITransactionManager {
+    struct RegisterData {
+        address arbitrator;
+        uint256 deadline;
+        address compensationReceiver;
+        address refundAddress;
+    }
+    
     // Register transaction
     function registerTransaction(
-        address arbitrator,
-        uint256 deadline,
-        address compensationReceive,
-        address refundAddress
-    ) external payable returns (bytes32 id);
+        RegisterData calldata data
+    ) external payable returns (bytes32 id, string memory btcFeeAddress);
 
     // Upload transaction utxos, only once
     function uploadUTXOs(
@@ -46,6 +50,26 @@ interface ITransactionManager {
 
     function txHashToId(bytes32 txHash) external view returns (bytes32);
 
+    /**
+     * @notice Set the Bitcoin transaction that pays the arbitrator's fee
+     * @dev This function verifies:
+     *      1. The transaction output matches the P2SH address generated during registration
+     *      2. The output amount meets the required fee
+     *      3. The transaction is included in the specified block through merkle proof
+     * @param id The transaction ID in the arbitration protocol
+     * @param rawData The raw Bitcoin transaction data
+     * @param merkleProof The merkle proof array proving transaction inclusion
+     * @param index The index of the transaction in the merkle tree
+     * @param blockHeight The Bitcoin block height containing this transaction
+     */
+    function setDAppBtcFeeTransaction(
+        bytes32 id,
+        bytes calldata rawData,
+        bytes32[] calldata merkleProof,
+        uint256 index,
+        uint32 blockHeight
+    ) external;
+
    /**
     * @notice Transfer arbitration fee to arbitrator and system fee address
     * @dev Only callable by compensation manager
@@ -57,6 +81,14 @@ interface ITransactionManager {
         bytes32 id
     ) external returns (uint256 arbitratorFee, uint256 systemFee);
 
+    /**
+     * @notice Close a transaction that has not paid the BTC fee within the timeout period
+     * @dev Only callable by the assigned arbitrator of the transaction
+     * @param id The transaction ID
+     */
+    function closeUnpaidTransaction(bytes32 id) external;
+
+
     // Events
     event TransactionRegistered(
         bytes32 indexed id,
@@ -64,7 +96,8 @@ interface ITransactionManager {
         address indexed arbitrator,
         uint256 deadline,
         uint256 depositFee,
-        address compensationReceiver);
+        address compensationReceiver,
+        uint256 timestamp);
     event UTXOsUploaded(bytes32 indexed txId, address indexed dapp);
     event TransactionCompleted(bytes32 indexed txId, address indexed dapp);
     event ArbitrationRequested(
@@ -74,6 +107,13 @@ interface ITransactionManager {
         bytes rawData,
         bytes script,
         address timeoutCompensationReceiver);
+
+    event TransactionClosedUnpaid(
+        bytes32 indexed txId,
+        address indexed dapp,
+        address indexed arbitrator,
+        uint256 timestamp);
+
     event ArbitrationSubmitted(
         bytes32 indexed txId,
         address indexed dapp,
@@ -83,6 +123,15 @@ interface ITransactionManager {
     event BTCAddressParserChanged(address indexed newParser);
     event AssetOracleUpdated(address indexed newOracle);
     event DepositFeeTransfer(bytes32 indexed txId, address indexed revenueETHAddress, uint256 arbitratorFee, uint256 systemFee, uint256 refundedFee);
+
+    event DAppFeeTransactionSet(
+        bytes32 indexed id,
+        bytes32 indexed txHash,
+        uint256 blockHeight
+    );
+
+    event BtcBlockHeadersChanged(address indexed newBtcBlockHeaders);
+
     // Functions
     function setArbitratorManager(address _arbitratorManager) external;
     function setBTCAddressParser(address _btcAddressParser) external;

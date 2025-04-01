@@ -41,6 +41,9 @@ library Errors {
     string constant INVALID_INPUT_INDEX = "I2";
     string constant INVALID_OUTPUT_SCRIPT = "I3";
     string constant INVALID_OUTPUT_AMOUNT = "I5";
+    string constant INVALID_MERKLE_PROOF = "I8";
+    string constant NO_BTC_FEE = "B2";
+    string constant TIMEOUT_NOT_REACHED = "T1";
 
     // Arbitrator related errors (A0-A9, S0-S9)
     string constant ARBITRATOR_ALREADY_REGISTERED = "A1";

@@ -33,4 +33,10 @@ interface IBTCUtils {
     ) external pure returns (bytes memory);
 
     function IsValidDERSignature(bytes calldata signature) external pure returns (bool);
+
+    /// @notice Calculate transaction ID (double SHA256)
+    /// @dev For witness transactions, exclude witness data
+    /// @param txData Raw transaction data
+    /// @return Transaction ID
+    function calculateTxId(bytes calldata txData) external pure returns (bytes32);
 }

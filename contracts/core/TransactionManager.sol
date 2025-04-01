@@ -10,9 +10,11 @@ import "../interfaces/IConfigManager.sol";
 import "../interfaces/IBTCUtils.sol";
 import "../interfaces/IBtcAddress.sol";
 import "../interfaces/IAssetOracle.sol";
+import "../interfaces/IBtcBlockHeaders.sol";
 import "../core/ConfigManager.sol";
 import "../libraries/DataTypes.sol";
 import "../libraries/Errors.sol";
+import "../libraries/MerkleVerifier.sol";
 
 /**
  * @title TransactionManager
@@ -50,6 +52,7 @@ contract TransactionManager is
     mapping(bytes32 => bytes32) public txHashToId;
     uint256 private _transactionIdCounter;
     IAssetOracle public assetOracle;
+    IBtcBlockHeaders public btcBlockHeaders;
 
     modifier onlyCompensationManager() {
         if (msg.sender != compensationManager) revert(Errors.NOT_COMPENSATION_MANAGER);
@@ -102,75 +105,119 @@ contract TransactionManager is
     }
 
     /**
-     * @notice Register a new transaction
-     * @param arbitrator The arbitrator address
-     * @param deadline The deadline for the transaction
-     * @param compensationReceiver Address to receive compensation in case of timeout
-     * @param refundAddress Address to receive refund
+     * @notice Register a new transaction with an arbitrator
+     * @param data The registration data containing:
+     *        - arbitrator: The arbitrator address for dispute resolution
+     *        - deadline: The deadline for the transaction completion
+     *        - compensationReceiver: Address to receive compensation in case of arbitration
+     *        - refundAddress: Address to receive refunded fees
      * @return id The unique transaction ID
+     * @return btcFeeAddress The BTC P2WSH address for arbitrator's fee payment
      */
     function registerTransaction(
-        address arbitrator,
-        uint256 deadline,
-        address compensationReceiver,
-        address refundAddress
-    ) external payable nonReentrant returns (bytes32) {
-        if (arbitrator == address(0) || compensationReceiver == address(0) || refundAddress == address(0)) {
-            revert(Errors.ZERO_ADDRESS);
-        }
+        RegisterData calldata data
+    ) external payable nonReentrant returns (bytes32, string memory) {
+        // Validate inputs and check DApp status
+        _validateRegistration(data);
 
-        // Check DApp status
-        if (!dappRegistry.isActiveDApp(msg.sender)) {
-            revert(Errors.DAPP_NOT_ACTIVE);
-        }
-
-        // Validate arbitrator
-        if (!arbitratorManager.isActiveArbitrator(arbitrator))
-            revert(Errors.ARBITRATOR_NOT_ACTIVE);
-
-        // Validate deadline
-        if (deadline <= block.timestamp)
-            revert(Errors.INVALID_DEADLINE);
-        uint256 duration = deadline - block.timestamp;
-        if (duration < configManager.getConfig(ConfigManagerKeys.MIN_TRANSACTION_DURATION) ||
-            duration > configManager.getConfig(ConfigManagerKeys.MAX_TRANSACTION_DURATION)) {
-            revert(Errors.INVALID_DURATION);
-        }
-
-        // Calculate and validate fee
-        // fee = stake * (duration / secondsPerYear) * (feeRate / feeRateMultiplier)
-        uint256 fee = getRegisterTransactionFee(deadline, arbitrator);
-   
+        // Calculate and validate fees
+        uint256 fee = getRegisterTransactionFee(data.deadline, data.arbitrator);
         if (msg.value < fee) revert(Errors.INSUFFICIENT_FEE);
+        uint256 btcFee = getRegisterTransactionBtcFee(data.deadline, data.arbitrator);
 
         // Generate transaction ID
         bytes32 id = keccak256(
             abi.encodePacked(
                 block.timestamp,
                 msg.sender,
-                arbitrator,
+                data.arbitrator,
                 _transactionIdCounter++
             )
         );
-        uint256 btcFee = getRegisterTransactionBtcFee(deadline, arbitrator);
-        // Set arbitrator to working status
-        arbitratorManager.setArbitratorWorking(arbitrator, id);
 
-        // Store transaction
+        // Set arbitrator to working status
+        arbitratorManager.setArbitratorWorking(data.arbitrator, id);
+
+        // Store transaction data
+        _storeTransactionData(id, data, msg.value, btcFee);
+
+        // Generate BTC fee address
+        string memory arbitratorFeeAddress = _generateBtcFeeAddress(id, data.arbitrator);
+
+        emit TransactionRegistered(
+            id,
+            msg.sender,
+            data.arbitrator,
+            data.deadline,
+            msg.value,
+            data.compensationReceiver,
+            block.timestamp
+        );
+
+        return (id, arbitratorFeeAddress);
+    }
+
+    function _validateRegistration(RegisterData calldata data) internal view {
+        if (data.arbitrator == address(0) || data.compensationReceiver == address(0) || data.refundAddress == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
+        }
+
+        if (!dappRegistry.isActiveDApp(msg.sender)) {
+            revert(Errors.DAPP_NOT_ACTIVE);
+        }
+
+        if (!arbitratorManager.isActiveArbitrator(data.arbitrator)) {
+            revert(Errors.ARBITRATOR_NOT_ACTIVE);
+        }
+
+        if (data.deadline <= block.timestamp) {
+            revert(Errors.INVALID_DEADLINE);
+        }
+
+        uint256 duration = data.deadline - block.timestamp;
+        if (duration < configManager.getConfig(ConfigManagerKeys.MIN_TRANSACTION_DURATION) ||
+            duration > configManager.getConfig(ConfigManagerKeys.MAX_TRANSACTION_DURATION)) {
+            revert(Errors.INVALID_DURATION);
+        }
+    }
+
+    function _storeTransactionData(
+        bytes32 id,
+        RegisterData calldata data,
+        uint256 depositedFee,
+        uint256 btcFee
+    ) internal {
         DataTypes.TransactionData storage transactionData = transactions_data[id];
         DataTypes.TransactionParties storage transactionParties = transactions_parties[id];
-        transactionData.startTime = block.timestamp;
-        transactionData.deadline = deadline;
-        transactionData.depositedFee = msg.value;
-        transactionData.arbitratorBtcFee = btcFee;
-        transactionData.status = DataTypes.TransactionStatus.Active;
-        transactionParties.arbitrator = arbitrator;
-        transactionParties.compensationReceiver = compensationReceiver;
-        transactionParties.dapp = msg.sender;
-        transactionParties.depositedFeeRefundAddress = refundAddress;
 
-        emit TransactionRegistered(id, msg.sender, arbitrator, deadline, msg.value, compensationReceiver);
-        return id;
+        transactionData.startTime = block.timestamp;
+        transactionData.deadline = data.deadline;
+        transactionData.depositedFee = depositedFee;
+        transactionData.arbitratorBtcFee = btcFee;
+        transactionData.status = btcFee > 0 ? DataTypes.TransactionStatus.ToBeActive : DataTypes.TransactionStatus.Active;
+
+        transactionParties.arbitrator = data.arbitrator;
+        transactionParties.compensationReceiver = data.compensationReceiver;
+        transactionParties.dapp = msg.sender;
+        transactionParties.depositedFeeRefundAddress = data.refundAddress;
+    }
+
+    function _generateBtcFeeAddress(bytes32 id, address arbitrator) internal returns (string memory) {
+        bytes memory revenueBtcPubKey = arbitratorManager.getArbitratorInfo(arbitrator).revenueBtcPubKey;
+        bytes32 randomSeed = keccak256(abi.encodePacked(block.timestamp, msg.sender, id));
+
+        bytes memory lockScript = abi.encodePacked(
+            hex"20", // Byte length of the random seed
+            randomSeed,
+            hex"75", // OP_DROP
+            uint8(revenueBtcPubKey.length),
+            revenueBtcPubKey,
+            hex"ac" // OP_CHECKSIG
+        );
+
+        string memory arbitratorFeeAddress = btcAddressParser.EncodeSegWitAddress(lockScript, "mainnet");
+        transactions_data[id].btcFeeAddress = arbitratorFeeAddress;
+        return arbitratorFeeAddress;
     }
 
     /**
@@ -222,6 +269,71 @@ contract TransactionManager is
         _completeTransaction(id, parties);
     }
 
+    /**
+     * @notice Set the Bitcoin transaction that pays the arbitrator's fee
+     * @dev This function verifies:
+     *      1. The transaction output matches the P2SH address generated during registration
+     *      2. The output amount meets the required fee
+     *      3. The transaction is included in the specified block through merkle proof
+     * @param id The transaction ID in the arbitration protocol
+     * @param rawData The raw Bitcoin transaction data
+     * @param merkleProof The merkle proof array proving transaction inclusion
+     * @param index The index of the transaction in the merkle tree
+     * @param blockHeight The Bitcoin block height containing this transaction
+     */
+    function setDAppBtcFeeTransaction(
+        bytes32 id,
+        bytes calldata rawData,
+        bytes32[] calldata merkleProof,
+        uint256 index,
+        uint32 blockHeight
+    ) external {
+        DataTypes.TransactionParties storage parties = transactions_parties[id];
+
+        // Check caller authorization
+        if (msg.sender != parties.dapp) {
+            revert(Errors.NOT_AUTHORIZED);
+        }
+
+        // If no BTC fee is required, return immediately
+        DataTypes.TransactionData storage transactionData = transactions_data[id];
+        if (transactionData.arbitratorBtcFee == 0) {
+            return;
+        }
+
+        // Parse transaction output
+        IBTCUtils.BTCTransaction memory transaction = btcUtils.parseBTCTransaction(rawData);
+        if (transaction.outputs.length != 1) {
+            revert(Errors.INVALID_BTC_TX);
+        }
+
+        // verify output script
+        string memory p2wshAddress = btcAddressParser.EncodeSegWitAddress(transaction.outputs[0].scriptPubKey, "mainnet");
+        if (keccak256(bytes(p2wshAddress)) != keccak256(bytes(transactionData.btcFeeAddress))) {
+            revert(Errors.INVALID_OUTPUT_SCRIPT);
+        }
+
+        // Verify amount
+        if (transaction.outputs[0].value < transactionData.arbitratorBtcFee) {
+            revert(Errors.INVALID_OUTPUT_AMOUNT);
+        }
+
+        // Get block header information
+        IBtcBlockHeaders.BlockHeader memory blockHeader = btcBlockHeaders.getBlockByHeight(blockHeight);
+
+        // Calculate transaction hash
+        bytes32 txHash = btcUtils.calculateTxId(rawData);
+
+        // Verify merkle proof
+        if (!MerkleVerifier.verifyMerkleProof(txHash, blockHeader.merkleRoot, merkleProof, index)) {
+            revert(Errors.INVALID_MERKLE_PROOF);
+        }
+
+        transactionData.btcFeeTxHash = txHash;
+        transactionData.status = DataTypes.TransactionStatus.Active;
+        emit DAppFeeTransactionSet(id, txHash, blockHeight);
+    }
+
     function isAbleCompletedTransaction(bytes32 id) external view returns (bool) {
         DataTypes.TransactionData memory transactionData = transactions_data[id];
         if(transactionData.status == DataTypes.TransactionStatus.Active) {
@@ -235,6 +347,35 @@ contract TransactionManager is
         }
 
         return false;
+    }
+
+    /**
+     * @notice Close a transaction that has not paid the BTC fee within the timeout period
+     * @dev Only callable by the assigned arbitrator of the transaction
+     * @param id The transaction ID
+     */
+    function closeUnpaidTransaction(bytes32 id) external override {
+        DataTypes.TransactionParties memory parties = transactions_parties[id];
+        // Check if caller is the assigned arbitrator
+        if (msg.sender != parties.arbitrator) {
+            revert(Errors.NOT_AUTHORIZED);
+        }
+
+        // Check if transaction btc fee is 0
+        DataTypes.TransactionData memory transactionData = transactions_data[id];
+        if (transactionData.arbitratorBtcFee == 0) {
+            revert(Errors.NO_BTC_FEE);
+        }
+
+        // Check if BTC fee payment timeout has passed
+        uint256 timeout = configManager.getDappBtcFeePaymentTimeout();
+        if (block.timestamp <= transactionData.startTime + timeout) {
+            revert(Errors.TIMEOUT_NOT_REACHED);
+        }
+
+        _completeTransaction(id, parties);
+
+        emit TransactionClosedUnpaid(id, parties.dapp, parties.arbitrator, block.timestamp);
     }
 
     function isSubmitArbitrationOutTime(DataTypes.TransactionData memory transaction ) internal view returns (bool) {
@@ -614,6 +755,14 @@ contract TransactionManager is
         emit AssetOracleUpdated(_assetOracle);
     }
 
+    function setBtcBlockHeaders(address _btcBlockHeaders) external onlyOwner {
+        if (_btcBlockHeaders == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
+        }
+        btcBlockHeaders = IBtcBlockHeaders(_btcBlockHeaders);
+        emit BtcBlockHeadersChanged(_btcBlockHeaders);
+    }
+
     // Add a gap for future storage variables
-    uint256[47] private __gap;
+    uint256[46] private __gap;
 }

@@ -51,6 +51,18 @@ interface IConfigManager {
     function getSystemCompensationFeeRate() external view returns (uint256);
     function setSystemCompensationFeeRate(uint256 rate) external;
     function getArbitrationBTCFeeRate() external view returns (uint256);
+
+    /**
+     * @notice Get the timeout duration for DApp to pay BTC fee
+     * @return The timeout duration in seconds
+     */
+    function getDappBtcFeePaymentTimeout() external view returns (uint256);
+
+    /**
+     * @notice Set the timeout duration for DApp to pay BTC fee
+     * @param timeout The timeout duration in seconds
+     */
+    function setDappBtcFeePaymentTimeout(uint256 timeout) external;
     
     /**
      * @notice Emitted when a config value is updated
