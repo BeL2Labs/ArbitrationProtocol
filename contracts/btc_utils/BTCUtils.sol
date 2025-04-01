@@ -541,4 +541,50 @@ contract BTCUtils is IBTCUtils {
         return signData;
     }
 
+    /// @notice Calculate transaction ID (double SHA256)
+    /// @dev For witness transactions, exclude witness data
+    /// @param txData Raw transaction data
+    /// @return Transaction ID
+    function calculateTxId(bytes calldata txData) external pure returns (bytes32) {
+        // If witness transaction, construct non-witness data
+        if (txData[4] == 0x00 && txData[5] == 0x01) {
+            uint256 inputCount;
+            uint256 offset = 6;
+            (inputCount, offset) = BytesLib.readVarInt(txData, offset);
+
+            // Skip all inputs
+            for(uint256 i = 0; i < inputCount; i++) {
+                (, offset) = parseInputs(txData, offset);
+            }
+
+            // Read and skip all outputs
+            uint256 outputCount;
+            (outputCount, offset) = BytesLib.readVarInt(txData, offset);
+            for(uint256 i = 0; i < outputCount; i++) {
+                (, offset) = parseOutputs(txData, offset);
+            }
+
+            // Construct non-witness data
+            bytes memory nonWitnessData = new bytes(4 + (offset - 6) + 4);
+            uint256 pos = 0;
+
+            // Copy version
+            pos = BytesLib.writeUint32LE(BytesLib.readUint32LE(txData, 0), nonWitnessData, pos);
+
+            // Copy input and output data (skip witness flag and version)
+            for(uint256 i = 6; i < offset; i++) {
+                nonWitnessData[pos++] = txData[i];
+            }
+
+            // Copy locktime
+            uint256 lockTimeOffset = txData.length - 4;
+            BytesLib.writeUint32LE(BytesLib.readUint32LE(txData, lockTimeOffset), nonWitnessData, pos);
+
+            // Calculate double SHA256 and return in correct byte order
+            return BytesLib.doubleSha256Bitcoin(nonWitnessData);
+        }
+
+        // Non-witness transaction, calculate directly
+        return BytesLib.doubleSha256Bitcoin(txData);
+    }
 }

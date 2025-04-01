@@ -17,7 +17,8 @@ library DataTypes {
         Arbitrated,
         Expired,
         Disputed,
-        Submitted
+        Submitted,
+        ToBeActive
     }
 
     enum SignDataType {
@@ -71,6 +72,8 @@ library DataTypes {
         uint256 depositedFee;
         TransactionStatus status;
         uint256 arbitratorBtcFee;
+        string btcFeeAddress;
+        bytes32 btcFeeTxHash;
     }
 
     struct TransactionParties{
