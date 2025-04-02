@@ -121,7 +121,6 @@ interface ITransactionManager {
         bytes btcTxSignature);
     event SetArbitratorManager(address indexed arbitratorManager);
     event BTCAddressParserChanged(address indexed newParser);
-    event AssetOracleUpdated(address indexed newOracle);
     event DepositFeeTransfer(bytes32 indexed txId, address indexed revenueETHAddress, uint256 arbitratorFee, uint256 systemFee, uint256 refundedFee);
 
     event DAppFeeTransactionSet(
