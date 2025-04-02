@@ -690,6 +690,14 @@ contract TransactionManager is
         emit BtcBlockHeadersChanged(_btcBlockHeaders);
     }
 
+    function setBtcBlockHeaders(address _btcBlockHeaders) external onlyOwner {
+        if (_btcBlockHeaders == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
+        }
+        btcBlockHeaders = IBtcBlockHeaders(_btcBlockHeaders);
+        emit BtcBlockHeadersChanged(_btcBlockHeaders);
+    }
+
     // Add a gap for future storage variables
     uint256[46] private __gap;
 }
