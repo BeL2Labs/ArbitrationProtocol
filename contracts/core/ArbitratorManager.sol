@@ -11,6 +11,7 @@ import "./ConfigManager.sol";
 import "../libraries/DataTypes.sol";
 import "../libraries/Errors.sol";
 import "hardhat/console.sol";
+import "../interfaces/IAssetOracle.sol";
 
 /**
  * @title ArbitratorManager
@@ -35,6 +36,11 @@ contract ArbitratorManager is
 {
     // Constants
     address public constant zeroAddress = address(0);
+    uint256 private constant SECONDS_PER_YEAR = 365 days;
+    uint256 private constant FEE_RATE_MULTIPLIER = 10000;
+    address private constant ETH_TOKEN = address(0x517E9e5d46C1EA8aB6f78677d6114Ef47F71f6c4);
+    address private constant BTC_TOKEN = address(0xDF4191Bfe8FAE019fD6aF9433E8ED6bfC4B90CA1);
+
 
     // Config manager reference for system parameters
     ConfigManager public configManager;
@@ -51,6 +57,8 @@ contract ArbitratorManager is
     address public compensationManager;
     bool private initialized;
     mapping(address => DataTypes.ArbitratorInfoExt) private arbitratorsExt;
+
+    IAssetOracle public assetOracle;
 
     /**
      * @notice Ensures arbitrator is not currently handling any transactions
@@ -88,24 +96,28 @@ contract ArbitratorManager is
      * @param _configManager Address of the ConfigManager contract
      * @param _nftContract Address of the NFT contract
      * @param _nftInfo Address of the NFT info contract
+     * @param _assetOracle Address of the AssetOracle contract
      */
     function initialize(
         address _configManager,
         address _nftContract,
-        address _nftInfo
+        address _nftInfo,
+        address _assetOracle
     ) public initializer {
         __ReentrancyGuard_init();
         __Ownable_init(msg.sender);
 
         if (_configManager == address(0)
             || _nftContract == address(0)
-            || _nftInfo == address(0)) {
+            || _nftInfo == address(0)
+            || _assetOracle == address(0)) {
             revert (Errors.ZERO_ADDRESS);
         }
 
         configManager = ConfigManager(_configManager);
         nftContract = IERC721(_nftContract);
         nftInfo = IBNFTInfo(_nftInfo);
+        assetOracle = IAssetOracle(_assetOracle);
     }
 
     // Helper function to validate inputs
@@ -629,7 +641,7 @@ contract ArbitratorManager is
      * @return uint256 Available stake amount (ETH + NFT value)
      */
     function getAvailableStake(address arbitrator) public view override returns (uint256) {
-        DataTypes.ArbitratorInfo storage info = arbitrators[arbitrator];
+        DataTypes.ArbitratorInfo memory info = arbitrators[arbitrator];
         uint256 totalNftValue = getTotalNFTStakeValue(arbitrator);
         return info.ethAmount + totalNftValue;
     }
@@ -748,7 +760,7 @@ contract ArbitratorManager is
      * @return Total stake NFT value in ETH
      */
     function getTotalNFTStakeValue(address arbitrator) public view returns (uint256) {
-        DataTypes.ArbitratorInfo storage arbiInfo = arbitrators[arbitrator];
+        DataTypes.ArbitratorInfo memory arbiInfo = arbitrators[arbitrator];
         uint256 totalValue = 0;
 
         // Add NFT values
@@ -839,6 +851,53 @@ contract ArbitratorManager is
         emit NFTContractUpdated(oldNFTContract, _nftContract);
     }
 
+    function setAssetOracle(address _assetOracle) external onlyOwner {
+        if (_assetOracle == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
+        }
+        assetOracle = IAssetOracle(_assetOracle);
+        emit AssetOracleUpdated(_assetOracle);
+    }
+
+    /**
+     * @notice Get the arbitration fee based on the deadline
+     * @param duration The duration for the transaction
+     * @param arbitrator The address of the arbitrator
+     * @return fee The calculated fee
+     */
+    function getFee(uint256 duration, address arbitrator) external view returns (uint256 fee) {
+        uint256 feeRate = arbitrators[arbitrator].currentFeeRate;
+        return _getFee(arbitrator, feeRate, duration);
+    }
+
+    function _getFee(address arbitrator, uint256 feeRate, uint256 duration) internal view returns (uint256) {
+        // Calculate and validate fee
+        // fee = stake * (duration / secondsPerYear) * (feeRate / feeRateMultiplier)
+        uint256 totalStake = getAvailableStake(arbitrator);
+        return (totalStake * duration * feeRate) / (SECONDS_PER_YEAR * FEE_RATE_MULTIPLIER);
+    }
+
+    function getBtcFee(uint256 duration, address arbitrator) external view returns (uint256 fee) {
+        uint256 btcFeeRate = arbitratorsExt[arbitrator].currentBTCFeeRate;
+        if (btcFeeRate > 0) {
+            uint256 ethFee = _getFee(arbitrator, btcFeeRate, duration);
+            return ethToBTC(ethFee);
+        }
+        return 0;
+    }
+
+    function ethToBTC(uint256 eth_amount) private view returns (uint256) {
+        uint256 eth_price = assetOracle.assetPrices(ETH_TOKEN);
+        uint256 btc_price = assetOracle.assetPrices(BTC_TOKEN);
+        //(eth_amount * eth_price / 1e18)/(btc_price)*1e8
+        uint256 satoshi =  (eth_amount * eth_price * 1e8) / (btc_price * 1e18);
+        if(satoshi < 1000) {
+            satoshi = 1000;
+        }
+        return satoshi;
+    }
+
+
     // Add a gap for future storage variables
-    uint256[49] private __gap;
+    uint256[48] private __gap;
 }

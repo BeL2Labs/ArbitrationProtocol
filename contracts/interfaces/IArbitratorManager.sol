@@ -115,6 +115,14 @@ interface IArbitratorManager {
     function getAvailableStake(address arbitrator) external view returns (uint256);
     function getTotalNFTStakeValue(address arbitrator) external view returns (uint256);
     function isConfigModifiable(address arbitrator) external view returns (bool);
+    /**
+     * @notice Get the arbitration fee based on the deadline
+     * @param duration The duration for the transaction
+     * @param arbitrator The address of the arbitrator
+     * @return fee The calculated fee
+     */
+    function getFee(uint256 duration, address arbitrator) external view returns (uint256 fee);
+    function getBtcFee(uint256 duration, address arbitrator) external view returns (uint256 fee);
 
     /**
      * @notice Check if the given operator address is the operator of the arbitrator
@@ -136,6 +144,8 @@ interface IArbitratorManager {
     function setCompensationManager(address _compensationManager) external;
     function initTransactionAndCompensationManager(address _transactionManager, address _compensationManager) external;
     function setNFTContract(address _nftContract) external;
+    function setAssetOracle(address _assetOracle) external;
+
     // Events
     event InitializedManager(address indexed transactionManager, address indexed compensationManager);
     event StakeAdded(
@@ -192,4 +202,6 @@ interface IArbitratorManager {
         uint256 deadline
     );
     event NFTContractUpdated(address indexed oldNFTContract, address indexed newNFTContract);
+
+    event AssetOracleUpdated(address indexed assetOracle);
 }
