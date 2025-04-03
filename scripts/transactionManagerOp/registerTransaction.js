@@ -16,7 +16,7 @@ async function main() {
     const transactionManager = TransactionManager.attach(transactionManagerAddress);
 
     // Parameters for registerTransaction
-    const arbitratorAddress = deployer.address;
+    const arbitratorAddress = "0x3Cf0BB575527cACf9e274a6eE879f876Dae0BC40";
     const compensationReceiverAddress = receiver.address;
     const deadline = Math.floor(Date.now() / 1000) + 3600 * 24 + 180; // 1 days from now
     const value = ethers.utils.parseEther("0.1");
@@ -32,17 +32,21 @@ async function main() {
     console.log("Compensation Receiver Address:", compensationReceiverAddress);
     console.log("Deadline:", deadline);
     console.log("Value:", value);
-    let gasLimit = await transactionManager.estimateGas.registerTransaction(utxos,
-        arbitratorAddress, deadline, compensationReceiverAddress,
+    const registerData = {
+        arbitrator: arbitratorAddress,
+        deadline: deadline,
+        compensationReceiver: compensationReceiverAddress,
+        refundAddress: receiver.address
+    }
+    let gasLimit = await transactionManager.estimateGas.registerTransaction(
+        registerData,
         {value: value}
     );
     console.log("Gas Limit:", gasLimit);
+    return;
     // Call registerTransaction directly with transaction options
     const tx = await transactionManager.registerTransaction(
-        utxos,
-        arbitratorAddress, 
-        deadline, 
-        compensationReceiverAddress,
+        registerData,
         {
             value: value,
             gasLimit: gasLimit
