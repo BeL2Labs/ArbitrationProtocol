@@ -115,7 +115,6 @@ contract TransactionManager is
         uint256 duration = data.deadline - block.timestamp;
         uint256 fee = arbitratorManager.getFee(duration, data.arbitrator);
         if (msg.value < fee) revert(Errors.INSUFFICIENT_FEE);
-        uint256 btcFee = getRegisterTransactionBtcFee(data.deadline, data.arbitrator);
 
         uint256 btcFee = arbitratorManager.getBtcFee(duration, data.arbitrator);
 
@@ -681,14 +680,6 @@ contract TransactionManager is
         }
         btcAddressParser = IBtcAddress(_btcAddressParser);
         emit BTCAddressParserChanged(_btcAddressParser);
-    }
-
-    function setBtcBlockHeaders(address _btcBlockHeaders) external onlyOwner {
-        if (_btcBlockHeaders == address(0)) {
-            revert(Errors.ZERO_ADDRESS);
-        }
-        btcBlockHeaders = IBtcBlockHeaders(_btcBlockHeaders);
-        emit BtcBlockHeadersChanged(_btcBlockHeaders);
     }
 
     function setBtcBlockHeaders(address _btcBlockHeaders) external onlyOwner {
