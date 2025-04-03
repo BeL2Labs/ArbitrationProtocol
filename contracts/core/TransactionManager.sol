@@ -329,6 +329,9 @@ contract TransactionManager is
 
     function isAbleCompletedTransaction(bytes32 id) external view returns (bool) {
         DataTypes.TransactionData memory transactionData = transactions_data[id];
+        if (transactionData.status == DataTypes.TransactionStatus.ToBeActive) {
+            return true;
+        }
         if(transactionData.status == DataTypes.TransactionStatus.Active) {
             return true;
         } else if (transactionData.status == DataTypes.TransactionStatus.Arbitrated) {

@@ -18,14 +18,15 @@ async function main() {
     console.log("arbitratorManagerAddress", arbitratorManagerAddress);
 
     // Transaction ID to query
-    const transactionId = "0x2ee768abbf8e8f43a181667530642555d025930652132919990222684e1349ad";
+    const transactionId = "0x5ee8eeb3660e718d7fe88ac9b3dfcad1fd1b0c52a5bf7897388e4cc066d6bda3";
 
     try {
         // Log transaction details
         console.log("Querying Transaction ID:", transactionId);
 
         // Call getTransactionById
-        const transaction = await transactionManager.getTransactionById(transactionId);
+        const transaction = await transactionManager.getTransactionDataById(transactionId);
+        console.log("transaction:", transaction);
         const status = await transactionManager.getTransactionStatus(transactionId);
         // Log the transaction details
         console.log("\n--- Transaction Details ---");
