@@ -8,7 +8,6 @@ describe("BTCUtils", function () {
         // Create a contract that uses the BTCUtils library
         const TestBTCUtilsFactory = await ethers.getContractFactory("BTCUtils");
         testBTCUtils = await TestBTCUtilsFactory.deploy();
-        console.log("TestBTCUtils deployed to:", testBTCUtils.address);
     });
 
     describe("parseBTCTransaction", function () {
@@ -18,11 +17,9 @@ describe("BTCUtils", function () {
             
             // Convert hex to bytes
             const txBytes = ethers.utils.arrayify(txHex);
-            console.log("txBytes ", txBytes);
 
             // Call the parseBTCTransaction method
             const parsedTx = await testBTCUtils.parseBTCTransaction(txHex);
-            console.log("parsedTx ", parsedTx);
             // Verify transaction details
             expect(parsedTx.version).to.equal(2);
             expect(parsedTx.inputs.length).to.equal(1);

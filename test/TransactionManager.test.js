@@ -27,21 +27,22 @@ describe("TransactionManager", function () {
         operator = owner;
         compensationReceiver=owner;
         other = arbitrator;
-        console.log("Owner address:", owner.address);
-        console.log("DApp address:", dapp.address);
-        console.log("Arbitrator address:", arbitrator.address);
         // Deploy ConfigManager
         const ConfigManager = await ethers.getContractFactory("ConfigManager");
         configManager = await upgrades.deployProxy(ConfigManager, [], { initializer: 'initialize' });
         // Deploy DAppRegistry
         const DAppRegistry = await ethers.getContractFactory("DAppRegistry");
         dappRegistry = await upgrades.deployProxy(DAppRegistry, [configManager.address], { initializer: 'initialize' });
+        // Deploy MockAssetOracle
+        const MockOracle = await ethers.getContractFactory("MockAssetOracle");
+        const mockOracle = await MockOracle.deploy();
         // Deploy ArbitratorManager
         const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager");
         arbitratorManager = await upgrades.deployProxy(ArbitratorManager, [
             configManager.address, 
             owner.address,  // Temporary NFT contract address
-            owner.address   // Temporary NFT info contract address
+            owner.address,   // Temporary NFT info contract address
+            mockOracle.address
         ], { initializer: 'initialize' });
 
         const MockSignatureValidationService = await ethers.getContractFactory("MockSignatureValidationService");
@@ -63,9 +64,6 @@ describe("TransactionManager", function () {
         const BTCAddressParser = await ethers.getContractFactory("MockBtcAddress");
         btcAddressParser = await BTCAddressParser.deploy();
 
-        // Deploy MockAssetOracle
-        const MockOracle = await ethers.getContractFactory("MockAssetOracle");
-        const mockOracle = await MockOracle.deploy();
         // Deploy TransactionManager
         const TransactionManager = await ethers.getContractFactory("TransactionManager");
         transactionManager = await upgrades.deployProxy(TransactionManager, [
@@ -74,8 +72,7 @@ describe("TransactionManager", function () {
             configManager.address,
             compensationManager.address,
             btcUtils.address,
-            btcAddressParser.address,
-            mockOracle.address
+            btcAddressParser.address
         ], { initializer: 'initialize' });
 
         // Set transactionManager
@@ -93,10 +90,9 @@ describe("TransactionManager", function () {
         const btcAddress = "1F9wDVq5ym2B3Z8bs1yBMSsd6oa9SbihJ4";
         const btcPubKey = ethers.utils.arrayify("0x0250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19");
         const btcScript = "0x76a9149b42587007f85e456b5d0d702e828f34ea1f55b188ac";
-        const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
+        const deadline = Math.floor(Date.now() / 1000) + 300 * 24 * 60 * 60; // 300 days from now
         const feeRate = 0; // 10%
-        const btcFeeRate = 1000; // 10%
-        console.log("Before Register arbitrator result:");
+        const btcFeeRate = 0; // 10%
         let tx = await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
             btcAddress,
             btcPubKey,
@@ -106,7 +102,6 @@ describe("TransactionManager", function () {
             { value: STAKE_AMOUNT }
         );
         let receipt = await tx.wait();
-        console.log("Register arbitrator result:", tx.hash)
         await btcAddressParser.connect(owner).setBtcAddressToScript(btcAddress, btcScript);
 
         // Ensure arbitrator is active
@@ -117,7 +112,6 @@ describe("TransactionManager", function () {
         // Set TransactionManager as the transaction manager in ArbitratorManager
         tx = await arbitratorManager.connect(owner).initTransactionAndCompensationManager(transactionManager.address, compensationManager.address);
         receipt = await tx.wait();
-        console.log("setTransactionManager:", tx.hash);
     });
    
    describe("Transaction Registration", async function () {
@@ -127,15 +121,18 @@ describe("TransactionManager", function () {
         });
         it("Should register a transaction with valid parameters", async function () {
             const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
-            console.log("Deadline:", deadline);
+
+            const data = {
+                arbitrator: arbitrator.address,
+                deadline: deadline,
+                compensationReceiver: compensationReceiver.address,
+                refundAddress: dapp.address,
+            }
             const registerTx = await transactionManager.connect(dapp).registerTransaction(
-                arbitrator.address,
-                deadline,
-                compensationReceiver.address,
-                dapp.address,
+                data,
                 { value: ethers.utils.parseEther("0.1") } // Sufficient fee
             );
-            console.log("registerTx:", registerTx.hash);
+
             const receipt = await registerTx.wait();
             const event = receipt.events.find(e => e.event === "TransactionRegistered");
             expect(event).to.exist;
@@ -143,13 +140,15 @@ describe("TransactionManager", function () {
 
         it("Should fail to register transaction with zero address", async function () {
             const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
-
+            const data = {
+                arbitrator: ethers.constants.AddressZero,
+                deadline: deadline,
+                compensationReceiver: compensationReceiver.address,
+                refundAddress: dapp.address,
+            }
             await expect(
                 transactionManager.connect(dapp).registerTransaction(
-                    ethers.constants.AddressZero,
-                    deadline,
-                    compensationReceiver.address,
-                    dapp.address,
+                    data,
                     { value: ethers.utils.parseEther("0.1") }
                 )
             ).to.be.revertedWith("Z0");
@@ -157,13 +156,15 @@ describe("TransactionManager", function () {
 
         it("Should fail to register transaction with invalid deadline", async function () {
             const deadline = (await time.latest()) - 2 * 24 * 60 * 60; // 2 days in the past
-
+            const data = {
+                arbitrator: arbitrator.address,
+                deadline: deadline,
+                compensationReceiver: compensationReceiver.address,
+                refundAddress: dapp.address,
+            }
             await expect(
                 transactionManager.connect(dapp).registerTransaction(
-                    arbitrator.address,
-                    deadline,
-                    compensationReceiver.address,
-                    dapp.address,
+                    data,
                     { value: ethers.utils.parseEther("0.1") }
                 )
             ).to.be.revertedWith("T3");
@@ -171,40 +172,44 @@ describe("TransactionManager", function () {
 
         it("Should success to register transaction with 0 ela fee", async function () {
             const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
+            const regdata = {
+                arbitrator: arbitrator.address,
+                deadline: deadline,
+                compensationReceiver: compensationReceiver.address,
+                refundAddress: dapp.address,
+            }
             // Try to register with zero fee
             const tx = await transactionManager.connect(dapp).registerTransaction(
-                    arbitrator.address,
-                    deadline,
-                    compensationReceiver.address,
-                    dapp.address,
-                    { value: 0 } // Zero fee
-                );
+                regdata,
+                { value: 0 } // Zero fee
+            );
 
             const receipt = await tx.wait();
             const event = receipt.events.find(e => e.event === "TransactionRegistered");
             const txId = event.args[0];
 
             const data = await transactionManager.connect(dapp).getTransactionDataById(txId);
-            expect(data.arbitratorBtcFee).to.equal(546);
+            expect(data.arbitratorBtcFee).to.equal(0);
         });
     });
 
    describe("Transaction Upload utxos", function () {
         beforeEach(async function () {
             const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
-
+            const regdata = {
+                arbitrator: arbitrator.address,
+                deadline: deadline,
+                compensationReceiver: compensationReceiver.address,
+                refundAddress: dapp.address,
+            }
             const registerTx = await transactionManager.connect(dapp).registerTransaction(
-                arbitrator.address,
-                deadline,
-                compensationReceiver.address,
-                dapp.address,
+                regdata,
                 { value: ethers.utils.parseEther("0.1") }
             );
 
             const receipt = await registerTx.wait();
             const event = receipt.events.find(e => e.event === "TransactionRegistered");
             transactionId = event.args[0];
-            console.log("Transaction ID:", transactionId);
         });
 
         it("Should upload utxos successfully", async function () {
@@ -271,19 +276,20 @@ describe("TransactionManager", function () {
             await btcAddressParser.connect(owner).setBtcAddressToScript(btcAddress, btcScript);
 
             const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
-
+            const regdata = {
+                arbitrator: arbitrator.address,
+                deadline: deadline,
+                compensationReceiver: compensationReceiver.address,
+                refundAddress: dapp.address,
+            }
             const registerTx = await transactionManager.connect(dapp).registerTransaction(
-                arbitrator.address,
-                deadline,
-                compensationReceiver.address,
-                dapp.address,
+                regdata,
                 { value: ethers.utils.parseEther("0.1") }
             );
 
             const receipt = await registerTx.wait();
             const event = receipt.events.find(e => e.event === "TransactionRegistered");
             transactionId = event.args[0];
-            console.log("Transaction ID:", transactionId);
 
             const utxos = [
                 {
@@ -330,19 +336,20 @@ describe("TransactionManager", function () {
 
         it ("Should request arbitration successfully 2", async function () {
             const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
-
+            const regdata = {
+                arbitrator: arbitrator.address,
+                deadline: deadline,
+                compensationReceiver: compensationReceiver.address,
+                refundAddress: dapp.address,
+            }
             const registerTx = await transactionManager.connect(dapp).registerTransaction(
-                arbitrator.address,
-                deadline,
-                compensationReceiver.address,
-                dapp.address,
+                regdata,
                 { value: ethers.utils.parseEther("0.1") }
             );
 
             const receipt = await registerTx.wait();
             const event = receipt.events.find(e => e.event === "TransactionRegistered");
             transactionId = event.args[0];
-            console.log("Transaction ID:", transactionId);
 
             const utxos = [
                 {
@@ -389,19 +396,20 @@ describe("TransactionManager", function () {
             await btcAddressParser.connect(owner).setBtcAddressToScript(btcAddress, btcScript);
 
             const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
-
+            const regdata = {
+                arbitrator: arbitrator.address,
+                deadline: deadline,
+                compensationReceiver: compensationReceiver.address,
+                refundAddress: dapp.address,
+            }
             const registerTx = await transactionManager.connect(dapp).registerTransaction(
-                arbitrator.address,
-                deadline,
-                compensationReceiver.address,
-                dapp.address,
+                regdata,
                 { value: ethers.utils.parseEther("0.1") }
             );
 
             const receipt = await registerTx.wait();
             const event = receipt.events.find(e => e.event === "TransactionRegistered");
             transactionId = event.args[0];
-            console.log("Transaction ID:", transactionId);
 
             const utxos = [
                 {
@@ -434,19 +442,20 @@ describe("TransactionManager", function () {
 
         beforeEach(async function () {
             const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
-
+            const regdata = {
+                arbitrator: arbitrator.address,
+                deadline: deadline,
+                compensationReceiver: compensationReceiver.address,
+                refundAddress: dapp.address,
+            }
             const registerTx = await transactionManager.connect(dapp).registerTransaction(
-                arbitrator.address,
-                deadline,
-                compensationReceiver.address,
-                dapp.address,
+                regdata,
                 { value: ethers.utils.parseEther("0.1") }
             );
 
             const receipt = await registerTx.wait();
             const event = receipt.events.find(e => e.event === "TransactionRegistered");
             transactionId = event.args[0];
-            console.log("Transaction ID:", transactionId);
         });
 
         it("Should allow transaction completion by DApp", async function () {

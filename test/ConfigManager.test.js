@@ -199,8 +199,8 @@ describe("ConfigManager", function () {
     describe("Config Queries", function () {
         it("Should return all configs correctly", async function () {
             const [keys, values] = await configManager.getAllConfigs();
-            expect(keys.length).to.equal(13); // Total number of configs
-            expect(values.length).to.equal(13);
+            expect(keys.length).to.equal(14); // Total number of configs
+            expect(values.length).to.equal(14);
         });
     });
 });

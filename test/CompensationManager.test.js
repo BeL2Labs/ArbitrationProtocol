@@ -62,10 +62,14 @@ describe("CompensationManager", function () {
         mockNFTInfo = await MockNFTInfo.deploy();
         configManager = await upgrades.deployProxy(ConfigManager, [], { initializer: 'initialize' });
         dappRegistry = await upgrades.deployProxy(DappRegistry, [configManager.address], { initializer: 'initialize' });
+        // Deploy MockAssetOracle
+        const MockOracle = await ethers.getContractFactory("MockAssetOracle");
+        const mockOracle = await MockOracle.deploy();
         arbitratorManager = await upgrades.deployProxy(ArbitratorManager, [
             configManager.address,
             mockNFT.address,
-            mockNFTInfo.address
+            mockNFTInfo.address,
+            mockOracle.address
         ], { initializer: 'initialize' });
 
         compensationManager = await upgrades.deployProxy(CompensationManager, [
@@ -110,7 +114,7 @@ describe("CompensationManager", function () {
         const btcScript = "0x76a914cb539f4329eeb589e83659c8304bcc6c99553a9688ac";
         const deadline = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60; // 356 days from now
         const feeRate = 1000; // 10%
-        const btcFeeRate = 1000;
+        const btcFeeRate = 0;
         let tx = await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
             btcAddress,
             VALID_PUB_KEY,
@@ -121,11 +125,15 @@ describe("CompensationManager", function () {
         );
         await tx.wait();
         await btcAddressParser.connect(owner).setBtcAddressToScript(btcAddress, btcScript);
+
+        const data = {
+            arbitrator: arbitrator.address,
+            deadline: Math.floor(Date.now() / 1000) + duration, // 30 days from now
+            compensationReceiver: compensationReceiver.address,
+            refundAddress: dapp.address,
+        }
         const registerTx = await transactionManager.connect(dapp).registerTransaction(
-            arbitrator.address,
-            Math.floor(Date.now() / 1000) + duration, // 30 days from now
-            compensationReceiver.address,
-            dapp.address,
+            data,
             { value: ethers.utils.parseEther("0.1") }
         );
         const receipt = await registerTx.wait();
@@ -289,7 +297,7 @@ describe("CompensationManager", function () {
 
            const claimId = ethers.utils.solidityKeccak256(
                ["bytes32", "address", "address", "uint8"],
-               [valid_evidence, arbitrator.address, compensationReceiver.address, 2]
+               [valid_evidence, arbitrator.address, timeoutReceiver.address, 2]
            );
 
            await expect(compensationManager.connect(dapp).claimFailedArbitrationCompensation(
@@ -508,7 +516,7 @@ describe("CompensationManager", function () {
            );
            claimId = ethers.utils.solidityKeccak256(
                ["bytes32", "address", "address", "uint8"],
-               [valid_evidence, arbitrator.address, compensationReceiver.address, 2]
+               [valid_evidence, arbitrator.address, timeoutReceiver.address, 2]
              );
            const feeRate = await configManager.getSystemCompensationFeeRate();
            withdrawFee = STAKE_AMOUNT.mul(feeRate).div(10000);

@@ -13,9 +13,7 @@ describe("DAppRegistry", function () {
   const REGISTRATION_FEE = ethers.utils.parseEther("10"); // 10 ETH
 
   beforeEach(async function () {
-    console.log("Fetching signers...");
     const signers = await ethers.getSigners();
-    console.log("Total signers:", signers.length);
 
     // Assign first three signers to standard roles
     owner = signers[0];
@@ -25,12 +23,6 @@ describe("DAppRegistry", function () {
     // Create mock addresses using ethers.utils.keccak256 to generate unique addresses
     dappContractAddress = owner.address;
     feeCollectorAddress = owner.address;
-
-    console.log("Owner address:", owner.address);
-    console.log("DApp Owner address:", dappOwner.address);
-    console.log("Other Account address:", otherAccount.address);
-    console.log("DApp Contract address:", dappContractAddress);
-    console.log("Fee Collector address:", feeCollectorAddress);
 
     // Deploy ConfigManager first
     const ConfigManager = await ethers.getContractFactory("ConfigManager");

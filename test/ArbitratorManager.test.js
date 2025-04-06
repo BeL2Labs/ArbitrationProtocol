@@ -30,13 +30,16 @@ describe("ArbitratorManager", function () {
       [minFeeRateKey, minStakeKey, maxStakeKey],
       [minFeeRate, ethers.utils.parseEther("10"), ethers.utils.parseEther("1000")]
     );
-
+    // Deploy MockAssetOracle
+    const MockOracle = await ethers.getContractFactory("MockAssetOracle");
+    const mockOracle = await MockOracle.deploy();
     // Deploy ArbitratorManager
     const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager");
     arbitratorManager = await upgrades.deployProxy(ArbitratorManager, [
       configManager.address,
       owner.address,  // Temporary NFT contract address
-      owner.address   // Temporary NFT info contract address
+      owner.address,   // Temporary NFT info contract address
+      mockOracle.address
     ], { initializer: 'initialize' });
   });
 
@@ -151,15 +154,10 @@ describe("ArbitratorManager", function () {
        it("arbitrator unstake", async function () {
         let tx = await arbitratorManager.connect(arbitrator).unstake();
         tx.wait();
-        console.log("unstake ", tx.hash);
 
         const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
-
-        // Log the entire arbitrator info for debugging
-        console.log("Arbitrator Info:", arbitratorInfo);
-
-        const arbitratorInfoExt = await arbitratorManager.getArbitratorInfoExt(arbitrator.address);
-        console.log("Arbitrator Info Ext:", arbitratorInfoExt);
+        expect(arbitratorInfo.ethAmount).to.equal(0);
+        expect(arbitratorInfo.nftTokenIds).to.be.an('array').that.is.empty;
       });
 
 
