@@ -225,7 +225,8 @@ contract TransactionManager is
         if (utxos.length != 1) revert(Errors.INVALID_UTXO);
 
         DataTypes.TransactionParties storage transaction = transactions_parties[id];
-        if (transactions_data[id].status != DataTypes.TransactionStatus.Active) {
+        if (transactions_data[id].status != DataTypes.TransactionStatus.ToBeActive ||
+            transactions_data[id].status != DataTypes.TransactionStatus.Active) {
             revert(Errors.INVALID_TRANSACTION_STATUS);
         }
 
@@ -293,21 +294,19 @@ contract TransactionManager is
         if (transactionData.arbitratorBtcFee == 0) {
             return;
         }
-
+        bytes memory checkScript = btcAddressParser.DecodeBtcAddressToScript(transactionData.btcFeeAddress);
         // Parse transaction output
         IBTCUtils.BTCTransaction memory transaction = btcUtils.parseBTCTransaction(rawData);
-        if (transaction.outputs.length != 1) {
-            revert(Errors.INVALID_BTC_TX);
-        }
-
-        // verify output script
-        string memory p2wshAddress = btcAddressParser.EncodeSegWitAddress(transaction.outputs[0].scriptPubKey, "mainnet");
-        if (keccak256(bytes(p2wshAddress)) != keccak256(bytes(transactionData.btcFeeAddress))) {
-            revert(Errors.INVALID_OUTPUT_SCRIPT);
+        uint256 value = 0;
+        for(uint i = 0; i < transaction.outputs.length; i++) {
+            bytes memory pkScript = transaction.outputs[i].scriptPubKey;
+            if (BytesLib.equal(checkScript, pkScript)) {
+                value = value + transaction.outputs[i].value;
+            }
         }
 
         // Verify amount
-        if (transaction.outputs[0].value < transactionData.arbitratorBtcFee) {
+        if (value < transactionData.arbitratorBtcFee) {
             revert(Errors.INVALID_OUTPUT_AMOUNT);
         }
 
@@ -691,6 +690,14 @@ contract TransactionManager is
         }
         btcBlockHeaders = IBtcBlockHeaders(_btcBlockHeaders);
         emit BtcBlockHeadersChanged(_btcBlockHeaders);
+    }
+
+    function setBtcUtils(address _btcUtils) external onlyOwner {
+        if (_btcUtils == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
+        }
+        btcUtils = IBTCUtils(_btcUtils);
+        emit BtcUtilsChanged(_btcUtils);
     }
 
     // Add a gap for future storage variables
