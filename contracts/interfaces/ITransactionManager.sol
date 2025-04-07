@@ -130,6 +130,7 @@ interface ITransactionManager {
     );
 
     event BtcBlockHeadersChanged(address indexed newBtcBlockHeaders);
+    event BtcUtilsChanged(address indexed newBtcUtils);
 
     // Functions
     function setArbitratorManager(address _arbitratorManager) external;

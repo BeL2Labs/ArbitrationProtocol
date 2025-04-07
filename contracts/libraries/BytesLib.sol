@@ -176,4 +176,72 @@ library BytesLib {
         }
     }
 
+    function equal(bytes memory _preBytes, bytes memory _postBytes) internal pure returns (bool) {
+        bool success = true;
+
+        assembly {
+            let length := mload(_preBytes)
+
+        // if lengths don't match the arrays are not equal
+            switch eq(length, mload(_postBytes))
+            case 1 {
+            // cb is a circuit breaker in the for loop since there's
+            // no said feature for inline assembly loops
+            // cb = 1 - don't breaker
+            // cb = 0 - break
+                let cb := 1
+
+                let mc := add(_preBytes, 0x20)
+                let end := add(mc, length)
+
+                for {
+                    let cc := add(_postBytes, 0x20)
+                // the next line is the loop condition:
+                // while(uint(mc < end) + cb == 2)
+                } eq(add(lt(mc, end), cb), 2) {
+                    mc := add(mc, 0x20)
+                    cc := add(cc, 0x20)
+                } {
+                // if any of these checks fails then arrays are not equal
+                    if iszero(eq(mload(mc), mload(cc))) {
+                    // unsuccess:
+                        success := 0
+                        cb := 0
+                    }
+                }
+            }
+            default {
+            // unsuccess:
+                success := 0
+            }
+        }
+
+        return success;
+    }
+
+    function contains(bytes memory _bytes, bytes memory _substr) internal pure returns (bool) {
+        if (_substr.length == 0) {
+            return true;
+        }
+        if (_bytes.length < _substr.length) {
+            return false;
+        }
+        if (_bytes.length == _substr.length) {
+            return equal(_bytes, _substr);
+        }
+        for (uint i = 0; i <= _bytes.length - _substr.length; i++) {
+            bool found = true;
+            for (uint j = 0; j < _substr.length; j++) {
+                if (_bytes[i + j] != _substr[j]) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }
