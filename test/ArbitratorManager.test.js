@@ -226,4 +226,45 @@ describe("ArbitratorManager", function () {
          expect(availableStake).to.equal(stakeAmount);
        });
      });
+
+    describe("Fee Calculations", function () {
+      const secondsPerYear = 365 * 24 * 60 * 60;
+      const feeRate = 1000; // 1%
+      const btcFeeRate = 100; // 1%
+      const btcAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+      const btcPubKey = ethers.utils.arrayify("0x03f028892bad7ed57d2fb57bf33081d5cfcf6f9ed3d3d7f159c2e2fff579dc341a");
+
+      beforeEach(async function () {
+        // Set a fixed deadline in the future
+        const deadline = Math.floor(Date.now() / 1000) + 300 * 24 * 60 * 60; // 300 days from now
+
+        // Register arbitrator
+        await arbitratorManager.connect(arbitrator).registerArbitratorByStakeETH(
+          btcAddress,
+          btcPubKey,
+          feeRate,
+          btcFeeRate,
+          deadline,
+          { value: stakeAmount }
+        );
+      });
+      
+      it("Should calculate ETH fee correctly", async function () {
+        const duration = 30 * 24 * 60 * 60; // 30 days
+        const expectedFee = stakeAmount.mul(duration).mul(feeRate).div(secondsPerYear).div(10000);
+
+        // Check fee
+        const fee = await arbitratorManager.getFee(duration, arbitrator.address);
+        expect(fee).to.equal(expectedFee);
+      });
+
+      it("Should calculate BTC fee correctly", async function () {
+        // at least 1000 satoshi
+        const expectedFee = 1000;
+        const duration = 30 * 24 * 60 * 60; // 30 days
+
+        const fee = await arbitratorManager.getBtcFee(duration, arbitrator.address);
+        expect(fee).to.equal(expectedFee);
+      });
+    });
 });

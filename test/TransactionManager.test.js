@@ -136,6 +136,14 @@ describe("TransactionManager", function () {
             const receipt = await registerTx.wait();
             const event = receipt.events.find(e => e.event === "TransactionRegistered");
             expect(event).to.exist;
+
+            const txData = await transactionManager.getTransactionDataById(event.args[0]);
+            expect(txData.status).to.equal(0); // Active
+            const txParties = await transactionManager.getTransactionPartiesById(event.args[0]);
+            expect(txParties.arbitrator).to.equal(arbitrator.address);
+            expect(txParties.compensationReceiver).to.equal(compensationReceiver.address);
+            expect(txParties.dapp).to.equal(dapp.address);
+            expect(txParties.depositedFeeRefundAddress).to.equal(dapp.address);
         });
 
         it("Should fail to register transaction with zero address", async function () {
@@ -475,6 +483,63 @@ describe("TransactionManager", function () {
             await expect(
                 transactionManager.connect(other).completeTransaction(transactionId)
             ).to.be.revertedWith("N0");
+        });
+    });
+
+    describe("Transaction Set BTC fee transaction", function () {
+
+        it("Should revert not authorized", async function () {
+            await arbitratorManager.connect(arbitrator).setFeeRates(0, 1000);
+
+            const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
+            const regdata = {
+                arbitrator: arbitrator.address,
+                deadline: deadline,
+                compensationReceiver: compensationReceiver.address,
+                refundAddress: dapp.address,
+            }
+            const registerTx = await transactionManager.connect(dapp).registerTransaction(
+                regdata,
+                { value: ethers.utils.parseEther("0.1") }
+            );
+
+            const receipt = await registerTx.wait();
+            const event = receipt.events.find(e => e.event === "TransactionRegistered");
+            const transactionId = event.args[0];
+            await expect(
+                transactionManager.connect(arbitrator).setDAppBtcFeeTransaction(
+                    transactionId,
+                    "0x02000000000101a7b650787c6e2844c0906b3893f6d42fc3041f23869448980ce9a00430cb7a870000000000000000000268210000000000001976a9149b42587007f85e456b5d0d702e828f34ea1f55b188ac640000000000000017a9146fb7f3048e4b6d3eb81ecb1760221650734bab2887050000010100fd0a0163210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac6763210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad2102098cf93afc2c0682e0b6d7e132f9fbeedc610dc1c0d09dbcd75db1892f975641ac676303b60040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ada8205a0737e8cbcfa24dcc118b0ab1e6d98bee17c57daa8a1686024159aae707ed6f876703bd0040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac68686800000000",
+                    ["0x0000000000000000000000000000000000000000000000000000000000000000"],
+                    0,
+                    0
+                )
+            ).to.be.revertedWith("N0");
+        });
+
+        it("Should success with no btc fee ", async function () {
+            const deadline = (await time.latest()) + 2 * 24 * 60 * 60; // 2 days from now
+            const regdata = {
+                arbitrator: arbitrator.address,
+                deadline: deadline,
+                compensationReceiver: compensationReceiver.address,
+                refundAddress: dapp.address,
+            }
+            const registerTx = await transactionManager.connect(dapp).registerTransaction(
+                regdata,
+                { value: ethers.utils.parseEther("0.1") }
+            );
+
+            const receipt = await registerTx.wait();
+            const event = receipt.events.find(e => e.event === "TransactionRegistered");
+            const transactionId = event.args[0];
+            await transactionManager.connect(dapp).setDAppBtcFeeTransaction(
+                transactionId,
+                "0x0000000000000000000000000000000000000000000000000000000000000000",
+                ["0x0000000000000000000000000000000000000000000000000000000000000000"],
+                0,
+                0
+            );
         });
     });
 });
