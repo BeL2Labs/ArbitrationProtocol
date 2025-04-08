@@ -225,7 +225,7 @@ contract TransactionManager is
         if (utxos.length != 1) revert(Errors.INVALID_UTXO);
 
         DataTypes.TransactionParties storage transaction = transactions_parties[id];
-        if (transactions_data[id].status != DataTypes.TransactionStatus.ToBeActive ||
+        if (transactions_data[id].status != DataTypes.TransactionStatus.ToBeActive &&
             transactions_data[id].status != DataTypes.TransactionStatus.Active) {
             revert(Errors.INVALID_TRANSACTION_STATUS);
         }
