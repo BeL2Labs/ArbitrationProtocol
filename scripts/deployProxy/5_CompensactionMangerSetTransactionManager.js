@@ -21,7 +21,7 @@ async function main() {
     // Wait for the transaction to be mined
     const receipt = await tx.wait();
     
-    console.log(`TransactionManager set successfully. Transaction hash: ${receipt.hash}`);
+    console.log(`TransactionManager set successfully. Transaction hash: ${tx.hash}`);
 }
 
 main()

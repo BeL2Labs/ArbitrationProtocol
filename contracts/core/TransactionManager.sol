@@ -700,6 +700,13 @@ contract TransactionManager is
         emit BtcUtilsChanged(_btcUtils);
     }
 
+    // Setter for ConfigManager
+    function setConfigManager(address _configManager) external onlyOwner {
+        require(address(_configManager) != address(0), "Invalid ConfigManager address");
+        configManager = IConfigManager(_configManager);
+        emit ConfigManagerUpdated(address(_configManager));
+    }
+
     // Add a gap for future storage variables
     uint256[46] private __gap;
 }

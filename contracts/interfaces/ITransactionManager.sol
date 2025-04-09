@@ -131,7 +131,7 @@ interface ITransactionManager {
 
     event BtcBlockHeadersChanged(address indexed newBtcBlockHeaders);
     event BtcUtilsChanged(address indexed newBtcUtils);
-
+    event ConfigManagerUpdated(address indexed newConfigManager);
     // Functions
     function setArbitratorManager(address _arbitratorManager) external;
     function setBTCAddressParser(address _btcAddressParser) external;

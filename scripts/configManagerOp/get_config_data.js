@@ -26,12 +26,17 @@ async function main() {
   const MAX_STAKE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MAX_STAKE"));
   const MIN_STAKE_LOCKED_TIME = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MIN_STAKE_LOCKED_TIME"));
   const SYSTEM_FEE_RATE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("systemFeeRate"));
+  const TRANSACTION_MIN_BTC_FEE_RATE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TRANSACTION_MIN_BTC_FEE_RATE"));
 
   const getArbitrationTimeout = await contract.getArbitrationTimeout();
   console.log("ARBITRATION_TIMEOUT:", getArbitrationTimeout.toString(), "seconds");
 
   const minStake = await contract.getConfig(MIN_STAKE);
   console.log("MIN_STAKE:", ethers.utils.formatEther(minStake), "ETH");
+
+  const minBtc_feeRate = await contract.getConfig(TRANSACTION_MIN_BTC_FEE_RATE);
+
+  console.log("minBtc_feeRate:", minBtc_feeRate);
 
   const maxStake = await contract.getConfig(MAX_STAKE);
   console.log("MAX_STAKE:", ethers.utils.formatEther(maxStake), "ETH");
