@@ -46971,7 +46971,7 @@
             "label": "arbitratorManager",
             "offset": 0,
             "slot": "0",
-            "type": "t_contract(IArbitratorManager)4234",
+            "type": "t_contract(IArbitratorManager)10495",
             "contract": "TransactionManager",
             "src": "contracts/core/TransactionManager.sol:29"
           },
@@ -46979,7 +46979,7 @@
             "label": "dappRegistry",
             "offset": 0,
             "slot": "1",
-            "type": "t_contract(IDAppRegistry)4618",
+            "type": "t_contract(IDAppRegistry)10938",
             "contract": "TransactionManager",
             "src": "contracts/core/TransactionManager.sol:30"
           },
@@ -46987,7 +46987,7 @@
             "label": "configManager",
             "offset": 0,
             "slot": "2",
-            "type": "t_contract(IConfigManager)4528",
+            "type": "t_contract(IConfigManager)10848",
             "contract": "TransactionManager",
             "src": "contracts/core/TransactionManager.sol:31"
           },
@@ -46995,7 +46995,7 @@
             "label": "btcUtils",
             "offset": 0,
             "slot": "3",
-            "type": "t_contract(IBTCUtils)4316",
+            "type": "t_contract(IBTCUtils)10636",
             "contract": "TransactionManager",
             "src": "contracts/core/TransactionManager.sol:32"
           },
@@ -47011,7 +47011,7 @@
             "label": "btcAddressParser",
             "offset": 0,
             "slot": "5",
-            "type": "t_contract(IBtcAddress)4353",
+            "type": "t_contract(IBtcAddress)10673",
             "contract": "TransactionManager",
             "src": "contracts/core/TransactionManager.sol:34"
           },
@@ -47019,7 +47019,7 @@
             "label": "transactions_data",
             "offset": 0,
             "slot": "6",
-            "type": "t_mapping(t_bytes32,t_struct(TransactionData)5867_storage)",
+            "type": "t_mapping(t_bytes32,t_struct(TransactionData)12187_storage)",
             "contract": "TransactionManager",
             "src": "contracts/core/TransactionManager.sol:37"
           },
@@ -47027,7 +47027,7 @@
             "label": "transactions_parties",
             "offset": 0,
             "slot": "7",
-            "type": "t_mapping(t_bytes32,t_struct(TransactionParties)5880_storage)",
+            "type": "t_mapping(t_bytes32,t_struct(TransactionParties)12200_storage)",
             "contract": "TransactionManager",
             "src": "contracts/core/TransactionManager.sol:38"
           },
@@ -47059,7 +47059,7 @@
             "label": "transactions_utxos",
             "offset": 0,
             "slot": "11",
-            "type": "t_mapping(t_bytes32,t_array(t_struct(UTXO)5812_storage)dyn_storage)",
+            "type": "t_mapping(t_bytes32,t_array(t_struct(UTXO)12132_storage)dyn_storage)",
             "contract": "TransactionManager",
             "src": "contracts/core/TransactionManager.sol:42"
           },
@@ -47099,7 +47099,7 @@
             "label": "assetOracle",
             "offset": 0,
             "slot": "16",
-            "type": "t_contract(IAssetOracle)4245",
+            "type": "t_contract(IAssetOracle)10506",
             "contract": "TransactionManager",
             "src": "contracts/core/TransactionManager.sol:48"
           },
@@ -47107,7 +47107,7 @@
             "label": "btcBlockHeaders",
             "offset": 0,
             "slot": "17",
-            "type": "t_contract(IBtcBlockHeaders)4386",
+            "type": "t_contract(IBtcBlockHeaders)10706",
             "contract": "TransactionManager",
             "src": "contracts/core/TransactionManager.sol:49"
           },
@@ -47125,7 +47125,7 @@
             "label": "address",
             "numberOfBytes": "20"
           },
-          "t_array(t_struct(UTXO)5812_storage)dyn_storage": {
+          "t_array(t_struct(UTXO)12132_storage)dyn_storage": {
             "label": "struct DataTypes.UTXO[]",
             "numberOfBytes": "32"
           },
@@ -47141,35 +47141,35 @@
             "label": "bytes",
             "numberOfBytes": "32"
           },
-          "t_contract(IArbitratorManager)4234": {
+          "t_contract(IArbitratorManager)10495": {
             "label": "contract IArbitratorManager",
             "numberOfBytes": "20"
           },
-          "t_contract(IAssetOracle)4245": {
+          "t_contract(IAssetOracle)10506": {
             "label": "contract IAssetOracle",
             "numberOfBytes": "20"
           },
-          "t_contract(IBTCUtils)4316": {
+          "t_contract(IBTCUtils)10636": {
             "label": "contract IBTCUtils",
             "numberOfBytes": "20"
           },
-          "t_contract(IBtcAddress)4353": {
+          "t_contract(IBtcAddress)10673": {
             "label": "contract IBtcAddress",
             "numberOfBytes": "20"
           },
-          "t_contract(IBtcBlockHeaders)4386": {
+          "t_contract(IBtcBlockHeaders)10706": {
             "label": "contract IBtcBlockHeaders",
             "numberOfBytes": "20"
           },
-          "t_contract(IConfigManager)4528": {
+          "t_contract(IConfigManager)10848": {
             "label": "contract IConfigManager",
             "numberOfBytes": "20"
           },
-          "t_contract(IDAppRegistry)4618": {
+          "t_contract(IDAppRegistry)10938": {
             "label": "contract IDAppRegistry",
             "numberOfBytes": "20"
           },
-          "t_enum(TransactionStatus)5798": {
+          "t_enum(TransactionStatus)12118": {
             "label": "enum DataTypes.TransactionStatus",
             "members": [
               "Active",
@@ -47182,7 +47182,7 @@
             ],
             "numberOfBytes": "1"
           },
-          "t_mapping(t_bytes32,t_array(t_struct(UTXO)5812_storage)dyn_storage)": {
+          "t_mapping(t_bytes32,t_array(t_struct(UTXO)12132_storage)dyn_storage)": {
             "label": "mapping(bytes32 => struct DataTypes.UTXO[])",
             "numberOfBytes": "32"
           },
@@ -47194,11 +47194,11 @@
             "label": "mapping(bytes32 => bytes)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_bytes32,t_struct(TransactionData)5867_storage)": {
+          "t_mapping(t_bytes32,t_struct(TransactionData)12187_storage)": {
             "label": "mapping(bytes32 => struct DataTypes.TransactionData)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_bytes32,t_struct(TransactionParties)5880_storage)": {
+          "t_mapping(t_bytes32,t_struct(TransactionParties)12200_storage)": {
             "label": "mapping(bytes32 => struct DataTypes.TransactionParties)",
             "numberOfBytes": "32"
           },
@@ -47206,7 +47206,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(TransactionData)5867_storage": {
+          "t_struct(TransactionData)12187_storage": {
             "label": "struct DataTypes.TransactionData",
             "members": [
               {
@@ -47235,7 +47235,7 @@
               },
               {
                 "label": "status",
-                "type": "t_enum(TransactionStatus)5798",
+                "type": "t_enum(TransactionStatus)12118",
                 "offset": 0,
                 "slot": "4"
               },
@@ -47260,7 +47260,7 @@
             ],
             "numberOfBytes": "256"
           },
-          "t_struct(TransactionParties)5880_storage": {
+          "t_struct(TransactionParties)12200_storage": {
             "label": "struct DataTypes.TransactionParties",
             "members": [
               {
@@ -47302,7 +47302,7 @@
             ],
             "numberOfBytes": "192"
           },
-          "t_struct(UTXO)5812_storage": {
+          "t_struct(UTXO)12132_storage": {
             "label": "struct DataTypes.UTXO",
             "members": [
               {

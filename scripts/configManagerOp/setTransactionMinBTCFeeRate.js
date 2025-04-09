@@ -13,6 +13,8 @@ async function main() {
     const configManager = ConfigManager.attach(contractAddress);
 
     // 设置BTC交易最低费率为0%（0 basis points）
+    let gasLimit = await configManager.estimateGas.setTransactionMinBTCFeeRate(0);
+    console.log("gasLimit = ", gasLimit);
     const tx = await configManager.setTransactionMinBTCFeeRate(0);
     console.log("Transaction hash:", tx.hash);
 

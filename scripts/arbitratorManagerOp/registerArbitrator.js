@@ -41,20 +41,25 @@ async function main() {
     // Read ArbitratorManager address from config
     const arbitratorManagerAddress = await readConfig(network.name, "ARBITRATOR_MANAGER");
     
-    // Read ConfigManager address from config
-    const configManagerAddress = await readConfig(network.name, "CONFIG_MANAGER");
-
     // Get contract factories
     const ArbitratorManagerFactory = await ethers.getContractFactory("ArbitratorManager");
     const ConfigManagerFactory = await ethers.getContractFactory("ConfigManager");
 
     // Create contract instances
     const arbitratorManager = ArbitratorManagerFactory.attach(arbitratorManagerAddress).connect(operator);
+    const configManagerAddress = await arbitratorManager.configManager();////ConfigManagerFactory.attach(configManagerAddress).connect(operator);
+    console.log("configManager=", configManagerAddress);
     const configManager = ConfigManagerFactory.attach(configManagerAddress).connect(operator);
-
     // Get minimum stake requirement
     const minStake = await configManager.getConfig(await configManager.MIN_STAKE());
     console.log("Minimum Stake Requirement:", ethers.utils.formatEther(minStake), "ETH");
+
+    const TRANSACTION_MIN_BTC_FEE_RATE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("TRANSACTION_MIN_BTC_FEE_RATE"))
+    const minBtc_feeRate = await configManager.getConfig(TRANSACTION_MIN_BTC_FEE_RATE);
+    console.log("minBtc_feeRate:", minBtc_feeRate, "satoshi");
+
+    const min_fee_rate = await configManager.getConfig(await configManager.TRANSACTION_MIN_FEE_RATE());
+    console.log("min_fee_rate:", min_fee_rate);
 
     let arbitrator_index = 1;
     const accounts = network.config.accounts;
@@ -72,7 +77,7 @@ async function main() {
 
     // Prepare arbitrator registration parameters
     let { btcPubKey, btcAddress } = await getBitcoinCredentials(privateKey);
-    const feeRate = ethers.utils.parseUnits("0", 4); // 0.1% fee rate (4 decimal places)
+    const feeRate = min_fee_rate; // 0.1% fee rate (4 decimal places)
     const btcFeeRate = ethers.utils.parseUnits("0.1", 4); // 0.1% fee rate (4 decimal places)
     const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
     btcPubKey = "0x" + btcPubKey;
@@ -84,13 +89,12 @@ async function main() {
                  value: minStake
             });
         console.log("Estimated Gas:", gasEstimate.toString());
-
         // Send transaction to register arbitrator
         const tx = await arbitratorManager.registerArbitratorByStakeETH(
             btcAddress, btcPubKey, feeRate, btcFeeRate, deadline,
             {
                 value: minStake,
-                gasLimit: gasEstimate.mul(2) // Add some buffer
+                gasLimit: gasEstimate // Add some buffer
             });
 
         // Wait for transaction confirmation

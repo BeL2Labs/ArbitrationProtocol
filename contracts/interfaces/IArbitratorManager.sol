@@ -204,4 +204,5 @@ interface IArbitratorManager {
     event NFTContractUpdated(address indexed oldNFTContract, address indexed newNFTContract);
 
     event AssetOracleUpdated(address indexed assetOracle);
+    event ConfigManagerUpdated(address indexed newConfigManager);
 }
