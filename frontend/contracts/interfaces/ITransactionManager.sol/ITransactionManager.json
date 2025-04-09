@@ -83,11 +83,11 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "newOracle",
+          "name": "newParser",
           "type": "address"
         }
       ],
-      "name": "AssetOracleUpdated",
+      "name": "BTCAddressParserChanged",
       "type": "event"
     },
     {
@@ -96,11 +96,49 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "newParser",
+          "name": "newBtcBlockHeaders",
           "type": "address"
         }
       ],
-      "name": "BTCAddressParserChanged",
+      "name": "BtcBlockHeadersChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newBtcUtils",
+          "type": "address"
+        }
+      ],
+      "name": "BtcUtilsChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "txHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "blockHeight",
+          "type": "uint256"
+        }
+      ],
+      "name": "DAppFeeTransactionSet",
       "type": "event"
     },
     {
@@ -167,6 +205,37 @@
           "internalType": "address",
           "name": "dapp",
           "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "arbitrator",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "TransactionClosedUnpaid",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "txId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "dapp",
+          "type": "address"
         }
       ],
       "name": "TransactionCompleted",
@@ -210,6 +279,12 @@
           "internalType": "address",
           "name": "compensationReceiver",
           "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
         }
       ],
       "name": "TransactionRegistered",
@@ -233,6 +308,19 @@
       ],
       "name": "UTXOsUploaded",
       "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "closeUnpaidTransaction",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
       "inputs": [
@@ -325,6 +413,16 @@
               "internalType": "uint256",
               "name": "arbitratorBtcFee",
               "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "btcFeeAddress",
+              "type": "string"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "btcFeeTxHash",
+              "type": "bytes32"
             }
           ],
           "internalType": "struct DataTypes.TransactionData",
@@ -376,6 +474,16 @@
               "internalType": "uint256",
               "name": "arbitratorBtcFee",
               "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "btcFeeAddress",
+              "type": "string"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "btcFeeTxHash",
+              "type": "bytes32"
             }
           ],
           "internalType": "struct DataTypes.TransactionData",
@@ -627,24 +735,31 @@
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "arbitrator",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "deadline",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "compensationReceive",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "refundAddress",
-          "type": "address"
+          "components": [
+            {
+              "internalType": "address",
+              "name": "arbitrator",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "deadline",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "compensationReceiver",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "refundAddress",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct ITransactionManager.RegisterData",
+          "name": "data",
+          "type": "tuple"
         }
       ],
       "name": "registerTransaction",
@@ -653,6 +768,11 @@
           "internalType": "bytes32",
           "name": "id",
           "type": "bytes32"
+        },
+        {
+          "internalType": "string",
+          "name": "btcFeeAddress",
+          "type": "string"
         }
       ],
       "stateMutability": "payable",
@@ -725,6 +845,39 @@
         }
       ],
       "name": "setBTCAddressParser",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "rawData",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "merkleProof",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint32",
+          "name": "blockHeight",
+          "type": "uint32"
+        }
+      ],
+      "name": "setDAppBtcFeeTransaction",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

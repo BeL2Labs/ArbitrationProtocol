@@ -25,6 +25,25 @@
     {
       "inputs": [
         {
+          "internalType": "bytes",
+          "name": "txData",
+          "type": "bytes"
+        }
+      ],
+      "name": "calculateTxId",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "components": [
             {
               "internalType": "uint32",
