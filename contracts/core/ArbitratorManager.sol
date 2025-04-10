@@ -182,6 +182,7 @@ contract ArbitratorManager is
             arbitrator.revenueBtcAddress,
             arbitrator.revenueBtcPubKey,
             feeRate,
+            btcFeeRate,
             deadline
         );
     }
@@ -228,6 +229,7 @@ contract ArbitratorManager is
             defaultBtcAddress,
             defaultBtcPubKey,
             feeRate,
+            btcFeeRate,
             deadline
         );
     }
