@@ -96,6 +96,7 @@ interface ITransactionManager {
         address indexed arbitrator,
         uint256 deadline,
         uint256 depositFee,
+        uint256 btcFee,
         address compensationReceiver,
         uint256 timestamp);
     event UTXOsUploaded(bytes32 indexed txId, address indexed dapp);

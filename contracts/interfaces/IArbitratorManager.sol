@@ -199,6 +199,7 @@ interface IArbitratorManager {
         string btcAddress,
         bytes btcPubKey,
         uint256 feeRate,
+        uint256 btcFeeReate,
         uint256 deadline
     );
     event NFTContractUpdated(address indexed oldNFTContract, address indexed newNFTContract);

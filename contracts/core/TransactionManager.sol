@@ -143,6 +143,7 @@ contract TransactionManager is
             data.arbitrator,
             data.deadline,
             msg.value,
+            btcFee,
             data.compensationReceiver,
             block.timestamp
         );
