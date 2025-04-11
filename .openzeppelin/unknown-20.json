@@ -47407,7 +47407,7 @@
             "label": "nftInfo",
             "offset": 0,
             "slot": "2",
-            "type": "t_contract(IBNFTInfo)12497",
+            "type": "t_contract(IBNFTInfo)12122",
             "contract": "ArbitratorManager",
             "src": "contracts/core/ArbitratorManager.sol:50"
           },
@@ -47415,7 +47415,7 @@
             "label": "arbitrators",
             "offset": 0,
             "slot": "3",
-            "type": "t_mapping(t_address,t_struct(ArbitratorInfo)14346_storage)",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfo)13973_storage)",
             "contract": "ArbitratorManager",
             "src": "contracts/core/ArbitratorManager.sol:53"
           },
@@ -47447,7 +47447,7 @@
             "label": "arbitratorsExt",
             "offset": 0,
             "slot": "6",
-            "type": "t_mapping(t_address,t_struct(ArbitratorInfoExt)14349_storage)",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfoExt)13976_storage)",
             "contract": "ArbitratorManager",
             "src": "contracts/core/ArbitratorManager.sol:59"
           },
@@ -47455,7 +47455,7 @@
             "label": "assetOracle",
             "offset": 0,
             "slot": "7",
-            "type": "t_contract(IAssetOracle)12438",
+            "type": "t_contract(IAssetOracle)12063",
             "contract": "ArbitratorManager",
             "src": "contracts/core/ArbitratorManager.sol:61"
           },
@@ -47497,11 +47497,11 @@
             "label": "contract ConfigManager",
             "numberOfBytes": "20"
           },
-          "t_contract(IAssetOracle)12438": {
+          "t_contract(IAssetOracle)12063": {
             "label": "contract IAssetOracle",
             "numberOfBytes": "20"
           },
-          "t_contract(IBNFTInfo)12497": {
+          "t_contract(IBNFTInfo)12122": {
             "label": "contract IBNFTInfo",
             "numberOfBytes": "20"
           },
@@ -47509,11 +47509,11 @@
             "label": "contract IERC721",
             "numberOfBytes": "20"
           },
-          "t_mapping(t_address,t_struct(ArbitratorInfo)14346_storage)": {
+          "t_mapping(t_address,t_struct(ArbitratorInfo)13973_storage)": {
             "label": "mapping(address => struct DataTypes.ArbitratorInfo)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_struct(ArbitratorInfoExt)14349_storage)": {
+          "t_mapping(t_address,t_struct(ArbitratorInfoExt)13976_storage)": {
             "label": "mapping(address => struct DataTypes.ArbitratorInfoExt)",
             "numberOfBytes": "32"
           },
@@ -47521,7 +47521,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(ArbitratorInfo)14346_storage": {
+          "t_struct(ArbitratorInfo)13973_storage": {
             "label": "struct DataTypes.ArbitratorInfo",
             "members": [
               {
@@ -47623,7 +47623,7 @@
             ],
             "numberOfBytes": "480"
           },
-          "t_struct(ArbitratorInfoExt)14349_storage": {
+          "t_struct(ArbitratorInfoExt)13976_storage": {
             "label": "struct DataTypes.ArbitratorInfoExt",
             "members": [
               {
