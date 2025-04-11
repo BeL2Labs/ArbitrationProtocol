@@ -33,8 +33,8 @@ export const EditFeeRateDialog: FC<{
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      feeRate: arbiter.currentFeeRate / 100 || 0,
-      btcFeeRate: arbiter.currentBTCFeeRate / 100 || 0
+      feeRate: arbiter.ethFeeRate / 100 || 0,
+      btcFeeRate: arbiter.btcFeeRate / 100 || 0
     },
   });
 
@@ -48,8 +48,8 @@ export const EditFeeRateDialog: FC<{
       successToast(`Arbiter fee rate successfully updated!`);
 
       // Update local model - and reset the rate type that becomes unused
-      arbiter.currentFeeRate = newElaFeeRate;
-      arbiter.currentBTCFeeRate = newBtcFeeRate;
+      arbiter.ethFeeRate = newElaFeeRate;
+      arbiter.btcFeeRate = newBtcFeeRate;
 
       onContractUpdated();
       onHandleClose();
@@ -59,7 +59,7 @@ export const EditFeeRateDialog: FC<{
   useEffect(() => {
     // Auto-detect current fee rate type when dialog opens.
     if (arbiter && isOpen)
-      setFeeRateType(arbiter.currentFeeRate > 0 ? "ela" : "btc");
+      setFeeRateType(arbiter.ethFeeRate > 0 ? "ela" : "btc");
   }, [arbiter, isOpen]);
 
   if (!arbiter)

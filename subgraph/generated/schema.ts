@@ -91,8 +91,8 @@ export class ArbiterInfo extends Entity {
     this.set("address", Value.fromString(value));
   }
 
-  get currentFeeRate(): i32 {
-    let value = this.get("currentFeeRate");
+  get ethFeeRate(): i32 {
+    let value = this.get("ethFeeRate");
     if (!value || value.kind == ValueKind.NULL) {
       return 0;
     } else {
@@ -100,12 +100,12 @@ export class ArbiterInfo extends Entity {
     }
   }
 
-  set currentFeeRate(value: i32) {
-    this.set("currentFeeRate", Value.fromI32(value));
+  set ethFeeRate(value: i32) {
+    this.set("ethFeeRate", Value.fromI32(value));
   }
 
-  get pendingFeeRate(): i32 {
-    let value = this.get("pendingFeeRate");
+  get btcFeeRate(): i32 {
+    let value = this.get("btcFeeRate");
     if (!value || value.kind == ValueKind.NULL) {
       return 0;
     } else {
@@ -113,8 +113,8 @@ export class ArbiterInfo extends Entity {
     }
   }
 
-  set pendingFeeRate(value: i32) {
-    this.set("pendingFeeRate", Value.fromI32(value));
+  set btcFeeRate(value: i32) {
+    this.set("btcFeeRate", Value.fromI32(value));
   }
 
   get paused(): boolean {
@@ -510,8 +510,8 @@ export class Transaction extends Entity {
     }
   }
 
-  get arbitratorFee(): BigInt | null {
-    let value = this.get("arbitratorFee");
+  get arbitratorFeeNative(): BigInt | null {
+    let value = this.get("arbitratorFeeNative");
     if (!value || value.kind == ValueKind.NULL) {
       return null;
     } else {
@@ -519,11 +519,28 @@ export class Transaction extends Entity {
     }
   }
 
-  set arbitratorFee(value: BigInt | null) {
+  set arbitratorFeeNative(value: BigInt | null) {
     if (!value) {
-      this.unset("arbitratorFee");
+      this.unset("arbitratorFeeNative");
     } else {
-      this.set("arbitratorFee", Value.fromBigInt(<BigInt>value));
+      this.set("arbitratorFeeNative", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get arbitratorFeeBTC(): BigInt | null {
+    let value = this.get("arbitratorFeeBTC");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set arbitratorFeeBTC(value: BigInt | null) {
+    if (!value) {
+      this.unset("arbitratorFeeBTC");
+    } else {
+      this.set("arbitratorFeeBTC", Value.fromBigInt(<BigInt>value));
     }
   }
 

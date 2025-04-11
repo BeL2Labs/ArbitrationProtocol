@@ -3,7 +3,7 @@ export type ContractArbiterInfo = {
   arbitrator: string;
   paused: boolean;
   activeTransactionId: string;
-  currentFeeRate: bigint;
+  currentFeeRate: bigint; // Fee rate in NATIVE (need to call another method to get currentBTCFeeRate)
   deadLine: bigint;
   erc20Token: string;
   ethAmount: bigint;
@@ -13,7 +13,6 @@ export type ContractArbiterInfo = {
   operator: string;
   operatorBtcAddress: string;
   operatorBtcPubKey: string;
-  pendingFeeRate: bigint;
   revenueBtcAddress: string;
   revenueBtcPubKey: string;
   revenueETHAddress: string;

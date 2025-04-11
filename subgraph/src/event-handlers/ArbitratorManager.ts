@@ -18,7 +18,8 @@ export function handleArbitratorRegistered(event: ArbitratorRegistered): void {
     arbitratorInfo.revenueBtcPubKey = event.params.btcPubKey.toHexString().slice(2);
     // Settings
     arbitratorInfo.deadLine = event.params.deadline.toI32();
-    arbitratorInfo.currentFeeRate = event.params.feeRate.toI32();
+    arbitratorInfo.ethFeeRate = event.params.feeRate.toI32();
+    arbitratorInfo.btcFeeRate = event.params.btcFeeRate.toI32();
 
     arbitratorInfo.isActive = computeIsActive(arbitratorInfo, event.block);
     arbitratorInfo.save();
@@ -68,7 +69,8 @@ export function handleArbitratorDeadlineUpdated(event: ArbitratorDeadlineUpdated
 
 export function handleArbitratorFeeRateUpdated(event: ArbitratorFeeRateUpdated): void {
     const arbitratorInfo = getArbitratorInfo(event.block, event.params.arbitrator.toHexString());
-    arbitratorInfo.currentFeeRate = event.params.feeRate.toI32();
+    arbitratorInfo.ethFeeRate = event.params.ethFeeRate.toI32();
+    arbitratorInfo.btcFeeRate = event.params.btcFeeRate.toI32();
     arbitratorInfo.isActive = computeIsActive(arbitratorInfo, event.block);
     arbitratorInfo.save();
 }
@@ -213,7 +215,8 @@ function getArbitratorInfo(block: ethereum.Block, arbitratorAddress: string): Ar
     arbitratorInfo.paused = false;
     arbitratorInfo.ethAmount = new BigInt(0);
     arbitratorInfo.nftValue = new BigInt(0);
-    arbitratorInfo.currentFeeRate = 0;
+    arbitratorInfo.ethFeeRate = 0;
+    arbitratorInfo.btcFeeRate = 0;
 
     arbitratorInfo.operatorEvmAddress = null;
     arbitratorInfo.operatorBtcAddress = null;

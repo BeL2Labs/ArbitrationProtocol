@@ -96,6 +96,86 @@ export class BTCAddressParserChanged__Params {
   }
 }
 
+export class BtcBlockHeadersChanged extends ethereum.Event {
+  get params(): BtcBlockHeadersChanged__Params {
+    return new BtcBlockHeadersChanged__Params(this);
+  }
+}
+
+export class BtcBlockHeadersChanged__Params {
+  _event: BtcBlockHeadersChanged;
+
+  constructor(event: BtcBlockHeadersChanged) {
+    this._event = event;
+  }
+
+  get newBtcBlockHeaders(): Address {
+    return this._event.parameters[0].value.toAddress();
+  }
+}
+
+export class BtcUtilsChanged extends ethereum.Event {
+  get params(): BtcUtilsChanged__Params {
+    return new BtcUtilsChanged__Params(this);
+  }
+}
+
+export class BtcUtilsChanged__Params {
+  _event: BtcUtilsChanged;
+
+  constructor(event: BtcUtilsChanged) {
+    this._event = event;
+  }
+
+  get newBtcUtils(): Address {
+    return this._event.parameters[0].value.toAddress();
+  }
+}
+
+export class ConfigManagerUpdated extends ethereum.Event {
+  get params(): ConfigManagerUpdated__Params {
+    return new ConfigManagerUpdated__Params(this);
+  }
+}
+
+export class ConfigManagerUpdated__Params {
+  _event: ConfigManagerUpdated;
+
+  constructor(event: ConfigManagerUpdated) {
+    this._event = event;
+  }
+
+  get newConfigManager(): Address {
+    return this._event.parameters[0].value.toAddress();
+  }
+}
+
+export class DAppFeeTransactionSet extends ethereum.Event {
+  get params(): DAppFeeTransactionSet__Params {
+    return new DAppFeeTransactionSet__Params(this);
+  }
+}
+
+export class DAppFeeTransactionSet__Params {
+  _event: DAppFeeTransactionSet;
+
+  constructor(event: DAppFeeTransactionSet) {
+    this._event = event;
+  }
+
+  get id(): Bytes {
+    return this._event.parameters[0].value.toBytes();
+  }
+
+  get txHash(): Bytes {
+    return this._event.parameters[1].value.toBytes();
+  }
+
+  get blockHeight(): BigInt {
+    return this._event.parameters[2].value.toBigInt();
+  }
+}
+
 export class DepositFeeTransfer extends ethereum.Event {
   get params(): DepositFeeTransfer__Params {
     return new DepositFeeTransfer__Params(this);
@@ -188,6 +268,36 @@ export class SetArbitratorManager__Params {
   }
 }
 
+export class TransactionClosedUnpaid extends ethereum.Event {
+  get params(): TransactionClosedUnpaid__Params {
+    return new TransactionClosedUnpaid__Params(this);
+  }
+}
+
+export class TransactionClosedUnpaid__Params {
+  _event: TransactionClosedUnpaid;
+
+  constructor(event: TransactionClosedUnpaid) {
+    this._event = event;
+  }
+
+  get txId(): Bytes {
+    return this._event.parameters[0].value.toBytes();
+  }
+
+  get dapp(): Address {
+    return this._event.parameters[1].value.toAddress();
+  }
+
+  get arbitrator(): Address {
+    return this._event.parameters[2].value.toAddress();
+  }
+
+  get timestamp(): BigInt {
+    return this._event.parameters[3].value.toBigInt();
+  }
+}
+
 export class TransactionCompleted extends ethereum.Event {
   get params(): TransactionCompleted__Params {
     return new TransactionCompleted__Params(this);
@@ -243,8 +353,16 @@ export class TransactionRegistered__Params {
     return this._event.parameters[4].value.toBigInt();
   }
 
+  get btcFee(): BigInt {
+    return this._event.parameters[5].value.toBigInt();
+  }
+
   get compensationReceiver(): Address {
-    return this._event.parameters[5].value.toAddress();
+    return this._event.parameters[6].value.toAddress();
+  }
+
+  get timestamp(): BigInt {
+    return this._event.parameters[7].value.toBigInt();
   }
 }
 
@@ -290,6 +408,18 @@ export class TransactionManager__getTransactionDataByIdResultValue0Struct extend
   get status(): i32 {
     return this[4].toI32();
   }
+
+  get arbitratorBtcFee(): BigInt {
+    return this[5].toBigInt();
+  }
+
+  get btcFeeAddress(): string {
+    return this[6].toString();
+  }
+
+  get btcFeeTxHash(): Bytes {
+    return this[7].toBytes();
+  }
 }
 
 export class TransactionManager__getTransactionDataByTxHashResultValue0Struct extends ethereum.Tuple {
@@ -311,6 +441,18 @@ export class TransactionManager__getTransactionDataByTxHashResultValue0Struct ex
 
   get status(): i32 {
     return this[4].toI32();
+  }
+
+  get arbitratorBtcFee(): BigInt {
+    return this[5].toBigInt();
+  }
+
+  get btcFeeAddress(): string {
+    return this[6].toString();
+  }
+
+  get btcFeeTxHash(): Bytes {
+    return this[7].toBytes();
   }
 }
 
@@ -437,6 +579,21 @@ export class TransactionManager extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
+  assetOracle(): Address {
+    let result = super.call("assetOracle", "assetOracle():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_assetOracle(): ethereum.CallResult<Address> {
+    let result = super.tryCall("assetOracle", "assetOracle():(address)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
   btcAddressParser(): Address {
     let result = super.call(
       "btcAddressParser",
@@ -451,6 +608,29 @@ export class TransactionManager extends ethereum.SmartContract {
     let result = super.tryCall(
       "btcAddressParser",
       "btcAddressParser():(address)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  btcBlockHeaders(): Address {
+    let result = super.call(
+      "btcBlockHeaders",
+      "btcBlockHeaders():(address)",
+      [],
+    );
+
+    return result[0].toAddress();
+  }
+
+  try_btcBlockHeaders(): ethereum.CallResult<Address> {
+    let result = super.tryCall(
+      "btcBlockHeaders",
+      "btcBlockHeaders():(address)",
       [],
     );
     if (result.reverted) {
@@ -532,38 +712,6 @@ export class TransactionManager extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
-  getRegisterTransactionFee(deadline: BigInt, arbitrator: Address): BigInt {
-    let result = super.call(
-      "getRegisterTransactionFee",
-      "getRegisterTransactionFee(uint256,address):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(deadline),
-        ethereum.Value.fromAddress(arbitrator),
-      ],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getRegisterTransactionFee(
-    deadline: BigInt,
-    arbitrator: Address,
-  ): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getRegisterTransactionFee",
-      "getRegisterTransactionFee(uint256,address):(uint256)",
-      [
-        ethereum.Value.fromUnsignedBigInt(deadline),
-        ethereum.Value.fromAddress(arbitrator),
-      ],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
   getTransactionBtcRawDataById(id: Bytes): Bytes {
     let result = super.call(
       "getTransactionBtcRawDataById",
@@ -592,7 +740,7 @@ export class TransactionManager extends ethereum.SmartContract {
   ): TransactionManager__getTransactionDataByIdResultValue0Struct {
     let result = super.call(
       "getTransactionDataById",
-      "getTransactionDataById(bytes32):((uint256,uint256,uint256,uint256,uint8))",
+      "getTransactionDataById(bytes32):((uint256,uint256,uint256,uint256,uint8,uint256,string,bytes32))",
       [ethereum.Value.fromFixedBytes(id)],
     );
 
@@ -606,7 +754,7 @@ export class TransactionManager extends ethereum.SmartContract {
   ): ethereum.CallResult<TransactionManager__getTransactionDataByIdResultValue0Struct> {
     let result = super.tryCall(
       "getTransactionDataById",
-      "getTransactionDataById(bytes32):((uint256,uint256,uint256,uint256,uint8))",
+      "getTransactionDataById(bytes32):((uint256,uint256,uint256,uint256,uint8,uint256,string,bytes32))",
       [ethereum.Value.fromFixedBytes(id)],
     );
     if (result.reverted) {
@@ -625,7 +773,7 @@ export class TransactionManager extends ethereum.SmartContract {
   ): TransactionManager__getTransactionDataByTxHashResultValue0Struct {
     let result = super.call(
       "getTransactionDataByTxHash",
-      "getTransactionDataByTxHash(bytes32):((uint256,uint256,uint256,uint256,uint8))",
+      "getTransactionDataByTxHash(bytes32):((uint256,uint256,uint256,uint256,uint8,uint256,string,bytes32))",
       [ethereum.Value.fromFixedBytes(txHash)],
     );
 
@@ -639,7 +787,7 @@ export class TransactionManager extends ethereum.SmartContract {
   ): ethereum.CallResult<TransactionManager__getTransactionDataByTxHashResultValue0Struct> {
     let result = super.tryCall(
       "getTransactionDataByTxHash",
-      "getTransactionDataByTxHash(bytes32):((uint256,uint256,uint256,uint256,uint8))",
+      "getTransactionDataByTxHash(bytes32):((uint256,uint256,uint256,uint256,uint8,uint256,string,bytes32))",
       [ethereum.Value.fromFixedBytes(txHash)],
     );
     if (result.reverted) {
@@ -986,6 +1134,36 @@ export class ConstructorCall__Outputs {
   }
 }
 
+export class CloseUnpaidTransactionCall extends ethereum.Call {
+  get inputs(): CloseUnpaidTransactionCall__Inputs {
+    return new CloseUnpaidTransactionCall__Inputs(this);
+  }
+
+  get outputs(): CloseUnpaidTransactionCall__Outputs {
+    return new CloseUnpaidTransactionCall__Outputs(this);
+  }
+}
+
+export class CloseUnpaidTransactionCall__Inputs {
+  _call: CloseUnpaidTransactionCall;
+
+  constructor(call: CloseUnpaidTransactionCall) {
+    this._call = call;
+  }
+
+  get id(): Bytes {
+    return this._call.inputValues[0].value.toBytes();
+  }
+}
+
+export class CloseUnpaidTransactionCall__Outputs {
+  _call: CloseUnpaidTransactionCall;
+
+  constructor(call: CloseUnpaidTransactionCall) {
+    this._call = call;
+  }
+}
+
 export class CompleteTransactionCall extends ethereum.Call {
   get inputs(): CompleteTransactionCall__Inputs {
     return new CompleteTransactionCall__Inputs(this);
@@ -1117,20 +1295,10 @@ export class RegisterTransactionCall__Inputs {
     this._call = call;
   }
 
-  get arbitrator(): Address {
-    return this._call.inputValues[0].value.toAddress();
-  }
-
-  get deadline(): BigInt {
-    return this._call.inputValues[1].value.toBigInt();
-  }
-
-  get compensationReceiver(): Address {
-    return this._call.inputValues[2].value.toAddress();
-  }
-
-  get refundAddress(): Address {
-    return this._call.inputValues[3].value.toAddress();
+  get data(): RegisterTransactionCallDataStruct {
+    return changetype<RegisterTransactionCallDataStruct>(
+      this._call.inputValues[0].value.toTuple(),
+    );
   }
 }
 
@@ -1143,6 +1311,28 @@ export class RegisterTransactionCall__Outputs {
 
   get value0(): Bytes {
     return this._call.outputValues[0].value.toBytes();
+  }
+
+  get value1(): string {
+    return this._call.outputValues[1].value.toString();
+  }
+}
+
+export class RegisterTransactionCallDataStruct extends ethereum.Tuple {
+  get arbitrator(): Address {
+    return this[0].toAddress();
+  }
+
+  get deadline(): BigInt {
+    return this[1].toBigInt();
+  }
+
+  get compensationReceiver(): Address {
+    return this[2].toAddress();
+  }
+
+  get refundAddress(): Address {
+    return this[3].toAddress();
   }
 }
 
@@ -1286,6 +1476,142 @@ export class SetBTCAddressParserCall__Outputs {
   _call: SetBTCAddressParserCall;
 
   constructor(call: SetBTCAddressParserCall) {
+    this._call = call;
+  }
+}
+
+export class SetBtcBlockHeadersCall extends ethereum.Call {
+  get inputs(): SetBtcBlockHeadersCall__Inputs {
+    return new SetBtcBlockHeadersCall__Inputs(this);
+  }
+
+  get outputs(): SetBtcBlockHeadersCall__Outputs {
+    return new SetBtcBlockHeadersCall__Outputs(this);
+  }
+}
+
+export class SetBtcBlockHeadersCall__Inputs {
+  _call: SetBtcBlockHeadersCall;
+
+  constructor(call: SetBtcBlockHeadersCall) {
+    this._call = call;
+  }
+
+  get _btcBlockHeaders(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+}
+
+export class SetBtcBlockHeadersCall__Outputs {
+  _call: SetBtcBlockHeadersCall;
+
+  constructor(call: SetBtcBlockHeadersCall) {
+    this._call = call;
+  }
+}
+
+export class SetBtcUtilsCall extends ethereum.Call {
+  get inputs(): SetBtcUtilsCall__Inputs {
+    return new SetBtcUtilsCall__Inputs(this);
+  }
+
+  get outputs(): SetBtcUtilsCall__Outputs {
+    return new SetBtcUtilsCall__Outputs(this);
+  }
+}
+
+export class SetBtcUtilsCall__Inputs {
+  _call: SetBtcUtilsCall;
+
+  constructor(call: SetBtcUtilsCall) {
+    this._call = call;
+  }
+
+  get _btcUtils(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+}
+
+export class SetBtcUtilsCall__Outputs {
+  _call: SetBtcUtilsCall;
+
+  constructor(call: SetBtcUtilsCall) {
+    this._call = call;
+  }
+}
+
+export class SetConfigManagerCall extends ethereum.Call {
+  get inputs(): SetConfigManagerCall__Inputs {
+    return new SetConfigManagerCall__Inputs(this);
+  }
+
+  get outputs(): SetConfigManagerCall__Outputs {
+    return new SetConfigManagerCall__Outputs(this);
+  }
+}
+
+export class SetConfigManagerCall__Inputs {
+  _call: SetConfigManagerCall;
+
+  constructor(call: SetConfigManagerCall) {
+    this._call = call;
+  }
+
+  get _configManager(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+}
+
+export class SetConfigManagerCall__Outputs {
+  _call: SetConfigManagerCall;
+
+  constructor(call: SetConfigManagerCall) {
+    this._call = call;
+  }
+}
+
+export class SetDAppBtcFeeTransactionCall extends ethereum.Call {
+  get inputs(): SetDAppBtcFeeTransactionCall__Inputs {
+    return new SetDAppBtcFeeTransactionCall__Inputs(this);
+  }
+
+  get outputs(): SetDAppBtcFeeTransactionCall__Outputs {
+    return new SetDAppBtcFeeTransactionCall__Outputs(this);
+  }
+}
+
+export class SetDAppBtcFeeTransactionCall__Inputs {
+  _call: SetDAppBtcFeeTransactionCall;
+
+  constructor(call: SetDAppBtcFeeTransactionCall) {
+    this._call = call;
+  }
+
+  get id(): Bytes {
+    return this._call.inputValues[0].value.toBytes();
+  }
+
+  get rawData(): Bytes {
+    return this._call.inputValues[1].value.toBytes();
+  }
+
+  get merkleProof(): Array<Bytes> {
+    return this._call.inputValues[2].value.toBytesArray();
+  }
+
+  get index(): BigInt {
+    return this._call.inputValues[3].value.toBigInt();
+  }
+
+  get blockHeight(): BigInt {
+    return this._call.inputValues[4].value.toBigInt();
+  }
+}
+
+export class SetDAppBtcFeeTransactionCall__Outputs {
+  _call: SetDAppBtcFeeTransactionCall;
+
+  constructor(call: SetDAppBtcFeeTransactionCall) {
     this._call = call;
   }
 }

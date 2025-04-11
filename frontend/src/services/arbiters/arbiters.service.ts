@@ -58,8 +58,8 @@ export const fetchArbiters = async (chain: ChainConfig, start = 0, limit = 100, 
           ethAmount 
           nftValue
           deadLine 
-          currentFeeRate 
-          pendingFeeRate 
+          ethFeeRate
+          btcFeeRate 
           activeTransactionId 
           operatorEvmAddress 
           operatorBtcAddress 

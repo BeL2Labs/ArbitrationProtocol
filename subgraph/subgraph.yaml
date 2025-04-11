@@ -24,7 +24,7 @@ dataSources:
       eventHandlers:
         - event: ArbitratorDeadlineUpdated(indexed address,uint256)
           handler: handleArbitratorDeadlineUpdated
-        - event: ArbitratorFeeRateUpdated(indexed address,uint256)
+        - event: ArbitratorFeeRateUpdated(indexed address,uint256,uint256)
           handler: handleArbitratorFeeRateUpdated
         - event: ArbitratorPaused(indexed address)
           handler: handleArbitratorPaused
@@ -39,7 +39,7 @@ dataSources:
         - event: OperatorSet(indexed address,indexed address,bytes,string)
           handler: handleOperatorSet
         - event: ArbitratorRegistered(indexed address,indexed
-            address,address,string,bytes,uint256,uint256)
+            address,address,string,bytes,uint256,uint256,uint256)
           handler: handleArbitratorRegistered
         - event: ArbitratorWorking(indexed address,indexed bytes32)
           handler: handleArbitratorWorking
@@ -55,7 +55,7 @@ dataSources:
     source:
       abi: TransactionManager
       address: "0x1f872A1fBc02A38B087DE6af2176ab0BC63a53d0"
-      startBlock: 28330216
+      startBlock: 29412286
     mapping:
       file: ./src/event-handlers/TransactionManager.ts
       language: wasm/assemblyscript
@@ -79,7 +79,7 @@ dataSources:
         - event: TransactionCompleted(indexed bytes32,indexed address)
           handler: handleTransactionCompleted
         - event: TransactionRegistered(indexed bytes32,indexed address,indexed
-            address,uint256,uint256,address)
+            address,uint256,uint256,uint256,address,uint256)
           handler: handleTransactionRegistered
         - event: DepositFeeTransfer(indexed bytes32,indexed
             address,uint256,uint256,uint256)

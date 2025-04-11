@@ -74,7 +74,7 @@ const ArbiterRow: FC<{ arbiter: ArbiterInfo }> = ({ arbiter }) => {
     </TableCell>
     <TableCell><OperatorInfo arbiter={arbiter} /></TableCell>
     <TableCell className="whitespace-nowrap">
-      <div className="text-sm">{Number(arbiter.currentFeeRate) / 100}%</div>
+      <div className="text-sm">{Number(arbiter.ethFeeRate) / 100}%</div>
     </TableCell>
     <TableCell className="whitespace-nowrap">
       <div className="text-sm">

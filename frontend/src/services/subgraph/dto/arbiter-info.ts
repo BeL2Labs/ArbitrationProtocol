@@ -5,7 +5,8 @@ export interface ArbiterInfo {
   ethAmount: string;
   createdAt: number; // timestamp seconds
   deadline: number;
-  currentFeeRate: number;
+  ethFeeRate: number;
+  btcFeeRate: number;
   paused: boolean;
   activeTransactionId: string;
 

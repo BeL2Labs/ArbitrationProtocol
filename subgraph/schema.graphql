@@ -30,8 +30,8 @@ type ArbiterInfo @entity {
     createdAt: Int! # Timestamp, DB side only, not on chain - block time at which the arbiter info was first found (first event)
     deadLine: Int # Timestamp at which this arbiter term ends
     address: String! @id # Arbiter Ethereum address
-    currentFeeRate: Int # Current fee rate
-    pendingFeeRate: Int # Pending new fee rate
+    ethFeeRate: Int # Current fee rate (native)
+    btcFeeRate: Int # Current fee rate (BTC)
     paused: Boolean! # Whether the arbiter is manually paused or not
     activeTransactionId: String # ID of the transaction that made the arbiter "working". 0 address if not working.
     ethAmount: BigInt! # Native token stake amount
@@ -65,7 +65,8 @@ type Transaction @entity {
     deadline: Int
     status: TransactionStatus!
     depositedFee: BigInt
-    arbitratorFee: BigInt
+    arbitratorFeeNative: BigInt
+    arbitratorFeeBTC: BigInt
     refundedFee: BigInt
     systemFee: BigInt
     signature: String # Arbiter's signature

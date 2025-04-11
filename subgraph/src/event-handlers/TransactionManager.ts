@@ -54,7 +54,7 @@ export function handleTransactionCompleted(event: TransactionCompleted): void {
 // Emitted when a transaction is completed. Fees are real amounts received by all parties.
 export function handleDepositFeeTransfer(event: DepositFeeTransfer): void {
   const transaction = getTransaction(event.block, event.params.txId.toHexString());
-  transaction.arbitratorFee = event.params.arbitratorFee;
+  transaction.arbitratorFeeNative = event.params.arbitratorFee; // Fee in here is always for native.
   transaction.refundedFee = event.params.refundedFee;
   transaction.systemFee = event.params.systemFee;
   // UNUSED? = event.params.revenueETHAddress;

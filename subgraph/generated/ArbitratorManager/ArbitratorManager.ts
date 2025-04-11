@@ -49,8 +49,12 @@ export class ArbitratorFeeRateUpdated__Params {
     return this._event.parameters[0].value.toAddress();
   }
 
-  get feeRate(): BigInt {
+  get ethFeeRate(): BigInt {
     return this._event.parameters[1].value.toBigInt();
+  }
+
+  get btcFeeRate(): BigInt {
+    return this._event.parameters[2].value.toBigInt();
   }
 }
 
@@ -127,8 +131,12 @@ export class ArbitratorRegistered__Params {
     return this._event.parameters[5].value.toBigInt();
   }
 
-  get deadline(): BigInt {
+  get btcFeeRate(): BigInt {
     return this._event.parameters[6].value.toBigInt();
+  }
+
+  get deadline(): BigInt {
+    return this._event.parameters[7].value.toBigInt();
   }
 }
 
@@ -212,6 +220,24 @@ export class ArbitratorWorking__Params {
   }
 }
 
+export class AssetOracleUpdated extends ethereum.Event {
+  get params(): AssetOracleUpdated__Params {
+    return new AssetOracleUpdated__Params(this);
+  }
+}
+
+export class AssetOracleUpdated__Params {
+  _event: AssetOracleUpdated;
+
+  constructor(event: AssetOracleUpdated) {
+    this._event = event;
+  }
+
+  get assetOracle(): Address {
+    return this._event.parameters[0].value.toAddress();
+  }
+}
+
 export class CompensationManagerUpdated extends ethereum.Event {
   get params(): CompensationManagerUpdated__Params {
     return new CompensationManagerUpdated__Params(this);
@@ -231,6 +257,24 @@ export class CompensationManagerUpdated__Params {
 
   get newManager(): Address {
     return this._event.parameters[1].value.toAddress();
+  }
+}
+
+export class ConfigManagerUpdated extends ethereum.Event {
+  get params(): ConfigManagerUpdated__Params {
+    return new ConfigManagerUpdated__Params(this);
+  }
+}
+
+export class ConfigManagerUpdated__Params {
+  _event: ConfigManagerUpdated;
+
+  constructor(event: ConfigManagerUpdated) {
+    this._event = event;
+  }
+
+  get newConfigManager(): Address {
+    return this._event.parameters[0].value.toAddress();
   }
 }
 
@@ -522,9 +566,30 @@ export class ArbitratorManager__getArbitratorInfoResultValue0Struct extends ethe
   }
 }
 
+export class ArbitratorManager__getArbitratorInfoExtResultValue0Struct extends ethereum.Tuple {
+  get currentBTCFeeRate(): BigInt {
+    return this[0].toBigInt();
+  }
+}
+
 export class ArbitratorManager extends ethereum.SmartContract {
   static bind(address: Address): ArbitratorManager {
     return new ArbitratorManager("ArbitratorManager", address);
+  }
+
+  assetOracle(): Address {
+    let result = super.call("assetOracle", "assetOracle():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_assetOracle(): ethereum.CallResult<Address> {
+    let result = super.tryCall("assetOracle", "assetOracle():(address)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
   compensationManager(): Address {
@@ -602,6 +667,39 @@ export class ArbitratorManager extends ethereum.SmartContract {
     );
   }
 
+  getArbitratorInfoExt(
+    arbitrator: Address,
+  ): ArbitratorManager__getArbitratorInfoExtResultValue0Struct {
+    let result = super.call(
+      "getArbitratorInfoExt",
+      "getArbitratorInfoExt(address):((uint256))",
+      [ethereum.Value.fromAddress(arbitrator)],
+    );
+
+    return changetype<ArbitratorManager__getArbitratorInfoExtResultValue0Struct>(
+      result[0].toTuple(),
+    );
+  }
+
+  try_getArbitratorInfoExt(
+    arbitrator: Address,
+  ): ethereum.CallResult<ArbitratorManager__getArbitratorInfoExtResultValue0Struct> {
+    let result = super.tryCall(
+      "getArbitratorInfoExt",
+      "getArbitratorInfoExt(address):((uint256))",
+      [ethereum.Value.fromAddress(arbitrator)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(
+      changetype<ArbitratorManager__getArbitratorInfoExtResultValue0Struct>(
+        value[0].toTuple(),
+      ),
+    );
+  }
+
   getAvailableStake(arbitrator: Address): BigInt {
     let result = super.call(
       "getAvailableStake",
@@ -618,6 +716,62 @@ export class ArbitratorManager extends ethereum.SmartContract {
       "getAvailableStake(address):(uint256)",
       [ethereum.Value.fromAddress(arbitrator)],
     );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getBtcFee(duration: BigInt, arbitrator: Address): BigInt {
+    let result = super.call(
+      "getBtcFee",
+      "getBtcFee(uint256,address):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(duration),
+        ethereum.Value.fromAddress(arbitrator),
+      ],
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getBtcFee(
+    duration: BigInt,
+    arbitrator: Address,
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getBtcFee",
+      "getBtcFee(uint256,address):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(duration),
+        ethereum.Value.fromAddress(arbitrator),
+      ],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getFee(duration: BigInt, arbitrator: Address): BigInt {
+    let result = super.call("getFee", "getFee(uint256,address):(uint256)", [
+      ethereum.Value.fromUnsignedBigInt(duration),
+      ethereum.Value.fromAddress(arbitrator),
+    ]);
+
+    return result[0].toBigInt();
+  }
+
+  try_getFee(
+    duration: BigInt,
+    arbitrator: Address,
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall("getFee", "getFee(uint256,address):(uint256)", [
+      ethereum.Value.fromUnsignedBigInt(duration),
+      ethereum.Value.fromAddress(arbitrator),
+    ]);
     if (result.reverted) {
       return new ethereum.CallResult();
     }
@@ -972,6 +1126,10 @@ export class InitializeCall__Inputs {
   get _nftInfo(): Address {
     return this._call.inputValues[2].value.toAddress();
   }
+
+  get _assetOracle(): Address {
+    return this._call.inputValues[3].value.toAddress();
+  }
 }
 
 export class InitializeCall__Outputs {
@@ -1037,8 +1195,12 @@ export class RegisterArbitratorByStakeETHCall__Inputs {
     return this._call.inputValues[2].value.toBigInt();
   }
 
-  get deadline(): BigInt {
+  get btcFeeRate(): BigInt {
     return this._call.inputValues[3].value.toBigInt();
+  }
+
+  get deadline(): BigInt {
+    return this._call.inputValues[4].value.toBigInt();
   }
 }
 
@@ -1083,8 +1245,12 @@ export class RegisterArbitratorByStakeNFTCall__Inputs {
     return this._call.inputValues[3].value.toBigInt();
   }
 
-  get deadline(): BigInt {
+  get btcFeeRate(): BigInt {
     return this._call.inputValues[4].value.toBigInt();
+  }
+
+  get deadline(): BigInt {
+    return this._call.inputValues[5].value.toBigInt();
   }
 }
 
@@ -1186,36 +1352,6 @@ export class SetArbitratorDeadlineCall__Outputs {
   }
 }
 
-export class SetArbitratorFeeRateCall extends ethereum.Call {
-  get inputs(): SetArbitratorFeeRateCall__Inputs {
-    return new SetArbitratorFeeRateCall__Inputs(this);
-  }
-
-  get outputs(): SetArbitratorFeeRateCall__Outputs {
-    return new SetArbitratorFeeRateCall__Outputs(this);
-  }
-}
-
-export class SetArbitratorFeeRateCall__Inputs {
-  _call: SetArbitratorFeeRateCall;
-
-  constructor(call: SetArbitratorFeeRateCall) {
-    this._call = call;
-  }
-
-  get feeRate(): BigInt {
-    return this._call.inputValues[0].value.toBigInt();
-  }
-}
-
-export class SetArbitratorFeeRateCall__Outputs {
-  _call: SetArbitratorFeeRateCall;
-
-  constructor(call: SetArbitratorFeeRateCall) {
-    this._call = call;
-  }
-}
-
 export class SetArbitratorWorkingCall extends ethereum.Call {
   get inputs(): SetArbitratorWorkingCall__Inputs {
     return new SetArbitratorWorkingCall__Inputs(this);
@@ -1250,6 +1386,36 @@ export class SetArbitratorWorkingCall__Outputs {
   }
 }
 
+export class SetAssetOracleCall extends ethereum.Call {
+  get inputs(): SetAssetOracleCall__Inputs {
+    return new SetAssetOracleCall__Inputs(this);
+  }
+
+  get outputs(): SetAssetOracleCall__Outputs {
+    return new SetAssetOracleCall__Outputs(this);
+  }
+}
+
+export class SetAssetOracleCall__Inputs {
+  _call: SetAssetOracleCall;
+
+  constructor(call: SetAssetOracleCall) {
+    this._call = call;
+  }
+
+  get _assetOracle(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+}
+
+export class SetAssetOracleCall__Outputs {
+  _call: SetAssetOracleCall;
+
+  constructor(call: SetAssetOracleCall) {
+    this._call = call;
+  }
+}
+
 export class SetCompensationManagerCall extends ethereum.Call {
   get inputs(): SetCompensationManagerCall__Inputs {
     return new SetCompensationManagerCall__Inputs(this);
@@ -1276,6 +1442,70 @@ export class SetCompensationManagerCall__Outputs {
   _call: SetCompensationManagerCall;
 
   constructor(call: SetCompensationManagerCall) {
+    this._call = call;
+  }
+}
+
+export class SetConfigManagerCall extends ethereum.Call {
+  get inputs(): SetConfigManagerCall__Inputs {
+    return new SetConfigManagerCall__Inputs(this);
+  }
+
+  get outputs(): SetConfigManagerCall__Outputs {
+    return new SetConfigManagerCall__Outputs(this);
+  }
+}
+
+export class SetConfigManagerCall__Inputs {
+  _call: SetConfigManagerCall;
+
+  constructor(call: SetConfigManagerCall) {
+    this._call = call;
+  }
+
+  get _configManager(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+}
+
+export class SetConfigManagerCall__Outputs {
+  _call: SetConfigManagerCall;
+
+  constructor(call: SetConfigManagerCall) {
+    this._call = call;
+  }
+}
+
+export class SetFeeRatesCall extends ethereum.Call {
+  get inputs(): SetFeeRatesCall__Inputs {
+    return new SetFeeRatesCall__Inputs(this);
+  }
+
+  get outputs(): SetFeeRatesCall__Outputs {
+    return new SetFeeRatesCall__Outputs(this);
+  }
+}
+
+export class SetFeeRatesCall__Inputs {
+  _call: SetFeeRatesCall;
+
+  constructor(call: SetFeeRatesCall) {
+    this._call = call;
+  }
+
+  get ethFeeRate(): BigInt {
+    return this._call.inputValues[0].value.toBigInt();
+  }
+
+  get btcFeeRate(): BigInt {
+    return this._call.inputValues[1].value.toBigInt();
+  }
+}
+
+export class SetFeeRatesCall__Outputs {
+  _call: SetFeeRatesCall;
+
+  constructor(call: SetFeeRatesCall) {
     this._call = call;
   }
 }

@@ -1,14 +1,17 @@
 import { CopyField } from "@/components/base/CopyField";
 import { StatusLabel } from "@/components/base/StatusLabel";
+import { TokenIcon } from "@/components/base/TokenIcon";
 import { TokenWithValue } from "@/components/base/TokenWithValue";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { arbiterStatusLabelColor, arbiterStatusLabelTitle } from "@/services/arbiters/arbiters.service";
 import { ArbiterInfo } from "@/services/arbiters/model/arbiter-info";
 import { useActiveEVMChainConfig } from "@/services/chains/hooks/useActiveEVMChainConfig";
+import { TokenOrNative } from "@/services/tokens/token-or-native";
+import { getTokenBySymbol } from "@/services/tokens/tokens";
 import { formatDate } from "@/utils/dates";
 import { formatAddress } from "@/utils/formatAddress";
 import { ChevronsUpDown } from "lucide-react";
-import { FC } from "react";
+import { FC, useEffect, useState } from "react";
 import { SecondaryArbiterStatusLabel } from "./components/SecondaryArbiterStatusLabel";
 
 export const GridView: FC<{
@@ -34,6 +37,24 @@ const ArbiterGridItem: FC<{
 }> = ({ arbiter, showOperatorInfo, onOperatorVisibilityChange }) => {
   const activeChain = useActiveEVMChainConfig();
   const deadline = arbiter.getDeadlineDate();
+  const [feeRate, setFeeRate] = useState<number>(undefined);
+  const [feeToken, setFeeToken] = useState<TokenOrNative>(undefined);
+
+  useEffect(() => {
+    if (arbiter) {
+      if (arbiter.ethFeeRate > 0) {
+        setFeeRate(Number(arbiter.ethFeeRate) / 100);
+        setFeeToken(activeChain?.nativeCurrency);
+      } else if (arbiter.btcFeeRate > 0) {
+        setFeeRate(Number(arbiter.btcFeeRate) / 100);
+        setFeeToken(getTokenBySymbol(activeChain, "BTC"));
+      }
+      else {
+        setFeeRate(0);
+        setFeeToken(undefined);
+      }
+    }
+  }, [activeChain, arbiter]);
 
   return <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
     <div className="flex justify-between items-start mb-4">
@@ -53,7 +74,10 @@ const ArbiterGridItem: FC<{
       </div>
       <div className="flex justify-between">
         <span className="text-gray-600">Fee Rate</span>
-        <span>{Number(arbiter.currentFeeRate) / 100} %</span>
+        <div className="flex flex-row justify-between items-center gap-2">
+          <span>{feeRate} %</span>
+          {feeToken && <TokenIcon style={{ height: 14 }} token={feeToken} />}
+        </div>
       </div>
       <div className="flex justify-between">
         <span className="text-gray-600">Deadline</span>

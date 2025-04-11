@@ -175,6 +175,29 @@ export class ConfigManager extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
+  DAPP_BTC_FEE_PAYMENT_TIMEOUT(): Bytes {
+    let result = super.call(
+      "DAPP_BTC_FEE_PAYMENT_TIMEOUT",
+      "DAPP_BTC_FEE_PAYMENT_TIMEOUT():(bytes32)",
+      [],
+    );
+
+    return result[0].toBytes();
+  }
+
+  try_DAPP_BTC_FEE_PAYMENT_TIMEOUT(): ethereum.CallResult<Bytes> {
+    let result = super.tryCall(
+      "DAPP_BTC_FEE_PAYMENT_TIMEOUT",
+      "DAPP_BTC_FEE_PAYMENT_TIMEOUT():(bytes32)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytes());
+  }
+
   MAX_STAKE(): Bytes {
     let result = super.call("MAX_STAKE", "MAX_STAKE():(bytes32)", []);
 
@@ -343,6 +366,29 @@ export class ConfigManager extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
+  TRANSACTION_MIN_BTC_FEE_RATE(): Bytes {
+    let result = super.call(
+      "TRANSACTION_MIN_BTC_FEE_RATE",
+      "TRANSACTION_MIN_BTC_FEE_RATE():(bytes32)",
+      [],
+    );
+
+    return result[0].toBytes();
+  }
+
+  try_TRANSACTION_MIN_BTC_FEE_RATE(): ethereum.CallResult<Bytes> {
+    let result = super.tryCall(
+      "TRANSACTION_MIN_BTC_FEE_RATE",
+      "TRANSACTION_MIN_BTC_FEE_RATE():(bytes32)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytes());
+  }
+
   TRANSACTION_MIN_FEE_RATE(): Bytes {
     let result = super.call(
       "TRANSACTION_MIN_FEE_RATE",
@@ -478,6 +524,29 @@ export class ConfigManager extends ethereum.SmartContract {
     let result = super.tryCall("getConfig", "getConfig(bytes32):(uint256)", [
       ethereum.Value.fromFixedBytes(key),
     ]);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getDappBtcFeePaymentTimeout(): BigInt {
+    let result = super.call(
+      "getDappBtcFeePaymentTimeout",
+      "getDappBtcFeePaymentTimeout():(uint256)",
+      [],
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getDappBtcFeePaymentTimeout(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getDappBtcFeePaymentTimeout",
+      "getDappBtcFeePaymentTimeout():(uint256)",
+      [],
+    );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
@@ -772,6 +841,36 @@ export class SetConfigsCall__Outputs {
   }
 }
 
+export class SetDappBtcFeePaymentTimeoutCall extends ethereum.Call {
+  get inputs(): SetDappBtcFeePaymentTimeoutCall__Inputs {
+    return new SetDappBtcFeePaymentTimeoutCall__Inputs(this);
+  }
+
+  get outputs(): SetDappBtcFeePaymentTimeoutCall__Outputs {
+    return new SetDappBtcFeePaymentTimeoutCall__Outputs(this);
+  }
+}
+
+export class SetDappBtcFeePaymentTimeoutCall__Inputs {
+  _call: SetDappBtcFeePaymentTimeoutCall;
+
+  constructor(call: SetDappBtcFeePaymentTimeoutCall) {
+    this._call = call;
+  }
+
+  get timeout(): BigInt {
+    return this._call.inputValues[0].value.toBigInt();
+  }
+}
+
+export class SetDappBtcFeePaymentTimeoutCall__Outputs {
+  _call: SetDappBtcFeePaymentTimeoutCall;
+
+  constructor(call: SetDappBtcFeePaymentTimeoutCall) {
+    this._call = call;
+  }
+}
+
 export class SetMaxStakeCall extends ethereum.Call {
   get inputs(): SetMaxStakeCall__Inputs {
     return new SetMaxStakeCall__Inputs(this);
@@ -1008,6 +1107,36 @@ export class SetSystemFeeRateCall__Outputs {
   _call: SetSystemFeeRateCall;
 
   constructor(call: SetSystemFeeRateCall) {
+    this._call = call;
+  }
+}
+
+export class SetTransactionMinBTCFeeRateCall extends ethereum.Call {
+  get inputs(): SetTransactionMinBTCFeeRateCall__Inputs {
+    return new SetTransactionMinBTCFeeRateCall__Inputs(this);
+  }
+
+  get outputs(): SetTransactionMinBTCFeeRateCall__Outputs {
+    return new SetTransactionMinBTCFeeRateCall__Outputs(this);
+  }
+}
+
+export class SetTransactionMinBTCFeeRateCall__Inputs {
+  _call: SetTransactionMinBTCFeeRateCall;
+
+  constructor(call: SetTransactionMinBTCFeeRateCall) {
+    this._call = call;
+  }
+
+  get feeRate(): BigInt {
+    return this._call.inputValues[0].value.toBigInt();
+  }
+}
+
+export class SetTransactionMinBTCFeeRateCall__Outputs {
+  _call: SetTransactionMinBTCFeeRateCall;
+
+  constructor(call: SetTransactionMinBTCFeeRateCall) {
     this._call = call;
   }
 }

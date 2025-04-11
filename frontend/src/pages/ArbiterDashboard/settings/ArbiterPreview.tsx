@@ -56,8 +56,8 @@ export const ArbiterPreview: FC<{
   useEffect(() => {
     // Auto-detect current fee rate type when dialog opens.
     if (arbiter) {
-      setFeeRateLabel(arbiter.currentFeeRate > 0 ? "Fee rate in ELA" : "Fee rate in BTC");
-      setFeeRateValue(arbiter.currentFeeRate > 0 ? arbiter.currentFeeRate / 100 : arbiter.currentBTCFeeRate / 100);
+      setFeeRateLabel(arbiter.ethFeeRate > 0 ? "Fee rate in ELA" : "Fee rate in BTC");
+      setFeeRateValue(arbiter.ethFeeRate > 0 ? arbiter.ethFeeRate / 100 : arbiter.btcFeeRate / 100);
     }
   }, [arbiter]);
 

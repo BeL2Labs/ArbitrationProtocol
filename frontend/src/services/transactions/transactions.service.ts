@@ -52,6 +52,7 @@ export const fetchTransactions = async (chain: ChainConfig, start: number, limit
           ${whereClause}
         ) { 
           id txId dapp arbiter startTime deadline requestArbitrationTime
+          arbitratorFeeNative arbitratorFeeBTC
           status depositedFee signature compensationReceiver timeoutCompensationReceiver
         }
       }`;
