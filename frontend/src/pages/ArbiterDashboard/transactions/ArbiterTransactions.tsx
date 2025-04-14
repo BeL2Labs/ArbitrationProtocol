@@ -8,24 +8,28 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { tooltips } from '@/config/tooltips';
 import { useWalletContext } from '@/contexts/WalletContext/WalletContext';
 import { RequestArbiterFeeCompensationDialog } from '@/pages/TransactionList/dialogs/RequestArbiterFeeCompensationDialog';
+import { RequestIllegalSignatureCompensationDialog } from '@/pages/TransactionList/dialogs/RequestIllegalSignatureCompensationDialog';
 import { SubmitSignatureDialog } from '@/pages/TransactionList/dialogs/SubmitSignatureDialog';
 import { TransactionDetailsDialog } from '@/pages/TransactionList/dialogs/TransactionDetailsDialog';
 import { CompensationType } from '@/services/compensations/model/compensation-claim';
+import { useBTCFees } from '@/services/transactions/hooks/useBTCFees';
 import { useTransactions } from '@/services/transactions/hooks/useTransactions';
 import { Transaction } from '@/services/transactions/model/transaction';
 import { isNullOrUndefined } from '@/utils/isNullOrUndefined';
 import { RefreshCwIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { TransactionRow } from './TransactionRow';
-import { RequestIllegalSignatureCompensationDialog } from '@/pages/TransactionList/dialogs/RequestIllegalSignatureCompensationDialog';
+import { WithdrawBTCFeesDialog } from './dialogs/WithdrawBTCFees';
 
-export type ArbiterTransactionColumn = keyof Transaction | "reward";
+export type ArbiterTransactionColumn = keyof Transaction | "selection" | "reward" | "btcFee";
 
 export const transactionFieldLabels: Partial<Record<ArbiterTransactionColumn, string>> = {
+  selection: '',
   id: 'ID',
   dapp: 'DApp',
   deadline: 'Deadline',
   reward: 'Reward',
+  btcFee: 'BTC fees balance',
   status: 'Status',
 };
 
@@ -33,8 +37,10 @@ export default function ArbiterTransactions() {
   const { evmAccount } = useWalletContext();
   const { transactions: rawTransactions, refreshTransactions } = useTransactions(1, 500, evmAccount);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const [openDialog, setOpenDialog] = useState<undefined | CompensationType | "sign-arbitration" | "details">(undefined);
+  const [pickedTransaction, setPickedTransaction] = useState<Transaction | null>(null); // Transaction we want to show details of
+  const [selectedTransactions, setSelectedTransactions] = useState<Transaction[]>([]); // Transactions that got selected for BTC fee withdrawal
+  const [openDialog, setOpenDialog] = useState<undefined | CompensationType | "sign-arbitration" | "details" | "withdraw-btc-fees">(undefined);
+  const btcFeesInfo = useBTCFees(rawTransactions);
 
   const transactions = useMemo(() => {
     return rawTransactions?.filter(tx => {
@@ -48,6 +54,17 @@ export default function ArbiterTransactions() {
   }, [rawTransactions, searchTerm]);
 
   const loading = useMemo(() => isNullOrUndefined(transactions), [transactions]);
+
+  const handleRowSelectionChanged = useCallback((selected: boolean) => {
+    if (selected) {
+      // select
+      setSelectedTransactions(selectedTransactions.concat([pickedTransaction]));
+    }
+    else {
+      // Unselect
+      setSelectedTransactions(selectedTransactions.filter(tx => tx.id !== pickedTransaction.id));
+    }
+  }, [pickedTransaction, selectedTransactions]);
 
   // Refresh list when page loads
   useEffect(() => {
@@ -84,20 +101,28 @@ export default function ArbiterTransactions() {
             {transactions?.map((tx, index) => <TransactionRow
               transaction={tx}
               key={index}
+              btcFeesInfo={btcFeesInfo?.[tx.id]}
               onShowTransactionDetails={() => {
-                setSelectedTransaction(tx);
+                setPickedTransaction(tx);
                 window.history.replaceState({}, '', `${window.location.pathname}/${tx.id}`);
                 setOpenDialog("details");
               }}
+              onRowSelection={handleRowSelectionChanged}
             />)}
           </TableBody>
         </Table>
       </div>
 
+      {
+        /* Button to start withdrawing btc fees, when some withdrawable transactions have been selected in the list */
+        selectedTransactions?.length > 0 &&
+        <Button onClick={() => setOpenDialog("withdraw-btc-fees")}>Withdraw BTC fees</Button>
+      }
+
       {loading && <Loading />}
 
       <TransactionDetailsDialog
-        transaction={selectedTransaction}
+        transaction={pickedTransaction}
         isOpen={openDialog === "details"}
         onHandleClose={() => {
           window.history.replaceState({}, '', `/transactions`);
@@ -111,9 +136,14 @@ export default function ArbiterTransactions() {
         }}
       />
 
-      <SubmitSignatureDialog transaction={selectedTransaction} isOpen={openDialog === "sign-arbitration"} onHandleClose={() => setOpenDialog(undefined)} />
-      <RequestIllegalSignatureCompensationDialog isOpen={openDialog === "IllegalSignature"} transaction={selectedTransaction} onHandleClose={() => setOpenDialog(undefined)} />
-      <RequestArbiterFeeCompensationDialog isOpen={openDialog === "ArbiterFee"} transaction={selectedTransaction} onHandleClose={() => setOpenDialog(undefined)} />
+      <SubmitSignatureDialog transaction={pickedTransaction} isOpen={openDialog === "sign-arbitration"} onHandleClose={() => setOpenDialog(undefined)} />
+      <RequestIllegalSignatureCompensationDialog isOpen={openDialog === "IllegalSignature"} transaction={pickedTransaction} onHandleClose={() => setOpenDialog(undefined)} />
+      <RequestArbiterFeeCompensationDialog isOpen={openDialog === "ArbiterFee"} transaction={pickedTransaction} onHandleClose={() => setOpenDialog(undefined)} />
+      <WithdrawBTCFeesDialog
+        isOpen={openDialog === "withdraw-btc-fees"}
+        withdrawableTransactions={selectedTransactions}
+        onHandleClose={() => setOpenDialog(undefined)}
+        onContractUpdated={refreshTransactions} />
     </div>
   );
 }
