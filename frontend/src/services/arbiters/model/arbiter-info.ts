@@ -64,8 +64,6 @@ export class ArbiterInfo implements Omit<ArbiterInfoDTO, "ethAmount" | "createdA
 
     const arbiter = new ArbiterInfo();
 
-    console.log("contractInfo", contractInfo)
-
     arbiter.id = contractInfo.arbitrator;
     arbiter.address = contractInfo.arbitrator;
     arbiter.ethAmount = tokenToReadableValue(contractInfo.ethAmount, 18);

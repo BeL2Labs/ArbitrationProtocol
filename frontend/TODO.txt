@@ -1,6 +1,16 @@
-- registerArbiterByStakeETH with btc fee rate:
-  - Registration: TBD
-  - Edition: TBD
+BTC fee withdrawal:
+- The TransactionRegistered event will include the BTC fee receiving address.
+- Arbitrer transactions page:
+  - Method to check the btc fee address of every transaction to see if it has some UTXO. If it doesn't, this means 
+    there is no fee to withdraw.
+  - Save processed BTC fee withdrawals locally to avoid re-checking utxos again.
+  - Filter to display all transactions / transactions with BTC fees to withdraw only.
+  - Add a column to display the BTC fee balance. 
+  - Ability to multi-select transactions with available fees to withdraw + button to start processing.
+  For multiple selected transactions, only one BTC transaction needs to be constructed for BTC fee withdrawal. 
+  This transaction will have multiple inputs and one output. Each input corresponds to a BTC 
+  fee address to be withdrawn, and the output points to the address entered by the arbiter 
+  (default is the arbiter's own BTC owner address). Each input requires a signature.
 
 ------------------------------------------
 
