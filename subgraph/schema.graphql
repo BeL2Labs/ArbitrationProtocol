@@ -67,6 +67,7 @@ type Transaction @entity {
     depositedFee: BigInt
     arbitratorFeeNative: BigInt
     arbitratorFeeBTC: BigInt
+    btcFeeAddress: String # Address that receives BTC fees when fees are paid in BTC (not in native)
     refundedFee: BigInt
     systemFee: BigInt
     signature: String # Arbiter's signature

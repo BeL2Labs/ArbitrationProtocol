@@ -12,6 +12,7 @@ export function handleTransactionRegistered(event: TransactionRegistered): void 
   transaction.deadline = event.params.deadline.toI32();
   transaction.depositedFee = event.params.depositFee;
   transaction.compensationReceiver = event.params.compensationReceiver.toHexString();
+  transaction.btcFeeAddress = event.params.btcFeeAddress;
   transaction.save();
 
   recomputeArbitratorIsActive(transaction.arbiter, event.block);

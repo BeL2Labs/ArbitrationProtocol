@@ -544,6 +544,23 @@ export class Transaction extends Entity {
     }
   }
 
+  get btcFeeAddress(): string | null {
+    let value = this.get("btcFeeAddress");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set btcFeeAddress(value: string | null) {
+    if (!value) {
+      this.unset("btcFeeAddress");
+    } else {
+      this.set("btcFeeAddress", Value.fromString(<string>value));
+    }
+  }
+
   get refundedFee(): BigInt | null {
     let value = this.get("refundedFee");
     if (!value || value.kind == ValueKind.NULL) {

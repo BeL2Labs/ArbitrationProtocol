@@ -364,6 +364,10 @@ export class TransactionRegistered__Params {
   get timestamp(): BigInt {
     return this._event.parameters[7].value.toBigInt();
   }
+
+  get btcFeeAddress(): string {
+    return this._event.parameters[8].value.toString();
+  }
 }
 
 export class UTXOsUploaded extends ethereum.Event {
