@@ -145,7 +145,8 @@ contract TransactionManager is
             msg.value,
             btcFee,
             data.compensationReceiver,
-            block.timestamp
+            block.timestamp,
+            arbitratorFeeAddress
         );
 
         return (id, arbitratorFeeAddress);
@@ -283,8 +284,11 @@ contract TransactionManager is
         uint256 index,
         uint32 blockHeight
     ) external {
-        DataTypes.TransactionParties storage parties = transactions_parties[id];
+        if (rawData.length == 0 || merkleProof.length == 0) {
+            revert(Errors.INVALID_PARAMETER);
+        }
 
+        DataTypes.TransactionParties storage parties = transactions_parties[id];
         // Check caller authorization
         if (msg.sender != parties.dapp) {
             revert(Errors.NOT_AUTHORIZED);

@@ -98,7 +98,8 @@ interface ITransactionManager {
         uint256 depositFee,
         uint256 btcFee,
         address compensationReceiver,
-        uint256 timestamp);
+        uint256 timestamp,
+        string btcFeeAddress);
     event UTXOsUploaded(bytes32 indexed txId, address indexed dapp);
     event TransactionCompleted(bytes32 indexed txId, address indexed dapp);
     event ArbitrationRequested(
