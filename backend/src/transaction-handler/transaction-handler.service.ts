@@ -50,7 +50,7 @@ export class TransactionHandlerService implements OnModuleInit {
 
   private async checkInsertTransaction(transaction: Transaction) {
     // Skip transaction if it doesn't have an arbitration request
-    if (!transaction.requestArbitrationTime)
+    if (!transaction.requestArbitrationTime || !transaction.deadline)
       return;
 
     // Ensure checksum address format
