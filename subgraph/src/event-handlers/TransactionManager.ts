@@ -76,6 +76,7 @@ function getTransaction(block: ethereum.Block, id: string): Transaction {
 
   const transaction = new Transaction(id);
   transaction.createdAt = block.timestamp.toI32();
+  transaction.createdBy = ""; // Normally always set in TransactionRegistered, but for backward with older tx with different event format, set a default value here.
   transaction.status = "Active";
   transaction.txId = id;
 
