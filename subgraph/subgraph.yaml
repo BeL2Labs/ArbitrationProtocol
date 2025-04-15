@@ -78,7 +78,8 @@ dataSources:
           handler: handleOwnershipTransferred
         - event: TransactionCompleted(indexed bytes32,indexed address)
           handler: handleTransactionCompleted
-        - event: TransactionRegistered(indexed bytes32,indexed address,indexed address,uint256,uint256,uint256,address,uint256,string)
+        - event: TransactionRegistered(indexed bytes32,indexed address,indexed
+            address,uint256,uint256,uint256,address,uint256,string)
           handler: handleTransactionRegistered
         - event: DepositFeeTransfer(indexed bytes32,indexed
             address,uint256,uint256,uint256)
