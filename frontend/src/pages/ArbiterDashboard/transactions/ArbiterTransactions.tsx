@@ -18,8 +18,9 @@ import { Transaction } from '@/services/transactions/model/transaction';
 import { isNullOrUndefined } from '@/utils/isNullOrUndefined';
 import { RefreshCwIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { TransactionRow } from './TransactionRow';
 import { WithdrawBTCFeesDialog } from './dialogs/WithdrawBTCFees';
+import { TransactionFilter, TransactionFilterType } from './TransactionFilter';
+import { TransactionRow } from './TransactionRow';
 
 export type ArbiterTransactionColumn = keyof Transaction | "selection" | "reward" | "btcFee";
 
@@ -41,9 +42,11 @@ export default function ArbiterTransactions() {
   const [selectedTransactions, setSelectedTransactions] = useState<Transaction[]>([]); // Transactions that got selected for BTC fee withdrawal
   const [openDialog, setOpenDialog] = useState<undefined | CompensationType | "sign-arbitration" | "details" | "withdraw-btc-fees">(undefined);
   const btcFeesInfo = useBTCFees(rawTransactions);
+  const [transactionFilter, setTransactionFilter] = useState<TransactionFilterType>("all");
 
   const transactions = useMemo(() => {
-    return rawTransactions?.filter(tx => {
+    // Filter with search field
+    const searchFiltered = rawTransactions?.filter(tx => {
       const searchLower = searchTerm.toLowerCase();
       return (
         tx.id?.toLowerCase().includes(searchLower) ||
@@ -51,7 +54,17 @@ export default function ArbiterTransactions() {
         tx.arbiter?.toLowerCase().includes(searchLower)
       );
     });
-  }, [rawTransactions, searchTerm]);
+
+    // Filter with transaction filter
+    const txTypeFiltered = searchFiltered?.filter(tx => {
+      switch (transactionFilter) {
+        case "all": return true;
+        case "with-btc-fee-balance": return btcFeesInfo?.[tx.id]?.withdrawableAmountBTC?.gt(0);
+      }
+    });
+
+    return txTypeFiltered;
+  }, [btcFeesInfo, rawTransactions, searchTerm, transactionFilter]);
 
   const loading = useMemo(() => isNullOrUndefined(transactions), [transactions]);
 
@@ -76,6 +89,7 @@ export default function ArbiterTransactions() {
       <PageTitleRow>
         <PageTitle className="flex flex-grow sm:flex-grow-0">Transactions <IconTooltip title='Transactions' tooltip={tooltips.transactionIntro} iconClassName='ml-2' iconSize={20} /></PageTitle>
         <div className="flex gap-2">
+          <TransactionFilter value={transactionFilter} onChange={setTransactionFilter} />
           <Button variant="outline" size="icon" onClick={refreshTransactions}>
             <RefreshCwIcon />
           </Button>
@@ -116,7 +130,9 @@ export default function ArbiterTransactions() {
       {
         /* Button to start withdrawing btc fees, when some withdrawable transactions have been selected in the list */
         selectedTransactions?.length > 0 &&
-        <Button onClick={() => setOpenDialog("withdraw-btc-fees")}>Withdraw BTC fees</Button>
+        <div className='flex justify-end'>
+          <Button onClick={() => setOpenDialog("withdraw-btc-fees")}>Withdraw BTC fees</Button>
+        </div>
       }
 
       {loading && <Loading />}

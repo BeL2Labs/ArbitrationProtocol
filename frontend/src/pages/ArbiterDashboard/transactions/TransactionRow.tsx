@@ -32,10 +32,10 @@ export const TransactionRow: FC<{
 
   useEffect(() => {
     if (transaction) {
-      if (transaction.arbitratorFeeNative.gt(0)) {
+      if (transaction.arbitratorFeeNative?.gt(0)) {
         setRewardValue(transaction.arbitratorFeeNative.toNumber());
         setRewardToken(activeChain?.nativeCurrency);
-      } else if (transaction.arbitratorFeeBTC.gt(0)) {
+      } else if (transaction.arbitratorFeeBTC?.gt(0)) {
         setRewardValue(transaction.arbitratorFeeBTC.toNumber());
         setRewardToken(getTokenBySymbol(activeChain, "BTC"));
       }
@@ -76,7 +76,7 @@ export const TransactionRow: FC<{
       return rewardToken ? <TokenWithValue amount={rewardValue} token={rewardToken} decimals={5} /> : "-";
 
     if (key === 'btcFee')
-      return <TokenWithValue amount={0.12345} token={getTokenBySymbol(activeChain, "BTC")} decimals={5} />;
+      return value ? <TokenWithValue amount={0.12345} token={getTokenBySymbol(activeChain, "BTC")} decimals={5} /> : "N/A";
 
     return value;
   };

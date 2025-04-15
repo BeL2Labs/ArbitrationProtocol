@@ -115,6 +115,12 @@
         {
           "indexed": false,
           "internalType": "uint256",
+          "name": "btcFeeRate",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
           "name": "deadline",
           "type": "uint256"
         }
@@ -216,6 +222,19 @@
         }
       ],
       "name": "CompensationManagerUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newConfigManager",
+          "type": "address"
+        }
+      ],
+      "name": "ConfigManagerUpdated",
       "type": "event"
     },
     {

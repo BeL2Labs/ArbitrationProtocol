@@ -1,4 +1,5 @@
 import { getUTXOs } from "../nownodes-api/nownodes-api";
+import { Transaction } from "./model/transaction";
 
 const TransactionBTCFeesStorageKey = 'TransactionBTCFees';
 
@@ -24,8 +25,11 @@ function getWithdrawnBTCFees() {
  * If there is no UTXO, this means fees have been withdrawn. Otherwise, this means the arbiter can still
  * claims those fees.
  */
-export async function checkOnChainTransactionBTCFeesWithdrawn(transactionId: string): Promise<boolean> {
-  const transactionBtcFeesAddress = "TODO";
+export async function checkOnChainTransactionBTCFeesWithdrawn(transaction: Transaction): Promise<boolean> {
+  const transactionBtcFeesAddress = transaction.btcFeeAddress;
+  if (!transactionBtcFeesAddress)
+    return false;
+
   const utxoResult = await getUTXOs(transactionBtcFeesAddress);
   console.log("utxoResult", utxoResult);
 

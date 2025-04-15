@@ -121,6 +121,19 @@
       "inputs": [
         {
           "indexed": true,
+          "internalType": "address",
+          "name": "newConfigManager",
+          "type": "address"
+        }
+      ],
+      "name": "ConfigManagerUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
           "internalType": "bytes32",
           "name": "id",
           "type": "bytes32"
@@ -276,6 +289,12 @@
         },
         {
           "indexed": false,
+          "internalType": "uint256",
+          "name": "btcFee",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
           "internalType": "address",
           "name": "compensationReceiver",
           "type": "address"
@@ -285,6 +304,12 @@
           "internalType": "uint256",
           "name": "timestamp",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "btcFeeAddress",
+          "type": "string"
         }
       ],
       "name": "TransactionRegistered",

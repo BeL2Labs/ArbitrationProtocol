@@ -32,7 +32,7 @@ export const useBTCFees = (transactions: Transaction[]) => {
         if (checkTransactionBTCFeesWithdrawn(tx.id))
           withdrawableAmountBTC = new BigNumber(0);
         else {
-          const hasUnclaimedFees = await checkOnChainTransactionBTCFeesWithdrawn(tx.id);
+          const hasUnclaimedFees = await checkOnChainTransactionBTCFeesWithdrawn(tx);
           withdrawableAmountBTC = hasUnclaimedFees ? arbiterFeeBTC : new BigNumber(0);
         }
       }

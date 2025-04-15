@@ -9,4 +9,5 @@ export interface Transaction {
   compensationReceiver: string;
   timeoutCompensationReceiver: string;
   requestArbitrationTime: number;
+  btcFeeAddress: string;
 }
