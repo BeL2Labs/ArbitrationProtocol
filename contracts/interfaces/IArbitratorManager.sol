@@ -7,6 +7,7 @@ interface IArbitratorManager {
     // Staking operations
     function stakeETH() external payable;
     function stakeNFT(uint256[] calldata tokenIds) external;
+    function stakeERC20(address token, uint256 amount) external;
     function unstake() external;  // Withdraw all staked assets
 
     /// @notice Registers a new arbitrator by staking ETH
@@ -44,6 +45,26 @@ interface IArbitratorManager {
         uint256 feeRate,
         uint256 btcFeeRate,
         uint256 deadline) external;
+
+    /**
+     * @notice Register arbitrator by staking ERC20 tokens
+     * @param token The ERC20 token address to stake
+     * @param amount The amount of tokens to stake
+     * @param defaultBtcAddress Default Bitcoin address for the arbitrator
+     * @param defaultBtcPubKey Default Bitcoin public key for the arbitrator
+     * @param feeRate Fee rate for arbitration in ETH
+     * @param btcFeeRate Fee rate for arbitration in BTC
+     * @param deadline Deadline for the arbitrator's term
+     */
+    function registerArbitratorByStakeERC20(
+        address token,
+        uint256 amount,
+        string calldata defaultBtcAddress,
+        bytes calldata defaultBtcPubKey,
+        uint256 feeRate,
+        uint256 btcFeeRate,
+        uint256 deadline
+    ) external;
 
     // Set operator information
     function setOperator(
@@ -142,12 +163,17 @@ interface IArbitratorManager {
     // Manager address setters
     function setTransactionManager(address _transactionManager) external;
     function setCompensationManager(address _compensationManager) external;
-    function initTransactionAndCompensationManager(address _transactionManager, address _compensationManager) external;
+
+    /**
+     * @notice Set the token whitelist contract address
+     * @param _tokenWhitelist The new token whitelist contract address
+     */
+    function setTokenWhitelist(address _tokenWhitelist) external;
+
     function setNFTContract(address _nftContract) external;
     function setAssetOracle(address _assetOracle) external;
 
     // Events
-    event InitializedManager(address indexed transactionManager, address indexed compensationManager);
     event StakeAdded(
         address indexed arbitrator, 
         address indexed assetAddress,  // 0x0 for ETH
@@ -157,8 +183,11 @@ interface IArbitratorManager {
     
     event StakeWithdrawn(
         address indexed arbitrator,
-        address indexed assetAddress,  // 0x0 for ETH
-        uint256 amount
+        uint256 ethAmount,
+        address indexed erc20Address,
+        uint256 erc20Amount,
+        address indexed nftAddress,
+        uint256[] nftTokenIds
     );
     
     event OperatorSet(
@@ -206,4 +235,5 @@ interface IArbitratorManager {
 
     event AssetOracleUpdated(address indexed assetOracle);
     event ConfigManagerUpdated(address indexed newConfigManager);
+    event TokenWhitelistUpdated(address indexed newTokenWhitelist);
 }
