@@ -1,14 +1,25 @@
 BTC fee withdrawal:
+- sign inputs: ensure same address as arbiter btc wallet 
+- ensure signed inputs are in the right order
 - Arbiter transactions page:
-  - Method to check the btc fee address of every transaction to see if it has some UTXO. If it doesn't, this means 
-    there is no fee to withdraw.
   - Save processed BTC fee withdrawals locally to avoid re-checking utxos again.
-  - Ability to multi-select transactions with available fees to withdraw 
-      + button to start processing.
-    For multiple selected transactions, only one BTC transaction needs to be constructed for BTC fee withdrawal. 
+  - For multiple selected transactions, only one BTC transaction needs to be constructed for BTC fee withdrawal. 
   This transaction will have multiple inputs and one output. Each input corresponds to a BTC 
   fee address to be withdrawn, and the output points to the address entered by the arbiter 
   (default is the arbiter's own BTC owner address). Each input requires a signature.
+
+steps:
+1. create tx: 
+inputs: from btc fee utxo
+output: from abriter address
+2. sign tx:
+input.witness need to be [signature, script]
+signature: use unisat wallet to sign signdata, signature need to be DER type
+script: calcuate script by information of TransactionRegistered event
+
+
+
+
 
 ------------------------------------------
 

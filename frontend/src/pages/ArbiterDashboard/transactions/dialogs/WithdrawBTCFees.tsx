@@ -1,34 +1,97 @@
+import { EnsureWalletNetwork } from "@/components/base/EnsureWalletNetwork/EnsureWalletNetwork";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { ArbiterInfo } from "@/services/arbiters/model/arbiter-info";
+import { btcToSats, rsSignatureToDer } from "@/services/btc/btc";
+import { useBitcoinWalletAction } from "@/services/btc/hooks/useBitcoinWalletAction";
+import { estimateBTCFeeRate } from "@/services/mempool-api/mempool-api";
+import { UTXO } from "@/services/nownodes-api/model/types";
+import { TransactionBTCFeeInfo } from "@/services/transactions/hooks/useBTCFees";
 import { Transaction } from "@/services/transactions/model/transaction";
+import { BTCFeeWithdrawlTxCreationInputs, generateBtcFeeScript, generateRawTransactionForBTCFeeWithdrawal } from "@/services/transactions/transaction-btc-fees.service";
 import { useToasts } from "@/services/ui/hooks/useToasts";
+import { formatAddress } from "@/utils/formatAddress";
+import { Transaction as BTCTransaction } from "bitcoinjs-lib";
 import { CheckIcon } from "lucide-react";
-import { FC, useCallback, useMemo, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
+
+/**
+ * State of a transaction, either signed or not yet.
+ */
+type TransactionSignatureInProgress = {
+  transaction: Transaction;
+  utxo: UTXO;
+  script: Buffer;
+
+  signature?: string;
+};
 
 export const WithdrawBTCFeesDialog: FC<{
-  arbiter?: ArbiterInfo; // TODO: mandatory?
+  arbiter: ArbiterInfo;
   withdrawableTransactions: Transaction[];
+  btcFeesInfo: Record<string, TransactionBTCFeeInfo>,
   isOpen: boolean;
   onHandleClose: () => void;
   onContractUpdated: () => void;
-}> = ({ arbiter, withdrawableTransactions, isOpen, onContractUpdated, onHandleClose, ...rest }) => {
+}> = ({ arbiter, btcFeesInfo, withdrawableTransactions, isOpen, onContractUpdated, onHandleClose, ...rest }) => {
   const { successToast } = useToasts();
-  const [signedTransactions, setSignedTransactions] = useState<string[]>([]);
-  const allInputsSigned = useMemo(() => signedTransactions.length === withdrawableTransactions.length, [signedTransactions, withdrawableTransactions]);
+  const [transactionsInProgress, setTransactionsInProgress] = useState<TransactionSignatureInProgress[]>([]);
+  const allInputsSigned = useMemo(() => transactionsInProgress.find(t => !!t.signature), [transactionsInProgress]);
 
-  const handleTransactionSigned = useCallback((transaction: Transaction) => {
+  const handleTransactionSigned = useCallback((signResult: TransactionSignatureInProgress) => {
     // A transaction in the list has been signed by the arbiter wallet.
-    setSignedTransactions(prev => prev.concat(transaction.id));
-  }, []);
+    const workedTransaction = transactionsInProgress.find(t => t.transaction.id === signResult.transaction.id);
+    workedTransaction.signature = signResult.signature;
 
-  const publishWithdrawal = useCallback(() => {
+    // Update global list for reactivity
+    setTransactionsInProgress(
+      transactionsInProgress
+        .filter(t => t.transaction.id !== workedTransaction.transaction.id)
+        .concat([workedTransaction])
+    );
+  }, [transactionsInProgress]);
+
+  const publishWithdrawal = useCallback(async () => {
     // All transactions (fee inputs) have been signed. We can publish the withdraw transaction to the bitcoin network.
-    console.log("publishWithdrawal");
-  }, []);
+    const inputs: BTCFeeWithdrawlTxCreationInputs = {
+      outputPubKey: arbiter.revenueBtcPubKey,
+      satsPerVb: await estimateBTCFeeRate(),
+      inputs: transactionsInProgress.map(info => ({
+        utxo: info.utxo,
+        script: info.script,
+        signature: info.signature
+      }))
+    }
 
-  if (!arbiter)
+    // Build the real transaction, using the right output value
+    const btcTxWithAllWitnesses = generateRawTransactionForBTCFeeWithdrawal(inputs, true);
+    console.log("btcTxWithAllWitnesses", btcTxWithAllWitnesses.toHex());
+
+    // TODO: publish btc tx
+  }, [arbiter, transactionsInProgress]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      // When reopening the dialog, reset all previous state
+      setTransactionsInProgress([]);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    // When the initial array of transactions to work on changes, we rebuild of transactions in progress list
+    setTransactionsInProgress(withdrawableTransactions?.map(wt => ({
+      transaction: wt,
+      script: generateBtcFeeScript(arbiter.revenueBtcPubKey, wt),
+      utxo: btcFeesInfo[wt.id].utxo
+    })));
+  }, [arbiter, btcFeesInfo, withdrawableTransactions]);
+
+  if (!arbiter || !btcFeesInfo || !isOpen)
     return null;
+
+  if (Object.values(btcFeesInfo).length != withdrawableTransactions.length)
+    throw new Error("btcFeesInfo and withdrawableTransactions should have the same length");
 
   return (
     <Dialog {...rest} open={isOpen} onOpenChange={onHandleClose}>
@@ -44,12 +107,19 @@ export const WithdrawBTCFeesDialog: FC<{
 
         {
           withdrawableTransactions.map(tx => (
-            <WithdrawableTransactionRow key={tx.id} transaction={tx} onSigned={() => handleTransactionSigned(tx)} />
+            <WithdrawableTransactionRow
+              key={tx.id}
+              arbiter={arbiter}
+              transaction={tx}
+              transactionsInProgress={transactionsInProgress}
+              onSigned={handleTransactionSigned} />
           ))
         }
 
         <DialogFooter>
-          <Button disabled={!allInputsSigned} onClick={publishWithdrawal}>Publish to withdraw</Button>
+          <EnsureWalletNetwork continuesTo="Publish transaction" btcAccountNeeded bitcoinSignDataNeeded>
+            <Button disabled={!allInputsSigned} onClick={publishWithdrawal}>Publish to withdraw</Button>
+          </EnsureWalletNetwork>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -57,29 +127,83 @@ export const WithdrawBTCFeesDialog: FC<{
 }
 
 const WithdrawableTransactionRow: FC<{
+  arbiter: ArbiterInfo;
   transaction: Transaction;
-  onSigned: () => void;
-}> = ({ transaction, onSigned }) => {
+  transactionsInProgress: TransactionSignatureInProgress[];
+  onSigned: (transactionsInProgress: TransactionSignatureInProgress) => void;
+}> = ({ transaction, transactionsInProgress, arbiter, onSigned }) => {
+  const { errorToast } = useToasts();
+  const { unsafeSignData } = useBitcoinWalletAction();
+  const transactionInProgress = useMemo(() => transactionsInProgress.find(t => t.transaction.id === transaction.id), [transactionsInProgress, transaction]);
+  const [isSigned, setIsSigned] = useState<boolean>(false);
 
-  const handleSignInput = useCallback(() => {
-    // TODO: sign
-    console.log("handleSignInput");
+  const handleSignInput = useCallback(async () => {
+    console.log("Starting to sign bel2 transaction as input for the btc fee withdraw transaction");
 
-    onSigned();
-  }, [onSigned]);
+    if (!transactionInProgress)
+      throw new Error(`Transaction to sign was not found in the list of transaction in progress, whats going on?`);
 
-  return <div className="flex gap-4 items-center">
-    <div className="flex gap-2 items-center">
-      <div className="flex gap-2 items-center">
-        {transaction.id}
-        <Button onClick={handleSignInput}>Sign</Button>
-        <div className="flex gap-1 items-center">
-          <div className="flex gap-1 items-center">
-            <CheckIcon className="h-4 w-4" />
-            <span>Signed</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    try {
+      const inputs: BTCFeeWithdrawlTxCreationInputs = {
+        outputPubKey: arbiter.revenueBtcPubKey,
+        satsPerVb: await estimateBTCFeeRate(),
+        inputs: transactionsInProgress.map(info => ({
+          utxo: info.utxo,
+          script: info.script
+        }))
+      }
+
+      // Build the real transaction, using the right output value
+      const rawBtcTx = generateRawTransactionForBTCFeeWithdrawal(inputs, false);
+
+      const feeSatsValue = btcToSats(transaction.arbitratorFeeBTC).toNumber();
+      const hashForWitness = rawBtcTx.hashForWitnessV0(0, transactionInProgress.script, feeSatsValue, BTCTransaction.SIGHASH_ALL).toString("hex");
+      const signature = await unsafeSignData(hashForWitness);
+
+      const derSignature = rsSignatureToDer(signature);
+
+      console.log("DEBUG", hashForWitness, signature, derSignature)
+
+      if (derSignature) {
+        setIsSigned(true); // Use a state here, not a memo, as signature contained in transactions in progress array is not dynamic 
+
+        onSigned({
+          signature: derSignature,
+          utxo: transactionInProgress.utxo,
+          script: transactionInProgress.script,
+          transaction: transaction
+        });
+      }
+    }
+    catch (e) {
+      errorToast(`${e}`);
+    }
+  }, [arbiter, onSigned, transactionsInProgress, transactionInProgress, transaction, unsafeSignData, errorToast]);
+
+  return <div className="flex gap-4 items-center w-full">
+    <Table className="w-full">
+      <TableBody>
+        <TableRow>
+          <TableCell>
+            Transaction <b>{formatAddress(transaction.id)}</b>
+          </TableCell>
+          <TableCell className="flex flex-row justify-end">
+            {
+              !isSigned &&
+              <EnsureWalletNetwork continuesTo="Sign" btcAccountNeeded bitcoinSignDataNeeded>
+                <Button onClick={handleSignInput}>Sign</Button>
+              </EnsureWalletNetwork>
+            }
+            {
+              isSigned &&
+              <div className="flex gap-1 items-center">
+                <CheckIcon className="h-4 w-4" />
+                <span>Signed</span>
+              </div>
+            }
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
   </div>
 }

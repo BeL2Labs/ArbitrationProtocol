@@ -17,16 +17,20 @@ export class Transaction implements Omit<TransactionDTO, "startTime" | "deadline
   @Expose() @Transform(({ value }) => value && moment.unix(value)) public startTime: Moment;
   @Expose() @Transform(({ value }) => value && moment.unix(value)) public deadline: Moment;
   @Expose() @Transform(({ value }) => value && tokenToReadableValue(value, 18)) public depositedFee: BigNumber;
-  @Expose() @Transform(({ value }) => value && tokenToReadableValue(value, 18)) public arbitratorFeeNative: BigNumber;
-  @Expose() @Transform(({ value }) => value && tokenToReadableValue(value, 18)) public arbitratorFeeBTC: BigNumber;
-  @Expose() public btcFeeAddress: string;
   @Expose() @Transform(({ value }) => value && tokenToReadableValue(value, 18)) public refundedFee: BigNumber;
   @Expose() @Transform(({ value }) => value && tokenToReadableValue(value, 18)) public systemFee: BigNumber;
   @Expose() public compensationReceiver: string;
   @Expose() public timeoutCompensationReceiver: string;
   @Expose() @Transform(({ value }) => value && moment.unix(value)) public requestArbitrationTime: Moment;
 
-  public btcTxHash?: string; // Only when fetched from contract
+  // Only when fetched from contract
+  public btcTxHash?: string;
+
+  // Only from subgraph
+  @Expose() public createdBy: string;
+  @Expose() @Transform(({ value }) => value && tokenToReadableValue(value, 18)) public arbitratorFeeNative: BigNumber;
+  @Expose() @Transform(({ value }) => value && tokenToReadableValue(value, 8)) public arbitratorFeeBTC: BigNumber;
+  @Expose() public btcFeeAddress: string;
 
   /**
    * So it's a bit tricky here. There is a transaction.status in the contract which is static,

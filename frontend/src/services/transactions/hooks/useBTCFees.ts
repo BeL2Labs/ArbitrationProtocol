@@ -1,3 +1,4 @@
+import { UTXO } from "@/services/nownodes-api/model/types";
 import { Transaction } from "@/services/transactions/model/transaction";
 import BigNumber from "bignumber.js";
 import { useCallback, useEffect, useState } from "react";
@@ -6,6 +7,7 @@ import { checkOnChainTransactionBTCFeesWithdrawn, checkTransactionBTCFeesWithdra
 export type TransactionBTCFeeInfo = {
   arbiterFeeBTC: BigNumber;
   withdrawableAmountBTC: BigNumber;
+  utxo?: UTXO;
 }
 
 /**
@@ -25,6 +27,7 @@ export const useBTCFees = (transactions: Transaction[]) => {
     for (const tx of transactions) {
       let arbiterFeeBTC: BigNumber = undefined;
       let withdrawableAmountBTC: BigNumber = undefined; // Undefined means there is not even a BTC fee (should be native)
+      let utxo: UTXO;
       if (tx.arbitratorFeeBTC?.gt(0)) {
         arbiterFeeBTC = tx.arbitratorFeeBTC;
 
@@ -32,12 +35,18 @@ export const useBTCFees = (transactions: Transaction[]) => {
         if (checkTransactionBTCFeesWithdrawn(tx.id))
           withdrawableAmountBTC = new BigNumber(0);
         else {
-          const hasUnclaimedFees = await checkOnChainTransactionBTCFeesWithdrawn(tx);
-          withdrawableAmountBTC = hasUnclaimedFees ? arbiterFeeBTC : new BigNumber(0);
+          const btcFeeAddressCheckOutput = await checkOnChainTransactionBTCFeesWithdrawn(tx);
+          if (btcFeeAddressCheckOutput) {
+            withdrawableAmountBTC = btcFeeAddressCheckOutput.withdrawn ? new BigNumber(0) : arbiterFeeBTC;
+            utxo = btcFeeAddressCheckOutput.utxo;
+          }
+          else {
+            withdrawableAmountBTC = new BigNumber(0);
+          }
         }
       }
 
-      feeInfo[tx.id] = { arbiterFeeBTC, withdrawableAmountBTC };
+      feeInfo[tx.id] = { arbiterFeeBTC, withdrawableAmountBTC, utxo };
     }
 
     setInfo(feeInfo);
