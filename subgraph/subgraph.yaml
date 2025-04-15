@@ -55,7 +55,7 @@ dataSources:
     source:
       abi: TransactionManager
       address: "0x1f872A1fBc02A38B087DE6af2176ab0BC63a53d0"
-      startBlock: 29412286
+      startBlock: 30100000
     mapping:
       file: ./src/event-handlers/TransactionManager.ts
       language: wasm/assemblyscript

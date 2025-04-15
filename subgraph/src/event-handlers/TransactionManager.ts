@@ -13,6 +13,7 @@ export function handleTransactionRegistered(event: TransactionRegistered): void 
   transaction.depositedFee = event.params.depositFee;
   transaction.compensationReceiver = event.params.compensationReceiver.toHexString();
   transaction.btcFeeAddress = event.params.btcFeeAddress;
+  transaction.arbitratorFeeBTC = event.params.btcFee;
   transaction.save();
 
   recomputeArbitratorIsActive(transaction.arbiter, event.block);
