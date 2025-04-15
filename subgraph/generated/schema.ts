@@ -407,6 +407,19 @@ export class Transaction extends Entity {
     this.set("createdAt", Value.fromI32(value));
   }
 
+  get createdBy(): string {
+    let value = this.get("createdBy");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set createdBy(value: string) {
+    this.set("createdBy", Value.fromString(value));
+  }
+
   get txId(): string {
     let value = this.get("txId");
     if (!value || value.kind == ValueKind.NULL) {

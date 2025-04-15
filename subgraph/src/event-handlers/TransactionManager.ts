@@ -5,6 +5,7 @@ import { recomputeArbitratorIsActive } from "./ArbitratorManager";
 
 export function handleTransactionRegistered(event: TransactionRegistered): void {
   const transaction = getTransaction(event.block, event.params.id.toHexString());
+  transaction.createdBy = event.transaction.from.toHexString();
   transaction.status = "Active";
   transaction.dapp = event.params.dapp.toHexString();
   transaction.arbiter = event.params.arbitrator.toHexString();

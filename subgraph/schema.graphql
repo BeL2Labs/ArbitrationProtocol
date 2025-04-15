@@ -58,6 +58,7 @@ type ArbiterInfo @entity {
 type Transaction @entity {
     id: ID! # required by the graph
     createdAt: Int! # Timestamp, DB side only, not on chain - block time at which the transaction was first found (first event)
+    createdBy: String! # Ethereum address that created the transaction (msg.sender)
     txId: String! # Transaction ID, same as ID
     dapp: String # DApp address
     arbiter: String
