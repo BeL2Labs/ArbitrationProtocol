@@ -198,7 +198,7 @@ contract TransactionManager is
     }
 
     function _generateBtcFeeAddress(bytes32 id, address arbitrator) internal returns (string memory) {
-        bytes memory revenueBtcPubKey = arbitratorManager.getArbitratorInfo(arbitrator).revenueBtcPubKey;
+        bytes memory revenueBtcPubKey = arbitratorManager.getArbitratorRevenueInfo(arbitrator).revenueBtcPubKey;
         bytes32 randomSeed = keccak256(abi.encodePacked(block.timestamp, msg.sender, id));
 
         bytes memory lockScript = abi.encodePacked(
@@ -452,7 +452,7 @@ contract TransactionManager is
         if (!success1) revert(Errors.TRANSFER_FAILED);
 
         // Pay arbitrator
-        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitratorManager.getArbitratorInfo(parties.arbitrator);
+        DataTypes.ArbitratorRevenueInfo memory arbitratorInfo = arbitratorManager.getArbitratorRevenueInfo(parties.arbitrator);
         (bool success2, ) = arbitratorInfo.revenueETHAddress.call{value: finalArbitratorFee}("");
         if (!success2) revert(Errors.TRANSFER_FAILED);
 
@@ -533,7 +533,7 @@ contract TransactionManager is
 
         // Check output script is sent to arbitrator's address
         bool isOutputOfArbitrator = false;
-        string memory arbitratorAddress = arbitratorManager.getArbitratorInfo(transactionParties.arbitrator).revenueBtcAddress;
+        string memory arbitratorAddress = arbitratorManager.getArbitratorRevenueInfo(transactionParties.arbitrator).revenueBtcAddress;
         for (uint i = 0; i < parsedTx.outputs.length; i++) {
             bytes memory decodedScript = btcAddressParser.DecodeBtcAddressToScript(arbitratorAddress);
             isOutputOfArbitrator = keccak256(parsedTx.outputs[i].scriptPubKey) == keccak256(decodedScript);

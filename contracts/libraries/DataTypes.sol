@@ -42,23 +42,27 @@ library DataTypes {
         uint256 amount;   // Amount in satoshis
     }
 
-    struct ArbitratorInfo {
-        address arbitrator;        // Arbitrator Ethereum address
-        bool paused;               // is paused
-        uint256 currentFeeRate;    // Current fee rate receive ETH
-        bytes32 activeTransactionId; // Current transaction ID
-        address operator;          // Operator address
-        bytes operatorBtcPubKey;   // Bitcoin public key
-        string operatorBtcAddress; // Bitcoin address
-        uint256 deadLine; // Last arbitration time , deadline
-        bytes revenueBtcPubKey;   // Bitcoin public key for receiving arbitrator earnings
-        string revenueBtcAddress; // Bitcoin address for receiving arbitrator earnings
-        address revenueETHAddress; // ETH address for receiving arbitrator earnings
-        uint256 lastSubmittedWorkTime; // Last submitted work time
+    struct ArbitratorBasicInfo {
+        address arbitrator;        // Arbitrator's Ethereum address
+        bool paused;              // Whether the arbitrator is paused
+        uint256 registerTime;     // Registration timestamp
+        uint256 deadline;         // Validity period deadline
     }
 
-    struct ArbitratorInfoExt{
-        uint256 currentBTCFeeRate;// Current BTC fee rate, receive BTC
+    struct ArbitratorOperationInfo {
+        address operator;         // Operator's address
+        bytes operatorBtcPubKey;  // Operator's BTC public key
+        string operatorBtcAddress;// Operator's BTC address
+        bytes32 activeTransactionId; // Current active transaction ID
+        uint256 lastSubmittedWorkTime; // Last work submission timestamp
+    }
+
+    struct ArbitratorRevenueInfo {
+        uint256 currentFeeRate;    // ETH fee rate
+        uint256 currentBTCFeeRate; // BTC fee rate
+        bytes revenueBtcPubKey;    // BTC public key for receiving revenue
+        string revenueBtcAddress;  // BTC address for receiving revenue
+        address revenueETHAddress; // ETH address for receiving revenue
     }
 
     struct ArbitratorAssets {
@@ -70,40 +74,40 @@ library DataTypes {
     }
 
     struct TransactionData {
-        uint256 startTime;
-        uint256 deadline;
-        uint256 requestArbitrationTime;
-        uint256 depositedFee;
-        TransactionStatus status;
-        uint256 arbitratorBtcFee;
-        string btcFeeAddress;
-        bytes32 btcFeeTxHash;
+        uint256 startTime;         // Transaction start time
+        uint256 deadline;          // Transaction deadline
+        uint256 requestArbitrationTime;  // Time when arbitration was requested
+        uint256 depositedFee;      // Deposited arbitration fee
+        TransactionStatus status;  // Current transaction status
+        uint256 arbitratorBtcFee; // Arbitrator's BTC fee
+        string btcFeeAddress;     // BTC address for fee payment
+        bytes32 btcFeeTxHash;     // BTC transaction hash for fee payment
     }
 
-    struct TransactionParties{
-        address dapp;
-        address arbitrator;
-        address compensationReceiver;
-        address timeoutCompensationReceiver;
-        address refundAddress;
-        address depositedFeeRefundAddress;
+    struct TransactionParties {
+        address dapp;                          // DApp address
+        address arbitrator;                    // Arbitrator address
+        address compensationReceiver;          // Compensation receiver address
+        address timeoutCompensationReceiver;   // Timeout compensation receiver address
+        address refundAddress;                 // Refund address
+        address depositedFeeRefundAddress;     // Deposited fee refund address
     }
 
     struct ZKVerification {
-        uint256 status;
-        bytes pubKey;
-        bytes32 txHash; // sign hash of the raw data
-        bytes signature;
-        bool verified;
-        UTXO[] utxos;
+        uint256 status;           // Verification status
+        bytes pubKey;             // Public key
+        bytes32 txHash;           // Transaction hash (sign hash of the raw data)
+        bytes signature;          // Signature
+        bool verified;            // Whether verification is complete
+        UTXO[] utxos;            // Array of UTXOs
     }
 
     struct ArbitrationData {
-        bytes32 id;
-        bytes rawData;
-        DataTypes.SignDataType signDataType;
-        uint8 signHashFlag;
-        bytes script;
-        address timeoutCompensationReceiver;
+        bytes32 id;               // Arbitration ID
+        bytes rawData;           // Raw transaction data
+        DataTypes.SignDataType signDataType;  // Signature data type
+        uint8 signHashFlag;      // Signature hash flag
+        bytes script;            // Script data
+        address timeoutCompensationReceiver;  // Timeout compensation receiver address
     }
 }

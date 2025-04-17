@@ -45,19 +45,17 @@ contract ArbitratorManager is
     address public compensationManager;
     AssetManager public assetManager;
 
-    mapping(address => DataTypes.ArbitratorInfoExt) private arbitratorsExt;
-    // Mapping of arbitrator addresses to their information
-    mapping(address => DataTypes.ArbitratorInfo) private arbitrators;
-
-    // Mapping to store ERC20 token stake amounts for arbitrators
-    mapping(address => uint256) private erc20StakeAmounts;
+    // State variables for arbitrator data
+    mapping(address => DataTypes.ArbitratorBasicInfo) private arbitratorsBasic;
+    mapping(address => DataTypes.ArbitratorOperationInfo) private arbitratorsOperation;
+    mapping(address => DataTypes.ArbitratorRevenueInfo) private arbitratorsRevenue;
 
     /**
      * @notice Ensures arbitrator is not currently handling any transactions
      * @dev Prevents critical state changes while arbitrator is working
      */
     modifier notWorking() {
-        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
+        DataTypes.ArbitratorOperationInfo memory arbitrator = arbitratorsOperation[msg.sender];
         if (arbitrator.activeTransactionId != bytes32(0)) {
             revert (Errors.ARBITRATOR_NOT_WORKING);
         }
@@ -225,6 +223,9 @@ contract ArbitratorManager is
         );
     }
 
+    /**
+     * @notice Initialize arbitrator data with basic info
+     */
     function _initializeArbitrator(
         address arbitratorAddress,
         string calldata defaultBtcAddress,
@@ -249,24 +250,25 @@ contract ArbitratorManager is
         if (deadline != 0 && deadline <= block.timestamp) revert (Errors.INVALID_DEADLINE);
 
         // Check if the arbitrator is already registered
-        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[arbitratorAddress];
-        if (arbitrator.arbitrator != address(0)) {
+        DataTypes.ArbitratorBasicInfo storage basicInfo = arbitratorsBasic[arbitratorAddress];
+        if (basicInfo.arbitrator != address(0)) {
             revert(Errors.ARBITRATOR_ALREADY_REGISTERED);
         }
+        basicInfo.arbitrator = arbitratorAddress;
+        basicInfo.registerTime = block.timestamp;
+        basicInfo.deadline = deadline;
 
-        // Initialize basic information
-        arbitrator.arbitrator = arbitratorAddress;
-        arbitrator.operator = arbitratorAddress;
-        arbitrator.revenueETHAddress = arbitratorAddress;
-        arbitrator.revenueBtcAddress = defaultBtcAddress;
-        arbitrator.revenueBtcPubKey = defaultBtcPubKey;
-        arbitrator.operatorBtcAddress = defaultBtcAddress;
-        arbitrator.operatorBtcPubKey = defaultBtcPubKey;
-        arbitrator.currentFeeRate = feeRate;
-        arbitrator.deadLine = deadline;
+        DataTypes.ArbitratorOperationInfo storage operationInfo = arbitratorsOperation[arbitratorAddress];
+        operationInfo.operator = arbitratorAddress;
+        operationInfo.operatorBtcAddress = defaultBtcAddress;
+        operationInfo.operatorBtcPubKey = defaultBtcPubKey;
 
-        // Initialize extension information
-        arbitratorsExt[arbitratorAddress].currentBTCFeeRate = btcFeeRate;
+        DataTypes.ArbitratorRevenueInfo storage revenueInfo = arbitratorsRevenue[arbitratorAddress];
+        revenueInfo.currentFeeRate = feeRate;
+        revenueInfo.currentBTCFeeRate = btcFeeRate;
+        revenueInfo.revenueETHAddress = arbitratorAddress;
+        revenueInfo.revenueBtcAddress = defaultBtcAddress;
+        revenueInfo.revenueBtcPubKey = defaultBtcPubKey;
     }
     
     /**
@@ -378,7 +380,7 @@ contract ArbitratorManager is
             revert (Errors.CONFIG_NOT_MODIFIABLE);
         }
 
-        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
+        DataTypes.ArbitratorOperationInfo storage arbitrator = arbitratorsOperation[msg.sender];
         arbitrator.operator = operator;
         arbitrator.operatorBtcPubKey = btcPubKey;
         arbitrator.operatorBtcAddress = btcAddress;
@@ -400,7 +402,7 @@ contract ArbitratorManager is
             revert (Errors.CONFIG_NOT_MODIFIABLE);
         }
 
-        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
+        DataTypes.ArbitratorRevenueInfo storage arbitrator = arbitratorsRevenue[msg.sender];
         arbitrator.revenueETHAddress = ethAddress;
         arbitrator.revenueBtcPubKey = btcPubKey;
         arbitrator.revenueBtcAddress = btcAddress;
@@ -418,8 +420,9 @@ contract ArbitratorManager is
             revert (Errors.CONFIG_NOT_MODIFIABLE);
         }
 
-        arbitrators[msg.sender].currentFeeRate = ethFeeRate;
-        arbitratorsExt[msg.sender].currentBTCFeeRate = btcFeeRate;
+        DataTypes.ArbitratorRevenueInfo storage arbitrator = arbitratorsRevenue[msg.sender];
+        arbitrator.currentFeeRate = ethFeeRate;
+        arbitrator.currentBTCFeeRate = btcFeeRate;
 
         emit ArbitratorFeeRateUpdated(msg.sender, ethFeeRate, btcFeeRate);
     }
@@ -431,11 +434,11 @@ contract ArbitratorManager is
      */
     function setArbitratorDeadline(uint256 deadline) external override {
         if (deadline <= block.timestamp) revert (Errors.INVALID_DEADLINE);
-        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
+        DataTypes.ArbitratorBasicInfo storage arbitrator = arbitratorsBasic[msg.sender];
         if (arbitrator.arbitrator == address(0)) revert (Errors.ARBITRATOR_NOT_REGISTERED);
 
-        if (arbitrator.deadLine > 0 && deadline <= arbitrator.deadLine) revert (Errors.INVALID_DEADLINE);
-        arbitrator.deadLine = deadline;
+        if (arbitrator.deadline > 0 && deadline <= arbitrator.deadline) revert (Errors.INVALID_DEADLINE);
+        arbitrator.deadline = deadline;
 
         emit ArbitratorDeadlineUpdated(msg.sender, deadline);
     }
@@ -445,7 +448,7 @@ contract ArbitratorManager is
      * @dev Can only be called when active and not working
      */
     function pause() external override {
-        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
+        DataTypes.ArbitratorBasicInfo storage arbitrator = arbitratorsBasic[msg.sender];
         if (arbitrator.arbitrator == address(0)) revert (Errors.ARBITRATOR_NOT_REGISTERED);
         if (arbitrator.paused) {
             revert (Errors.ALREADY_PAUSED);
@@ -460,7 +463,7 @@ contract ArbitratorManager is
      * @dev Can only be called when paused and not working
      */
     function unpause() external override {
-        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
+        DataTypes.ArbitratorBasicInfo storage arbitrator = arbitratorsBasic[msg.sender];
         if (arbitrator.arbitrator == address(0)) revert (Errors.ARBITRATOR_NOT_REGISTERED);
         if (!arbitrator.paused) {
             revert (Errors.NOT_PAUSED);
@@ -471,21 +474,25 @@ contract ArbitratorManager is
     }
 
     /**
-     * @notice Retrieves arbitrator information
-     * @param arbitratorAddress Address of the arbitrator
-     * @return ArbitratorInfo struct containing all arbitrator details
+     * @notice Retrieves arbitrator basic information
+     * @param arbitrator Address of the arbitrator
+     * @return ArbitratorBasicInfo struct containing all arbitrator details
      */
-    function getArbitratorInfo(address arbitratorAddress) 
+    function getArbitratorBasicInfo(address arbitrator)
         external 
         view 
         override 
-        returns (DataTypes.ArbitratorInfo memory) 
+        returns (DataTypes.ArbitratorBasicInfo memory)
     {
-        return arbitrators[arbitratorAddress];
+        return arbitratorsBasic[arbitrator];
     }
 
-    function getArbitratorInfoExt(address arbitrator) external view returns (DataTypes.ArbitratorInfoExt memory) {
-        return arbitratorsExt[arbitrator];
+    function getArbitratorRevenueInfo(address arbitrator) external view returns (DataTypes.ArbitratorRevenueInfo memory) {
+        return arbitratorsRevenue[arbitrator];
+    }
+
+    function getArbitratorOperationInfo(address arbitrator) external view returns (DataTypes.ArbitratorOperationInfo memory) {
+        return arbitratorsOperation[arbitrator];
     }
 
     /**
@@ -499,26 +506,28 @@ contract ArbitratorManager is
         override 
         returns (bool) 
     {
-        DataTypes.ArbitratorInfo memory arbitrator = arbitrators[arbitratorAddress];
-        if (arbitrator.deadLine > 0 && arbitrator.deadLine <= block.timestamp) {
+        DataTypes.ArbitratorBasicInfo memory arbitratorBasic = arbitratorsBasic[arbitratorAddress];
+
+        if (arbitratorBasic.deadline > 0 && arbitratorBasic.deadline <= block.timestamp) {
             return false;
         }
 
-        uint256 totalStakeValue = getAvailableStake(arbitrator.arbitrator);
+        uint256 totalStakeValue = getAvailableStake(arbitratorAddress);
         if (totalStakeValue < configManager.getConfig(configManager.MIN_STAKE())) {
             return false;
         }
 
         // freeze lock time
-        if (isFrozenArbitrator(arbitrator)) {
+        DataTypes.ArbitratorOperationInfo memory arbitratorOperation = arbitratorsOperation[arbitratorAddress];
+        if (isFrozenArbitrator(arbitratorOperation)) {
             return false;
         }
 
-        if (arbitrator.activeTransactionId != bytes32(0)) {
+        if (arbitratorOperation.activeTransactionId != bytes32(0)) {
             return false;
         }
 
-        if (arbitrator.paused) {
+        if (arbitratorBasic.paused) {
             return false;
         }
 
@@ -526,11 +535,11 @@ contract ArbitratorManager is
     }
 
     function isFrozenStatus(address arbitrator) external view returns (bool) {
-        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitrators[arbitrator];
-        return isFrozenArbitrator(arbitratorInfo);
+        DataTypes.ArbitratorOperationInfo memory arbitratorOperation = arbitratorsOperation[arbitrator];
+        return isFrozenArbitrator(arbitratorOperation);
     }
 
-    function isFrozenArbitrator(DataTypes.ArbitratorInfo memory arbitrator) private view returns(bool) {
+    function isFrozenArbitrator(DataTypes.ArbitratorOperationInfo memory arbitrator) private view returns(bool) {
         uint256 freeze_period = configManager.getArbitrationFrozenPeriod();
         if (arbitrator.lastSubmittedWorkTime == 0) {
             return false;
@@ -561,7 +570,7 @@ contract ArbitratorManager is
      * @return bool True if operator is associated with arbitrator
      */
     function isOperatorOf(address arbitrator, address operator) external view returns (bool) {
-        return arbitrators[arbitrator].operator == operator;
+        return arbitratorsOperation[arbitrator].operator == operator;
     }
 
     /**
@@ -570,10 +579,12 @@ contract ArbitratorManager is
      * @return bool True if the config can change
      */
     function isConfigModifiable(address arbitrator) public view returns (bool) {
-        DataTypes.ArbitratorInfo memory arbitratorInfo = arbitrators[arbitrator];
-        if (arbitratorInfo.arbitrator == address(0)
-            || arbitratorInfo.activeTransactionId != bytes32(0)
-            || isFrozenArbitrator(arbitratorInfo)) return false;
+        DataTypes.ArbitratorBasicInfo memory arbitratorBasic = arbitratorsBasic[arbitrator];
+        DataTypes.ArbitratorOperationInfo memory arbitratorOperation = arbitratorsOperation[arbitrator];
+
+        if (arbitratorBasic.arbitrator == address(0)
+            || arbitratorOperation.activeTransactionId != bytes32(0)
+            || isFrozenArbitrator(arbitratorOperation)) return false;
 
         return true;
     }
@@ -584,7 +595,7 @@ contract ArbitratorManager is
      * @return bool True if arbitrator is paused
      */
     function isPaused(address arbitrator) external view returns (bool) {
-        return arbitrators[arbitrator].paused;
+        return arbitratorsBasic[arbitrator].paused;
     }
 
     /**
@@ -596,7 +607,7 @@ contract ArbitratorManager is
         address arbitrator, 
         bytes32 transactionId
     ) external onlyTransactionManager {
-        DataTypes.ArbitratorInfo storage arbitratorInfo = arbitrators[arbitrator];
+        DataTypes.ArbitratorOperationInfo storage arbitratorInfo = arbitratorsOperation[arbitrator];
         if (!isActiveArbitrator(arbitrator)) {
             revert (Errors.ARBITRATOR_NOT_ACTIVE);
         }
@@ -616,7 +627,7 @@ contract ArbitratorManager is
         address arbitrator, 
         bytes32 transactionId
     ) external onlyTransactionManager {
-        DataTypes.ArbitratorInfo storage arbitratorInfo = arbitrators[arbitrator];
+        DataTypes.ArbitratorOperationInfo storage arbitratorInfo = arbitratorsOperation[arbitrator];
         
         if (arbitratorInfo.activeTransactionId != transactionId)
             revert (Errors.INVALID_TRANSACTION_ID);
@@ -633,7 +644,7 @@ contract ArbitratorManager is
      * @param arbitrator The address of the arbitrator to terminate
      */
     function terminateArbitratorWithSlash(address arbitrator) external override onlyCompensationManager {
-        DataTypes.ArbitratorInfo memory info = arbitrators[arbitrator];
+        DataTypes.ArbitratorBasicInfo memory info = arbitratorsBasic[arbitrator];
         if (info.arbitrator == address(0)) revert (Errors.ARBITRATOR_NOT_REGISTERED);
 
         transferStakes(arbitrator, assetManager.getArbitratorAssets(msg.sender), compensationManager);
@@ -668,10 +679,10 @@ contract ArbitratorManager is
     function frozenArbitrator(address arbitrator) external override onlyTransactionManager {
 
         // Get the arbitrator's info
-        DataTypes.ArbitratorInfo storage arbitratorInfo = arbitrators[arbitrator];
+        DataTypes.ArbitratorOperationInfo storage arbitratorInfo = arbitratorsOperation[arbitrator];
 
         // Ensure the arbitrator exists and is active
-        if (arbitratorInfo.arbitrator == address(0)) revert (Errors.ARBITRATOR_NOT_REGISTERED);
+        if (arbitratorsBasic[arbitrator].arbitrator == address(0)) revert (Errors.ARBITRATOR_NOT_REGISTERED);
         if (arbitratorInfo.activeTransactionId == bytes32(0)) revert (Errors.ARBITRATOR_NOT_WORKING);
 
         // Set the last submitted work time to current timestamp to trigger freeze
@@ -709,7 +720,7 @@ contract ArbitratorManager is
      * @return fee The calculated fee
      */
     function getFee(uint256 duration, address arbitrator) external view returns (uint256 fee) {
-        uint256 feeRate = arbitrators[arbitrator].currentFeeRate;
+        uint256 feeRate = arbitratorsRevenue[arbitrator].currentFeeRate;
         return _getFee(arbitrator, feeRate, duration);
     }
 
@@ -721,7 +732,7 @@ contract ArbitratorManager is
     }
 
     function getBtcFee(uint256 duration, address arbitrator) external view returns (uint256 fee) {
-        uint256 btcFeeRate = arbitratorsExt[arbitrator].currentBTCFeeRate;
+        uint256 btcFeeRate = arbitratorsRevenue[arbitrator].currentBTCFeeRate;
         if (btcFeeRate > 0) {
             uint256 ethFee = _getFee(arbitrator, btcFeeRate, duration);
             return assetManager.ethToBTC(ethFee);

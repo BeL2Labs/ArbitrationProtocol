@@ -130,8 +130,9 @@ interface IArbitratorManager {
     function isFrozenStatus(address arbitrator) external view returns (bool);
 
     // Query interfaces
-    function getArbitratorInfo(address arbitrator) external view returns (DataTypes.ArbitratorInfo memory);
-    function getArbitratorInfoExt(address arbitrator) external view returns (DataTypes.ArbitratorInfoExt memory);
+    function getArbitratorBasicInfo(address arbitrator) external view returns (DataTypes.ArbitratorBasicInfo memory);
+    function getArbitratorRevenueInfo(address arbitrator) external view returns (DataTypes.ArbitratorRevenueInfo memory);
+    function getArbitratorOperationInfo(address arbitrator) external view returns (DataTypes.ArbitratorOperationInfo memory);
     function isActiveArbitrator(address arbitrator) external view returns (bool);
     function getAvailableStake(address arbitrator) external view returns (uint256);
     function getArbitratorAssets(address arbitrator) external view returns (DataTypes.ArbitratorAssets memory);
