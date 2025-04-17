@@ -63,6 +63,8 @@ interface ICompensationManager {
         address indexed claimer,
         address indexed arbitrator,
         uint256 ethAmount,
+        address erc20Token,
+        uint256 erc20Amount,
         uint256[] nftTokenIds,
         uint256 totalAmount,
         address receivedCompensationAddress,
@@ -72,6 +74,8 @@ interface ICompensationManager {
         address indexed claimer,
         address indexed receivedCompensationAddress,
         uint256 ethAmount,
+        address erc20Token,
+        uint256 erc20Amount,
         uint256[] nftTokenIds,
         uint256 systemFee,
         uint256 excessPaymenttoClaimer

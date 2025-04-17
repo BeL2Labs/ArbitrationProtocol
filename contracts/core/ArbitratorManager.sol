@@ -7,13 +7,10 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "../interfaces/IArbitratorManager.sol";
-import "../interfaces/IBNFTInfo.sol";
 import "./ConfigManager.sol";
+import "./AssetManager.sol";
 import "../libraries/DataTypes.sol";
 import "../libraries/Errors.sol";
-import "hardhat/console.sol";
-import "../interfaces/IAssetOracle.sol";
-import "../interfaces/ITokenWhitelist.sol";
 
 /**
  * @title ArbitratorManager
@@ -39,26 +36,18 @@ contract ArbitratorManager is
     // Constants
     uint256 private constant SECONDS_PER_YEAR = 365 days;
     uint256 private constant FEE_RATE_MULTIPLIER = 10000;
-    address private constant ETH_TOKEN = address(0x517E9e5d46C1EA8aB6f78677d6114Ef47F71f6c4);
-    address private constant BTC_TOKEN = address(0xDF4191Bfe8FAE019fD6aF9433E8ED6bfC4B90CA1);
 
     // Config manager reference for system parameters
     ConfigManager public configManager;
-    
-    // NFT contract reference
-    IERC721 public nftContract;
-    IBNFTInfo public nftInfo;
 
-    // Mapping of arbitrator addresses to their information
-    mapping(address => DataTypes.ArbitratorInfo) private arbitrators;
-    
     // State variables
     address public transactionManager;
     address public compensationManager;
-    mapping(address => DataTypes.ArbitratorInfoExt) private arbitratorsExt;
+    AssetManager public assetManager;
 
-    IAssetOracle public assetOracle;
-    ITokenWhitelist public tokenWhitelist;
+    mapping(address => DataTypes.ArbitratorInfoExt) private arbitratorsExt;
+    // Mapping of arbitrator addresses to their information
+    mapping(address => DataTypes.ArbitratorInfo) private arbitrators;
 
     // Mapping to store ERC20 token stake amounts for arbitrators
     mapping(address => uint256) private erc20StakeAmounts;
@@ -95,34 +84,18 @@ contract ArbitratorManager is
     /**
      * @notice Initialize the contract with required addresses
      * @param _configManager Address of the ConfigManager contract
-     * @param _nftContract Address of the NFT contract
-     * @param _nftInfo Address of the NFT info contract
-     * @param _assetOracle Address of the AssetOracle contract
-     * @param _tokenWhitelist Address of the TokenWhitelist contract
      */
     function initialize(
-        address _configManager,
-        address _nftContract,
-        address _nftInfo,
-        address _assetOracle,
-        address _tokenWhitelist
+        address _configManager
     ) public initializer {
         __ReentrancyGuard_init();
         __Ownable_init(msg.sender);
 
-        if (_configManager == address(0)
-            || _nftContract == address(0)
-            || _nftInfo == address(0)
-            || _assetOracle == address(0)
-            || _tokenWhitelist == address(0)) {
-            revert (Errors.ZERO_ADDRESS);
+        if (_configManager == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
         }
 
         configManager = ConfigManager(_configManager);
-        nftContract = IERC721(_nftContract);
-        nftInfo = IBNFTInfo(_nftInfo);
-        assetOracle = IAssetOracle(_assetOracle);
-        tokenWhitelist = ITokenWhitelist(_tokenWhitelist);
     }
 
     function registerArbitratorByStakeETH(
@@ -132,7 +105,7 @@ contract ArbitratorManager is
         uint256 btcFeeRate,
         uint256 deadline
     ) external payable {
-       DataTypes.ArbitratorInfo storage arbitrator = _initializeArbitrator(
+       _initializeArbitrator(
             msg.sender,
             defaultBtcAddress,
             defaultBtcPubKey,
@@ -141,12 +114,12 @@ contract ArbitratorManager is
             deadline
         );
 
-        _validateStakeAmount(_calculateETHValue(msg.value));
+        _validateStakeAmount(assetManager.calculateETHValue(msg.value));
 
-        arbitrator.ethAmount += msg.value;
+        assetManager.depositETH{value: msg.value}(msg.sender);
 
         // Emit an event to notify the registration
-        emit StakeAdded(arbitrator.arbitrator, address(0), msg.value, new uint256[](0));
+        emit StakeAdded(msg.sender, address(0), msg.value, new uint256[](0));
         emit ArbitratorRegistered(
             msg.sender,
             msg.sender,
@@ -170,7 +143,7 @@ contract ArbitratorManager is
          // Validate token IDs
         if (tokenIds.length == 0) revert (Errors.EMPTY_TOKEN_IDS);
 
-        DataTypes.ArbitratorInfo storage arbitrator = _initializeArbitrator(
+        _initializeArbitrator(
             msg.sender,
             defaultBtcAddress,
             defaultBtcPubKey,
@@ -180,18 +153,13 @@ contract ArbitratorManager is
         );
 
         // Calculate total NFT value
-        uint256 totalNftValue = _calculateNFTValueInETH(tokenIds);
-        uint256 stakeValueInUSD = _calculateETHValue(totalNftValue);
+        uint256 totalNftValue = assetManager.getNftValue(tokenIds);
+        uint256 stakeValueInUSD = assetManager.calculateETHValue(totalNftValue);
         // Validate total stake
         _validateStakeAmount(stakeValueInUSD);
 
-        // Transfer NFTs and update arbitrator's token list
-        _transferAndStoreNFTs(arbitrator, tokenIds);
-
-        arbitrator.nftContract = address(nftContract);
-
         // Emit events
-        emit StakeAdded(msg.sender, address(nftContract), totalNftValue, tokenIds);
+        emit StakeAdded(msg.sender, address(assetManager.nftContract()), totalNftValue, tokenIds);
         emit ArbitratorRegistered(
             msg.sender,
             msg.sender, // operator
@@ -226,11 +194,11 @@ contract ArbitratorManager is
         if (token == address(0) || amount == 0) {
             revert (Errors.INVALID_PARAMETER);
         }
-        if (!tokenWhitelist.isWhitelisted(token)) {
-            revert (Errors.TOKEN_NOT_WHITELISTED);
+        if (!assetManager.isSupportToken(token)) {
+            revert (Errors.TOKEN_NOT_SUPPORTED);
         }
 
-        DataTypes.ArbitratorInfo storage arbitrator = _initializeArbitrator(
+        _initializeArbitrator(
             msg.sender,
             defaultBtcAddress,
             defaultBtcPubKey,
@@ -240,13 +208,11 @@ contract ArbitratorManager is
         );
 
         // Calculate token value and validate stake amount 
-        _validateStakeAmount(_calculateERC20Value(token, amount));
+        _validateStakeAmount(assetManager.calculateAssetValue(token, amount));
 
-        IERC20(token).transferFrom(msg.sender, address(this), amount);
-        arbitrator.erc20Token = token;
-        erc20StakeAmounts[msg.sender] = amount;
+        assetManager.depositERC20(msg.sender, token, amount);
 
-        emit StakeAdded(arbitrator.arbitrator, token, amount, new uint256[](0));
+        emit StakeAdded(msg.sender, token, amount, new uint256[](0));
         emit ArbitratorRegistered(
             msg.sender,
             msg.sender,
@@ -266,7 +232,7 @@ contract ArbitratorManager is
         uint256 feeRate,
         uint256 btcFeeRate,
         uint256 deadline
-    ) internal returns (DataTypes.ArbitratorInfo storage) {
+    ) internal {
         if (bytes(defaultBtcAddress).length == 0 || defaultBtcPubKey.length == 0 ) {
             revert (Errors.INVALID_PARAMETER);
         }
@@ -301,8 +267,6 @@ contract ArbitratorManager is
 
         // Initialize extension information
         arbitratorsExt[arbitratorAddress].currentBTCFeeRate = btcFeeRate;
-
-        return arbitrator;
     }
     
     /**
@@ -317,10 +281,9 @@ contract ArbitratorManager is
             revert (Errors.CONFIG_NOT_MODIFIABLE);
         }
 
-        DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
-        arbitrator.ethAmount += msg.value;
+        assetManager.depositETH{value: msg.value}(msg.sender);
 
-        emit StakeAdded(arbitrator.arbitrator, address(0), msg.value, new uint256[](0));
+        emit StakeAdded(msg.sender, address(0), msg.value, new uint256[](0));
     }
 
     /**
@@ -328,23 +291,16 @@ contract ArbitratorManager is
      * @param amount The amount of tokens to stake
      */
     function stakeERC20(address token, uint256 amount) external nonReentrant {
-        if (amount == 0 || token == address(0) || !tokenWhitelist.isWhitelisted(token)) {
+        if (amount == 0 || token == address(0) || !assetManager.isSupportToken(token)) {
             revert(Errors.INVALID_PARAMETER);
         }
         if (!isConfigModifiable(msg.sender)) {
             revert (Errors.CONFIG_NOT_MODIFIABLE);
         }
-        DataTypes.ArbitratorInfo memory arbitrator = arbitrators[msg.sender];
-        if (arbitrator.erc20Token == address(0)) {
-            arbitrators[msg.sender].erc20Token = token;
-        } else if (arbitrator.erc20Token != token) {
-            revert (Errors.INVALID_PARAMETER);
-        }
 
-        IERC20(token).transferFrom(msg.sender, address(this), amount);
-        erc20StakeAmounts[msg.sender] += amount;
+        assetManager.depositERC20(msg.sender, token, amount);
 
-        emit StakeAdded(arbitrator.arbitrator, token, amount, new uint256[](0));
+        emit StakeAdded(msg.sender, token, amount, new uint256[](0));
     }
 
     /**
@@ -358,50 +314,9 @@ contract ArbitratorManager is
             revert (Errors.CONFIG_NOT_MODIFIABLE);
         }
 
-        // Transfer NFTs and update arbitrator's token list
-        _transferAndStoreNFTs(arbitrators[msg.sender], tokenIds);
+        assetManager.depositNFTs(msg.sender, tokenIds);
 
-        // Calculate total NFT value
-        uint256 totalNftValue = _calculateNFTValueInETH(tokenIds);
-
-        emit StakeAdded(msg.sender, address(nftContract), totalNftValue, tokenIds);
-    }
-
-    /**
-     * @dev Calculate the total value of NFTs
-     * @param tokenIds Array of token IDs to calculate value for
-     * @return Total NFT value
-     */
-    function _calculateNFTValueInETH(uint256[] calldata tokenIds) internal view returns (uint256) {        
-        return _nftValue(tokenIds) + getTotalNFTStakeValue(msg.sender);
-    }
-
-    function _nftValue(uint256[] memory tokenIds) internal view returns (uint256) {
-        uint256 nftValue;
-         for (uint256 i = 0; i < tokenIds.length; i++) {
-            (,BNFTVoteInfo memory info) = nftInfo.getNftInfo(tokenIds[i]);
-            for (uint256 j = 0; j < info.infos.length; j++) {
-                uint256 votes = uint256(info.infos[j].votes);
-                nftValue += votes * 10 ** 10;
-            }
-        }
-
-        return nftValue;
-    }
-
-    /**
-     * @dev Transfer NFTs to contract and store in arbitrator's token list
-     * @param arbitrator Arbitrator storage reference
-     * @param tokenIds Array of token IDs to transfer
-     */
-    function _transferAndStoreNFTs(
-        DataTypes.ArbitratorInfo storage arbitrator, 
-        uint256[] calldata tokenIds
-    ) internal {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            nftContract.transferFrom(msg.sender, address(this), tokenIds[i]);
-            arbitrator.nftTokenIds.push(tokenIds[i]);
-        }
+        emit StakeAdded(msg.sender, address(assetManager.nftContract()), assetManager.getNftValue(tokenIds), tokenIds);
     }
 
     /**
@@ -426,21 +341,21 @@ contract ArbitratorManager is
     function unstake() external override nonReentrant notWorking {
         if(!isConfigModifiable(msg.sender)) revert (Errors.STAKE_STILL_LOCKED);
 
-        DataTypes.ArbitratorInfo memory arbitrator = arbitrators[msg.sender];
-        if (arbitrator.ethAmount == 0
-            && arbitrator.nftTokenIds.length == 0
-            && erc20StakeAmounts[msg.sender] == 0) {
+        DataTypes.ArbitratorAssets memory arbitratorAssets = assetManager.getArbitratorAssets(msg.sender);
+        if (arbitratorAssets.ethAmount == 0
+            && arbitratorAssets.nftTokenIds.length == 0
+            && arbitratorAssets.erc20Amount == 0) {
             revert(Errors.NO_STAKE_AVAILABLE);
         }
 
-        uint256 ethAmount = arbitrator.ethAmount;
-        address erc20Token = arbitrator.erc20Token;
-        uint256 erc20Amount = erc20StakeAmounts[msg.sender];
-        address nftAddress = arbitrator.nftContract;
-        uint256[] memory nftTokenIds = arbitrator.nftTokenIds;
-
-        transferStakes(msg.sender, msg.sender);
-        emit StakeWithdrawn(msg.sender, ethAmount, erc20Token, erc20Amount, nftAddress, nftTokenIds);
+        transferStakes(msg.sender, arbitratorAssets, msg.sender);
+        emit StakeWithdrawn(msg.sender, 
+            arbitratorAssets.ethAmount,
+            arbitratorAssets.erc20Token,
+            arbitratorAssets.erc20Amount,
+            arbitratorAssets.nftContract,
+            arbitratorAssets.nftTokenIds
+        );
     }
 
     /**
@@ -626,16 +541,17 @@ contract ArbitratorManager is
         return false;
     }
 
+    function getArbitratorAssets(address arbitrator) external view returns (DataTypes.ArbitratorAssets memory) {
+        return assetManager.getArbitratorAssets(arbitrator);
+    }
+
     /**
      * @notice Get available stake amount for an arbitrator
      * @param arbitrator Address of the arbitrator
      * @return uint256 Available stake amount (ETH + NFT + erc20 in usd value)
      */
     function getAvailableStake(address arbitrator) public view override returns (uint256) {
-        DataTypes.ArbitratorInfo memory info = arbitrators[arbitrator];
-        uint256 usdValue = _calculateETHValue(info.ethAmount + getTotalNFTStakeValue(arbitrator));
-        usdValue += _calculateERC20Value(info.erc20Token, erc20StakeAmounts[arbitrator]);
-        return usdValue;
+        return assetManager.getArbitratorStakeValue(arbitrator);
     }
 
     /**
@@ -687,7 +603,7 @@ contract ArbitratorManager is
 
         // Update arbitrator state
         arbitratorInfo.activeTransactionId = transactionId;
-        
+
         emit ArbitratorWorking(arbitrator, transactionId);
     }
 
@@ -720,59 +636,29 @@ contract ArbitratorManager is
         DataTypes.ArbitratorInfo memory info = arbitrators[arbitrator];
         if (info.arbitrator == address(0)) revert (Errors.ARBITRATOR_NOT_REGISTERED);
 
-        transferStakes(arbitrator, compensationManager);
+        transferStakes(arbitrator, assetManager.getArbitratorAssets(msg.sender), compensationManager);
 
         emit ArbitratorTerminatedWithSlash(arbitrator);
     }
 
-    function transferStakes(address arbitrator, address receiver) private {
-        DataTypes.ArbitratorInfo storage arbitratorInfo = arbitrators[arbitrator];
-
+    function transferStakes(
+        address arbitrator,
+        DataTypes.ArbitratorAssets memory arbitratorAssets,
+        address receiver) private {
         // Transfer staked ETH
-        if (arbitratorInfo.ethAmount > 0) {
-            uint256 ethAmount = arbitratorInfo.ethAmount;
-            arbitratorInfo.ethAmount = 0;
-            (bool success, ) = payable(receiver).call{value: ethAmount}("");
-            if (!success) {
-                revert (Errors.TRANSFER_FAILED);
-            }
+        if (arbitratorAssets.ethAmount > 0) {
+            assetManager.withdrawETH(arbitrator, receiver, arbitratorAssets.ethAmount);
         }
 
         // Transfer staked ERC20 tokens
-        if (arbitratorInfo.erc20Token != address(0) && erc20StakeAmounts[arbitrator] > 0) {
-            uint256 erc20Amount = erc20StakeAmounts[arbitrator];
-            erc20StakeAmounts[arbitrator] = 0;
-            address token = arbitratorInfo.erc20Token;
-            arbitratorInfo.erc20Token = address(0);
-            if (!IERC20(token).transfer(receiver, erc20Amount)) {
-                revert (Errors.TRANSFER_FAILED);
-            }
+        if (arbitratorAssets.erc20Token != address(0) && arbitratorAssets.erc20Amount > 0) {
+            assetManager.withdrawERC20(arbitrator, arbitratorAssets.erc20Token, receiver, arbitratorAssets.erc20Amount);
         }
 
         // Transfer NFTs if any
-        if (arbitratorInfo.nftContract != address(0) && arbitratorInfo.nftTokenIds.length > 0) {
-            uint256[] memory nftTokenIds = arbitratorInfo.nftTokenIds;
-            arbitratorInfo.nftTokenIds = new uint256[](0);
-            arbitratorInfo.nftContract = address(0);
-
-            for (uint256 i = 0; i < nftTokenIds.length; i++) {
-                nftContract.transferFrom(
-                    address(this),
-                    receiver,
-                    nftTokenIds[i]
-                );
-            }
+        if (arbitratorAssets.nftTokenIds.length > 0) {
+            assetManager.withdrawNFTs(arbitrator, receiver);
         }
-    }
-
-    /**
-     * @notice Calculate total stake value in NFTs
-     * @param arbitrator Address of the arbitrator
-     * @return Total stake NFT value in ETH
-     */
-    function getTotalNFTStakeValue(address arbitrator) public view returns (uint256) {
-        DataTypes.ArbitratorInfo memory arbiInfo = arbitrators[arbitrator];
-        return _nftValue(arbiInfo.nftTokenIds);
     }
 
     /**
@@ -817,41 +703,6 @@ contract ArbitratorManager is
     }
 
     /**
-     * @notice Set the NFT contract address
-     * @dev Can only be called by the contract owner
-     * @param _nftContract New NFT contract address
-     */
-    function setNFTContract(address _nftContract) external onlyOwner {
-        if (_nftContract == address(0)) 
-            revert (Errors.ZERO_ADDRESS);
-        
-        address oldNFTContract = address(nftContract);
-        nftContract = IERC721(_nftContract);
-        
-        emit NFTContractUpdated(oldNFTContract, _nftContract);
-    }
-
-    /**
-     * @notice Set the token whitelist contract address
-     * @param _tokenWhitelist The new token whitelist contract address
-     */
-    function setTokenWhitelist(address _tokenWhitelist) external override onlyOwner {
-        if (_tokenWhitelist == address(0)) {
-            revert(Errors.ZERO_ADDRESS);
-        }
-        tokenWhitelist = ITokenWhitelist(_tokenWhitelist);
-        emit TokenWhitelistUpdated( _tokenWhitelist);
-    }
-
-    function setAssetOracle(address _assetOracle) external override onlyOwner {
-        if (_assetOracle == address(0)) {
-            revert(Errors.ZERO_ADDRESS);
-        }
-        assetOracle = IAssetOracle(_assetOracle);
-        emit AssetOracleUpdated(_assetOracle);
-    }
-
-    /**
      * @notice Get the arbitration fee based on the deadline
      * @param duration The duration for the transaction
      * @param arbitrator The address of the arbitrator
@@ -873,38 +724,9 @@ contract ArbitratorManager is
         uint256 btcFeeRate = arbitratorsExt[arbitrator].currentBTCFeeRate;
         if (btcFeeRate > 0) {
             uint256 ethFee = _getFee(arbitrator, btcFeeRate, duration);
-            uint256 eth_price = assetOracle.assetPrices(ETH_TOKEN);
-            uint256 btc_price = assetOracle.assetPrices(BTC_TOKEN);
-            //(eth_amount * eth_price / 1e18)/(btc_price)*1e8
-            uint256 satoshi =  (ethFee * eth_price * 1e8) / (btc_price * 1e18);
-            if(satoshi < 1000) {
-                satoshi = 1000;
-            }
-            return satoshi;
+            return assetManager.ethToBTC(ethFee);
         }
         return 0;
-    }
-
-    /**
-     * @notice Calculate the USD value of ERC20 token stake
-     * @dev Uses the AssetOracle to get token price
-     * @param token The ERC20 token address
-     * @param amount The amount of tokens
-     * @return valueInUSD The value in USD (18 decimals)
-     */
-    function _calculateERC20Value(address token, uint256 amount) internal view returns (uint256 valueInUSD) {
-        if (token == address(0) || amount == 0) {
-            return 0;
-        }
-        uint256 tokenPrice = assetOracle.assetPrices(token);
-        // AssetOracle prices are in USD with 18 decimals
-        // We need to adjust for token decimals
-        uint8 decimals = IERC20Metadata(token).decimals();
-        return (amount * tokenPrice) / (10 ** decimals);
-    }
-
-    function _calculateETHValue(uint256 amount) private view returns (uint256) {
-        return amount * assetOracle.assetPrices(ETH_TOKEN) / 1e18;
     }
 
     // Setter for ConfigManager
@@ -916,6 +738,19 @@ contract ArbitratorManager is
         emit ConfigManagerUpdated(address(_configManager));
     }
 
+    /**
+     * @notice Set the asset manager address
+     * @dev Can only be called by the contract owner
+     * @param _assetManager New asset manager address
+     */
+    function setAssetManager(address _assetManager) external onlyOwner {
+        if (_assetManager == address(0))
+            revert (Errors.ZERO_ADDRESS);
+
+        assetManager = AssetManager(_assetManager);
+        emit AssetManagerUpdated(_assetManager);
+    }
+
     // Add a gap for future storage variables
-    uint256[48] private __gap;
+    uint256[50] private __gap;
 }

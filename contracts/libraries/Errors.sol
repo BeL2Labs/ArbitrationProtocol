@@ -64,8 +64,7 @@ library Errors {
     string constant INVALID_NFT_CONTRACT = "I6";
 
     string constant NOT_COMPENSATION_MANAGER = "N7";
-    string constant TOKEN_NOT_WHITELISTED = "W0";
-    string constant TOKEN_NOT_SUPPORTED = "W1";
+    string constant TOKEN_NOT_SUPPORTED = "W0";
     string constant ALREADY_PAUSED = "A7";
     string constant NOT_PAUSED = "A8";
 

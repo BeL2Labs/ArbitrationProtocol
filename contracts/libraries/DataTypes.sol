@@ -47,10 +47,6 @@ library DataTypes {
         bool paused;               // is paused
         uint256 currentFeeRate;    // Current fee rate receive ETH
         bytes32 activeTransactionId; // Current transaction ID
-        uint256 ethAmount;         // ETH stake amount
-        address erc20Token;        // ERC20 token address
-        address nftContract;       // NFT contract address
-        uint256[] nftTokenIds;     // NFT token IDs
         address operator;          // Operator address
         bytes operatorBtcPubKey;   // Bitcoin public key
         string operatorBtcAddress; // Bitcoin address
@@ -63,6 +59,14 @@ library DataTypes {
 
     struct ArbitratorInfoExt{
         uint256 currentBTCFeeRate;// Current BTC fee rate, receive BTC
+    }
+
+    struct ArbitratorAssets {
+        uint256 ethAmount;          // ETH balance
+        address erc20Token;         // ERC20 token address
+        uint256 erc20Amount;        // ERC20 token balance
+        address nftContract;        // NFT contract address
+        uint256[] nftTokenIds;      // NFT token IDs
     }
 
     struct TransactionData {

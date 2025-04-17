@@ -134,7 +134,7 @@ interface IArbitratorManager {
     function getArbitratorInfoExt(address arbitrator) external view returns (DataTypes.ArbitratorInfoExt memory);
     function isActiveArbitrator(address arbitrator) external view returns (bool);
     function getAvailableStake(address arbitrator) external view returns (uint256);
-    function getTotalNFTStakeValue(address arbitrator) external view returns (uint256);
+    function getArbitratorAssets(address arbitrator) external view returns (DataTypes.ArbitratorAssets memory);
     function isConfigModifiable(address arbitrator) external view returns (bool);
     /**
      * @notice Get the arbitration fee based on the deadline
@@ -164,14 +164,7 @@ interface IArbitratorManager {
     function setTransactionManager(address _transactionManager) external;
     function setCompensationManager(address _compensationManager) external;
 
-    /**
-     * @notice Set the token whitelist contract address
-     * @param _tokenWhitelist The new token whitelist contract address
-     */
-    function setTokenWhitelist(address _tokenWhitelist) external;
-
-    function setNFTContract(address _nftContract) external;
-    function setAssetOracle(address _assetOracle) external;
+    function setAssetManager(address _assetManager) external;
 
     // Events
     event StakeAdded(
@@ -231,9 +224,7 @@ interface IArbitratorManager {
         uint256 btcFeeRate,
         uint256 deadline
     );
-    event NFTContractUpdated(address indexed oldNFTContract, address indexed newNFTContract);
+    event AssetManagerUpdated(address indexed assetManager);
 
-    event AssetOracleUpdated(address indexed assetOracle);
     event ConfigManagerUpdated(address indexed newConfigManager);
-    event TokenWhitelistUpdated(address indexed newTokenWhitelist);
 }

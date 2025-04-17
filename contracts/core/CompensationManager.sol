@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../interfaces/ICompensationManager.sol";
 import "../interfaces/IZkService.sol";
 import "../interfaces/ISignatureValidationService.sol";
@@ -30,6 +31,8 @@ contract CompensationManager is
         address claimer;
         address arbitrator;
         uint256 ethAmount;
+        address erc20Token;
+        uint256 erc20Amount;
         address nftContract;
         uint256[] nftTokenIds;
         uint256 totalAmount;
@@ -161,13 +164,16 @@ contract CompensationManager is
             revert (Errors.NO_STAKE_AVAILABLE);
         }
 
+        DataTypes.ArbitratorAssets memory arbitratorAssets = arbitratorManager.getArbitratorAssets(arbitrator);
         // Create compensation claim
         claims[claimId] = CompensationClaim({
             claimer: msg.sender,
             arbitrator: arbitrator,
-            ethAmount: arbitratorInfo.ethAmount,
-            nftContract: arbitratorInfo.nftContract,
-            nftTokenIds: arbitratorInfo.nftTokenIds,
+            ethAmount: arbitratorAssets.ethAmount,
+            erc20Token: arbitratorAssets.erc20Token,
+            erc20Amount: arbitratorAssets.erc20Amount,
+            nftContract: arbitratorAssets.nftContract,
+            nftTokenIds: arbitratorAssets.nftTokenIds,
             totalAmount: stakeAmount,
             withdrawn: false,
             claimType: CompensationType.IllegalSignature,
@@ -182,8 +188,10 @@ contract CompensationManager is
             claimId,
             msg.sender,
             arbitrator,
-            arbitratorInfo.ethAmount,
-            arbitratorInfo.nftTokenIds,
+            arbitratorAssets.ethAmount,
+            arbitratorAssets.erc20Token,
+            arbitratorAssets.erc20Amount,
+            arbitratorAssets.nftTokenIds,
             stakeAmount,
             transaction.compensationReceiver,
             uint8(CompensationType.IllegalSignature)
@@ -210,13 +218,16 @@ contract CompensationManager is
         uint256 stakeAmount = arbitratorManager.getAvailableStake(transactionParties.arbitrator);
         if (stakeAmount == 0) revert (Errors.NO_STAKE_AVAILABLE);
 
-        // Create compensation claim
+        // Create compensation claim 
+        DataTypes.ArbitratorAssets memory arbitratorAssets = arbitratorManager.getArbitratorAssets(transactionParties.arbitrator);
         claims[claimId] = CompensationClaim({
             claimer: msg.sender,
             arbitrator: transactionParties.arbitrator,
-            ethAmount: arbitratorInfo.ethAmount,
-            nftContract: arbitratorInfo.nftContract,
-            nftTokenIds: arbitratorInfo.nftTokenIds,
+            ethAmount: arbitratorAssets.ethAmount,
+            erc20Token: arbitratorAssets.erc20Token,
+            erc20Amount: arbitratorAssets.erc20Amount,
+            nftContract: arbitratorAssets.nftContract,
+            nftTokenIds: arbitratorAssets.nftTokenIds,
             totalAmount: stakeAmount,
             withdrawn: false,
             claimType: CompensationType.Timeout,
@@ -230,8 +241,10 @@ contract CompensationManager is
             claimId,
             msg.sender,
             transactionParties.arbitrator,
-            arbitratorInfo.ethAmount,
-            arbitratorInfo.nftTokenIds,
+            arbitratorAssets.ethAmount,
+            arbitratorAssets.erc20Token,
+            arbitratorAssets.erc20Amount,
+            arbitratorAssets.nftTokenIds,
             stakeAmount,
             transactionParties.timeoutCompensationReceiver,
             uint8(CompensationType.Timeout));
@@ -280,12 +293,15 @@ contract CompensationManager is
         if (stakeAmount == 0) revert (Errors.NO_STAKE_AVAILABLE);
 
         // Create compensation claim
+        DataTypes.ArbitratorAssets memory arbitratorAssets = arbitratorManager.getArbitratorAssets(transactionParties.arbitrator);
         claims[claimId] = CompensationClaim({
             claimer: msg.sender,
             arbitrator: transactionParties.arbitrator,
-            ethAmount: arbitratorInfo.ethAmount,
-            nftContract: arbitratorInfo.nftContract,
-            nftTokenIds: arbitratorInfo.nftTokenIds,
+            ethAmount: arbitratorAssets.ethAmount,
+            erc20Token: arbitratorAssets.erc20Token,
+            erc20Amount: arbitratorAssets.erc20Amount,
+            nftContract: arbitratorAssets.nftContract,
+            nftTokenIds: arbitratorAssets.nftTokenIds,
             totalAmount: stakeAmount,
             withdrawn: false,
             claimType: CompensationType.FailedArbitration,
@@ -299,8 +315,10 @@ contract CompensationManager is
             claimId,
             msg.sender,
             transactionParties.arbitrator,
-            arbitratorInfo.ethAmount,
-            arbitratorInfo.nftTokenIds,
+            arbitratorAssets.ethAmount,
+            arbitratorAssets.erc20Token,
+            arbitratorAssets.erc20Amount,
+            arbitratorAssets.nftTokenIds,
             stakeAmount,
             transactionParties.compensationReceiver,
             uint8(CompensationType.FailedArbitration));
@@ -325,6 +343,8 @@ contract CompensationManager is
             claimer: msg.sender,
             arbitrator: transactionParties.arbitrator,
             ethAmount: arbitratorFee,
+            erc20Token: address(0),
+            erc20Amount: 0,
             nftContract: address(0),
             nftTokenIds: new uint256[](0),
             totalAmount: arbitratorFee,
@@ -337,6 +357,8 @@ contract CompensationManager is
             msg.sender,
             transactionParties.arbitrator,
             arbitratorFee,
+            address(0),
+            0,
             new uint256[](0),
             arbitratorFee,
             arbitratorInfo.revenueETHAddress,
@@ -346,16 +368,15 @@ contract CompensationManager is
     }
 
     function getWithdrawCompensationFee(bytes32 claimId) external view override returns (uint256) {
-        CompensationClaim storage claim = claims[claimId];
         uint256 systemFeeRate = configManager.getSystemCompensationFeeRate();
-        uint256 systemFee = claim.totalAmount * systemFeeRate / 10000;
+        uint256 systemFee = claims[claimId].totalAmount * systemFeeRate / 10000;
         return systemFee;
     }
 
     function withdrawCompensation(bytes32 claimId) external override payable {
         CompensationClaim storage claim = claims[claimId];
         if (claim.withdrawn) revert (Errors.COMPENSATION_WITHDRAWN);
-        if (claim.ethAmount == 0 && claim.nftTokenIds.length == 0) revert (Errors.NO_COMPENSATION_AVAILABLE);
+        if (claim.ethAmount == 0 && claim.erc20Amount == 0 && claim.nftTokenIds.length == 0) revert (Errors.NO_COMPENSATION_AVAILABLE);
         if (claim.receivedCompensationAddress == address(0)) revert (Errors.ZERO_ADDRESS);
 
         uint256 systemFee = this.getWithdrawCompensationFee(claimId);
@@ -366,6 +387,10 @@ contract CompensationManager is
         if (claim.ethAmount > 0) {
             (bool success, ) = claim.receivedCompensationAddress.call{value: claim.ethAmount}("");
             require(success, "TransferFailed");
+        }
+
+        if (claim.erc20Amount > 0) {
+            IERC20(claim.erc20Token).transferFrom(address(this), claim.receivedCompensationAddress, claim.erc20Amount);
         }
 
         // Transfer NFT compensation
@@ -390,6 +415,8 @@ contract CompensationManager is
             msg.sender,
             claim.receivedCompensationAddress,
             claim.ethAmount,
+            claim.erc20Token,
+            claim.erc20Amount,
             claim.nftTokenIds,
             systemFee,
             excessPayment);
