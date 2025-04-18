@@ -112,7 +112,7 @@ contract ArbitratorManager is
             deadline
         );
 
-        _validateStakeAmount(assetManager.calculateETHValue(msg.value));
+        _validateStakeAmount(msg.value);
 
         assetManager.depositETH{value: msg.value}(msg.sender);
 
@@ -152,9 +152,8 @@ contract ArbitratorManager is
 
         // Calculate total NFT value
         uint256 totalNftValue = assetManager.getNftValue(tokenIds);
-        uint256 stakeValueInUSD = assetManager.calculateETHValue(totalNftValue);
         // Validate total stake
-        _validateStakeAmount(stakeValueInUSD);
+        _validateStakeAmount(totalNftValue);
 
         // Emit events
         emit StakeAdded(msg.sender, address(assetManager.nftContract()), totalNftValue, tokenIds);
@@ -206,7 +205,7 @@ contract ArbitratorManager is
         );
 
         // Calculate token value and validate stake amount 
-        _validateStakeAmount(assetManager.calculateAssetValue(token, amount));
+        _validateStakeAmount(assetManager.calculateAssetValueInETH(token, amount));
 
         assetManager.depositERC20(msg.sender, token, amount);
 
@@ -323,16 +322,16 @@ contract ArbitratorManager is
 
     /**
      * @dev Validate total stake amount
-     * @param stakeValueInUSD Total value being staked
+     * @param stakeValueInETH Total value being staked in ETH
      */
     function _validateStakeAmount(
-        uint256 stakeValueInUSD
+        uint256 stakeValueInETH
     ) internal view {
         uint256 minStake = configManager.getConfig(configManager.MIN_STAKE());
         uint256 maxStake = configManager.getConfig(configManager.MAX_STAKE());
         
-        if (stakeValueInUSD < minStake) revert (Errors.INSUFFICIENT_STAKE);
-        if (stakeValueInUSD > maxStake) revert (Errors.STAKE_EXCEEDS_MAX);
+        if (stakeValueInETH < minStake) revert (Errors.INSUFFICIENT_STAKE);
+        if (stakeValueInETH > maxStake) revert (Errors.STAKE_EXCEEDS_MAX);
     }
 
     /**
@@ -647,7 +646,7 @@ contract ArbitratorManager is
         DataTypes.ArbitratorBasicInfo memory info = arbitratorsBasic[arbitrator];
         if (info.arbitrator == address(0)) revert (Errors.ARBITRATOR_NOT_REGISTERED);
 
-        transferStakes(arbitrator, assetManager.getArbitratorAssets(msg.sender), compensationManager);
+        transferStakes(arbitrator, assetManager.getArbitratorAssets(arbitrator), compensationManager);
 
         emit ArbitratorTerminatedWithSlash(arbitrator);
     }

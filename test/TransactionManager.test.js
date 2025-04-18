@@ -39,11 +39,27 @@ describe("TransactionManager", function () {
         // Deploy ArbitratorManager
         const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager");
         arbitratorManager = await upgrades.deployProxy(ArbitratorManager, [
-            configManager.address, 
-            owner.address,  // Temporary NFT contract address
-            owner.address,   // Temporary NFT info contract address
-            mockOracle.address
+            configManager.address
         ], { initializer: 'initialize' });
+
+        const TokenWhitelist = await ethers.getContractFactory("TokenWhitelist");
+        tokenWhitelist = await TokenWhitelist.deploy();
+
+        const MockNFT = await ethers.getContractFactory("MockNFT");
+        const MockNFTInfo = await ethers.getContractFactory("MockNFTInfo");
+        mockNFT = await MockNFT.deploy();
+        mockNFTInfo = await MockNFTInfo.deploy();
+
+        const AssetManager = await ethers.getContractFactory("AssetManager");
+        assetManager = await upgrades.deployProxy(AssetManager, [
+            arbitratorManager.address,
+            mockNFT.address,
+            mockNFTInfo.address,
+            mockOracle.address,
+            tokenWhitelist.address
+        ], { initializer: 'initialize' });
+
+        await arbitratorManager.connect(owner).setAssetManager(assetManager.address);
 
         const MockSignatureValidationService = await ethers.getContractFactory("MockSignatureValidationService");
         const validationService = await MockSignatureValidationService.deploy();
@@ -106,12 +122,11 @@ describe("TransactionManager", function () {
 
         // Ensure arbitrator is active
         const isActiveArbitrator = await arbitratorManager.isActiveArbitrator(arbitrator.address);
-        let info = await arbitratorManager.getArbitratorInfo(arbitrator.address);
         expect(isActiveArbitrator).to.be.true;
 
         // Set TransactionManager as the transaction manager in ArbitratorManager
-        tx = await arbitratorManager.connect(owner).initTransactionAndCompensationManager(transactionManager.address, compensationManager.address);
-        receipt = await tx.wait();
+        await arbitratorManager.setTransactionManager(transactionManager.address);
+        await arbitratorManager.setCompensationManager(compensationManager.address);
     });
    
    describe("Transaction Registration", async function () {

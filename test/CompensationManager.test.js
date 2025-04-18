@@ -66,11 +66,22 @@ describe("CompensationManager", function () {
         const MockOracle = await ethers.getContractFactory("MockAssetOracle");
         const mockOracle = await MockOracle.deploy();
         arbitratorManager = await upgrades.deployProxy(ArbitratorManager, [
-            configManager.address,
+            configManager.address
+        ], { initializer: 'initialize' });
+
+        const TokenWhitelist = await ethers.getContractFactory("TokenWhitelist");
+        tokenWhitelist = await TokenWhitelist.deploy();
+    
+        const AssetManager = await ethers.getContractFactory("AssetManager");
+        assetManager = await upgrades.deployProxy(AssetManager, [
+            arbitratorManager.address,
             mockNFT.address,
             mockNFTInfo.address,
-            mockOracle.address
+            mockOracle.address,
+            tokenWhitelist.address
         ], { initializer: 'initialize' });
+
+        await arbitratorManager.connect(owner).setAssetManager(assetManager.address);
 
         compensationManager = await upgrades.deployProxy(CompensationManager, [
             zkService.address,
@@ -99,7 +110,9 @@ describe("CompensationManager", function () {
         await compensationManager.connect(owner).setTransactionManager(transactionManager.address);
 
         // Initialize contracts
-        await arbitratorManager.initTransactionAndCompensationManager(transactionManager.address, compensationManager.address);
+        await arbitratorManager.setTransactionManager(transactionManager.address);
+        await arbitratorManager.setCompensationManager(compensationManager.address);
+
         // Register dapp and arbitrator
         await dappRegistry.connect(owner).registerDApp(
             dapp.address,
@@ -168,7 +181,7 @@ describe("CompensationManager", function () {
             const receipt = await claimTx.wait();
             const claimEvent = receipt.events.find(e => e.event === 'CompensationClaimed');
             expect(claimEvent).to.exist;
-            expect(claimEvent.args[7]).to.equal(0); // IllegalSignature type
+            expect(claimEvent.args[9]).to.equal(0); // IllegalSignature type
 
             expect(await arbitratorManager.getAvailableStake(arbitrator.address)).to.equal(0);
 
@@ -307,6 +320,8 @@ describe("CompensationManager", function () {
                dapp.address,
                arbitrator.address,
                STAKE_AMOUNT,
+               ethers.constants.AddressZero,
+               0,
                [],
                STAKE_AMOUNT,
                compensationReceiver.address,
@@ -324,6 +339,8 @@ describe("CompensationManager", function () {
            expect(compensationClaim.claimType).to.equal(2);
            expect(compensationClaim.withdrawn).to.equal(false);
            expect(compensationClaim.ethAmount).to.equal(STAKE_AMOUNT);
+           expect(compensationClaim.erc20Token).to.equal(ethers.constants.AddressZero);
+           expect(compensationClaim.erc20Amount).to.equal(0);
            expect(compensationClaim.totalAmount).to.equal(STAKE_AMOUNT);
            expect(compensationClaim.receivedCompensationAddress).to.equal(compensationReceiver.address);
        });
@@ -439,6 +456,8 @@ describe("CompensationManager", function () {
                    dapp.address,
                    arbitrator.address,
                    STAKE_AMOUNT,
+                   ethers.constants.AddressZero,
+                   0,
                    [],
                    STAKE_AMOUNT,
                    timeoutReceiver.address,
@@ -529,6 +548,8 @@ describe("CompensationManager", function () {
                    compensationReceiver.address,
                    compensationReceiver.address,
                    STAKE_AMOUNT,
+                   ethers.constants.AddressZero,
+                   0,
                    [],
                    withdrawFee,
                    0

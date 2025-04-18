@@ -36,11 +36,22 @@ describe("ArbitratorManager", function () {
     // Deploy ArbitratorManager
     const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager");
     arbitratorManager = await upgrades.deployProxy(ArbitratorManager, [
-      configManager.address,
+      configManager.address
+    ], { initializer: 'initialize' });
+
+    const TokenWhitelist = await ethers.getContractFactory("TokenWhitelist");
+    tokenWhitelist = await TokenWhitelist.deploy();
+  
+    const AssetManager = await ethers.getContractFactory("AssetManager");
+    assetManager = await upgrades.deployProxy(AssetManager, [
+      arbitratorManager.address,
       owner.address,  // Temporary NFT contract address
       owner.address,   // Temporary NFT info contract address
-      mockOracle.address
+      mockOracle.address,
+      tokenWhitelist.address
     ], { initializer: 'initialize' });
+
+    await arbitratorManager.connect(owner).setAssetManager(assetManager.address);
   });
 
   describe("Arbitrator Registration", function () {
@@ -60,11 +71,12 @@ describe("ArbitratorManager", function () {
         )
       ).to.emit(arbitratorManager, "ArbitratorRegistered");
 
-      const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
+      const arbitratorInfo = await arbitratorManager.getArbitratorOperationInfo(arbitrator.address);
       expect(arbitratorInfo.operator).to.equal(arbitrator.address);
-      expect(arbitratorInfo.revenueETHAddress).to.equal(arbitrator.address);
       expect(arbitratorInfo.operatorBtcAddress).to.equal(btcAddress);
-      expect(arbitratorInfo.currentFeeRate).to.equal(feeRate);
+      const revenueInfo = await arbitratorManager.getArbitratorRevenueInfo(arbitrator.address);
+      expect(revenueInfo.revenueETHAddress).to.equal(arbitrator.address);
+      expect(revenueInfo.currentFeeRate).to.equal(feeRate);
     });
 
     it("Should fail to register with insufficient stake", async function () {
@@ -155,31 +167,34 @@ describe("ArbitratorManager", function () {
         let tx = await arbitratorManager.connect(arbitrator).unstake();
         tx.wait();
 
-        const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
-        expect(arbitratorInfo.ethAmount).to.equal(0);
-        expect(arbitratorInfo.nftTokenIds).to.be.an('array').that.is.empty;
+        const stakeAsset = await arbitratorManager.getArbitratorAssets(arbitrator.address);
+        expect(stakeAsset.ethAmount).to.equal(0);
+        expect(stakeAsset.nftTokenIds).to.be.an('array').that.is.empty;
       });
 
 
        it("Should get arbitrator info", async function () {
-         const arbitratorInfo = await arbitratorManager.getArbitratorInfo(arbitrator.address);
-
+         const stakeAsset = await arbitratorManager.getArbitratorAssets(arbitrator.address);
          // Validate specific fields
-         expect(arbitratorInfo.ethAmount).to.equal(stakeAmount);
-         expect(arbitratorInfo.operator).to.equal(arbitrator.address);
-         expect(arbitratorInfo.currentFeeRate).to.equal(feeRate);
-         expect(arbitratorInfo.deadLine).to.equal(deadline);
-         expect(arbitratorInfo.operatorBtcAddress).to.equal(btcAddress);
+         expect(stakeAsset.ethAmount).to.equal(stakeAmount);
+
+         const operateInfo = await arbitratorManager.getArbitratorOperationInfo(arbitrator.address);
+         expect(operateInfo.operator).to.equal(arbitrator.address);
+         expect(operateInfo.operatorBtcAddress).to.equal(btcAddress);
+
+         const basicInfo = await arbitratorManager.getArbitratorBasicInfo(arbitrator.address);
+         expect(basicInfo.deadline).to.equal(deadline);
+
+         const revenueInfo = await arbitratorManager.getArbitratorRevenueInfo(arbitrator.address);
+         expect(revenueInfo.currentFeeRate).to.equal(feeRate);
+         expect(revenueInfo.currentBTCFeeRate).to.equal(btcFeeRate);
 
          // Convert both to hex strings for comparison
-         const storedPubKeyHex = ethers.utils.hexlify(arbitratorInfo.operatorBtcPubKey);
+         const storedPubKeyHex = ethers.utils.hexlify(operateInfo.operatorBtcPubKey);
          const inputPubKeyHex = ethers.utils.hexlify(btcPubKey);
          expect(storedPubKeyHex).to.equal(inputPubKeyHex);
 
-         expect(arbitratorInfo.nftTokenIds).to.be.an('array').that.is.empty;
-
-         const arbitratorInfoExt = await arbitratorManager.getArbitratorInfoExt(arbitrator.address);
-         expect(arbitratorInfoExt.currentBTCFeeRate).to.equal(btcFeeRate);
+         expect(stakeAsset.nftTokenIds).to.be.an('array').that.is.empty;
        });
      });
 
