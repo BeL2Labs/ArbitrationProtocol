@@ -1,30 +1,30 @@
 import { Transaction as BTCTransaction } from "bitcoinjs-lib";
 import { keccak256, toBeHex } from "ethers";
+import { BehaviorSubject } from "rxjs";
 import { UTXO } from "../nownodes-api/model/types";
 import { getUTXOs } from "../nownodes-api/nownodes-api";
 import { Transaction } from "./model/transaction";
 
-const TransactionBTCFeesStorageKey = 'TransactionBTCFees';
+const TransactionBTCFeesStorageKey = 'transaction-btc-fees';
 
 const SIGHASH_ALL_BUFFER = Buffer.from([BTCTransaction.SIGHASH_ALL]);
 const DUST_VALUE = 546; // Minimum value in sats for a BTC output to be considered dust
 
 type WithdrawnBTCFees = string[]; // list of arbiter transaction ids for which the arbiter has withdrawn the fees.
 
-export function checkTransactionBTCFeesWithdrawn(transactionId: string) {
-  const withdrawnBTCFees = getWithdrawnBTCFees();
-  return withdrawnBTCFees.includes(transactionId);
-}
-
 export function markTransactionBTCFeesWithdrawn(transactionId: string) {
   const withdrawnBTCFees = getWithdrawnBTCFees();
   withdrawnBTCFees.push(transactionId);
   localStorage.setItem(TransactionBTCFeesStorageKey, JSON.stringify(withdrawnBTCFees));
+
+  withdrawnBTCFees$.next(withdrawnBTCFees);
 }
 
 function getWithdrawnBTCFees() {
   return JSON.parse(localStorage.getItem(TransactionBTCFeesStorageKey) || '[]') as WithdrawnBTCFees;
 }
+
+export const withdrawnBTCFees$ = new BehaviorSubject<WithdrawnBTCFees>(getWithdrawnBTCFees());
 
 /**
  * Checks if there are BTC fees to withdraw. We know this by checking the unique BTC fees address UTXOs.
@@ -48,6 +48,7 @@ export async function checkOnChainTransactionBTCFeesWithdrawn(transaction: Trans
 
 export type BTCFeeWithdrawlTxCreationInputs = {
   outputPubKey: string;
+  outputBtcAddress: string;
   satsPerVb: number; // sats/vb we are willing to pay to post the bitcoin tx. Usually defined by current network cost.
   inputs: {
     /**
@@ -81,7 +82,7 @@ function computeTransactionValuesForBTCFeesWithdrawal(inputs: BTCFeeWithdrawlTxC
     fakeTx.addInput(Buffer.from(input.utxo.txid, 'hex').reverse(), input.utxo.vout, 0);
     fakeTx.setWitness(index, [fakeWitnessSignature, input.script]);
   });
-  fakeTx.addOutput(Buffer.from(inputs.outputPubKey, "hex"), 0);
+  fakeTx.addOutput(Buffer.from(inputs.outputBtcAddress, "hex"), 0);
 
   // Deduce the tx cost from the expected output value
   const txSize = fakeTx.virtualSize(); // satspervb
@@ -112,7 +113,7 @@ export function generateRawTransactionForBTCFeeWithdrawal(inputs: BTCFeeWithdraw
     }
   });
 
-  tx.addOutput(Buffer.from(inputs.outputPubKey, "hex"), computedValues.realOutputValueSat);
+  tx.addOutput(Buffer.from(inputs.outputBtcAddress, "hex"), computedValues.realOutputValueSat);
 
   return tx;
 }

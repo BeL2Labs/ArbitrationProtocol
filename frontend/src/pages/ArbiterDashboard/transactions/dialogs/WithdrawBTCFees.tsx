@@ -4,12 +4,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { ArbiterInfo } from "@/services/arbiters/model/arbiter-info";
 import { btcToSats, rsSignatureToDer } from "@/services/btc/btc";
+import { useBitcoinPublicKey } from "@/services/btc/hooks/useBitcoinPublicKey";
 import { useBitcoinWalletAction } from "@/services/btc/hooks/useBitcoinWalletAction";
 import { estimateBTCFeeRate } from "@/services/mempool-api/mempool-api";
 import { UTXO } from "@/services/nownodes-api/model/types";
 import { TransactionBTCFeeInfo } from "@/services/transactions/hooks/useBTCFees";
 import { Transaction } from "@/services/transactions/model/transaction";
-import { BTCFeeWithdrawlTxCreationInputs, generateBtcFeeScript, generateRawTransactionForBTCFeeWithdrawal } from "@/services/transactions/transaction-btc-fees.service";
+import { BTCFeeWithdrawlTxCreationInputs, generateBtcFeeScript, generateRawTransactionForBTCFeeWithdrawal, markTransactionBTCFeesWithdrawn } from "@/services/transactions/transaction-btc-fees.service";
 import { useToasts } from "@/services/ui/hooks/useToasts";
 import { formatAddress } from "@/utils/formatAddress";
 import { Transaction as BTCTransaction } from "bitcoinjs-lib";
@@ -33,11 +34,14 @@ export const WithdrawBTCFeesDialog: FC<{
   btcFeesInfo: Record<string, TransactionBTCFeeInfo>,
   isOpen: boolean;
   onHandleClose: () => void;
-  onContractUpdated: () => void;
-}> = ({ arbiter, btcFeesInfo, withdrawableTransactions, isOpen, onContractUpdated, onHandleClose, ...rest }) => {
+  onTransactionSubmitted: () => void;
+}> = ({ arbiter, btcFeesInfo, withdrawableTransactions, isOpen, onHandleClose, onTransactionSubmitted, ...rest }) => {
   const { successToast } = useToasts();
   const [transactionsInProgress, setTransactionsInProgress] = useState<TransactionSignatureInProgress[]>([]);
   const allInputsSigned = useMemo(() => transactionsInProgress.find(t => !!t.signature), [transactionsInProgress]);
+  const currentPublicKey = useBitcoinPublicKey(); // Bitcoin public key of currently active wallet
+  const isSameBitcoinPublicKey = useMemo(() => arbiter.revenueBtcPubKey === currentPublicKey, [arbiter, currentPublicKey]);
+  const [publishingTx, setPublishingTx] = useState<boolean>(false);
 
   const handleTransactionSigned = useCallback((signResult: TransactionSignatureInProgress) => {
     // A transaction in the list has been signed by the arbiter wallet.
@@ -53,9 +57,12 @@ export const WithdrawBTCFeesDialog: FC<{
   }, [transactionsInProgress]);
 
   const publishWithdrawal = useCallback(async () => {
+    setPublishingTx(true);
+
     // All transactions (fee inputs) have been signed. We can publish the withdraw transaction to the bitcoin network.
     const inputs: BTCFeeWithdrawlTxCreationInputs = {
       outputPubKey: arbiter.revenueBtcPubKey,
+      outputBtcAddress: arbiter.revenueBtcAddress,
       satsPerVb: await estimateBTCFeeRate(),
       inputs: transactionsInProgress.map(info => ({
         utxo: info.utxo,
@@ -68,8 +75,18 @@ export const WithdrawBTCFeesDialog: FC<{
     const btcTxWithAllWitnesses = generateRawTransactionForBTCFeeWithdrawal(inputs, true);
     console.log("btcTxWithAllWitnesses", btcTxWithAllWitnesses.toHex());
 
-    // TODO: publish btc tx
-  }, [arbiter, transactionsInProgress]);
+    // Broadcast the transaction
+    // publishBitcoinTransaction(btcTxWithAllWitnesses.toHex());
+
+    // If transaction publishing was successful, mark all transactions as processed
+    transactionsInProgress.forEach(t => markTransactionBTCFeesWithdrawn(t.transaction.id));
+
+    successToast("Transaction published, wait for bitcoin chain confirmation");
+
+    setPublishingTx(false);
+    onHandleClose();
+    onTransactionSubmitted();
+  }, [arbiter, transactionsInProgress, successToast, onHandleClose, onTransactionSubmitted]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -116,9 +133,13 @@ export const WithdrawBTCFeesDialog: FC<{
           ))
         }
 
-        <DialogFooter>
+        <DialogFooter className="sm:justify-center">
           <EnsureWalletNetwork continuesTo="Publish transaction" btcAccountNeeded bitcoinSignDataNeeded>
-            <Button disabled={!allInputsSigned} onClick={publishWithdrawal}>Publish to withdraw</Button>
+            <Button
+              disabled={!allInputsSigned || !isSameBitcoinPublicKey || publishingTx}
+              onClick={publishWithdrawal}>
+              {isSameBitcoinPublicKey ? "Publish to withdraw" : "Wrong bitcoin address"}
+            </Button>
           </EnsureWalletNetwork>
         </DialogFooter>
       </DialogContent>
@@ -136,16 +157,21 @@ const WithdrawableTransactionRow: FC<{
   const { unsafeSignData } = useBitcoinWalletAction();
   const transactionInProgress = useMemo(() => transactionsInProgress.find(t => t.transaction.id === transaction.id), [transactionsInProgress, transaction]);
   const [isSigned, setIsSigned] = useState<boolean>(false);
+  const currentPublicKey = useBitcoinPublicKey(); // Bitcoin public key of currently active wallet
+  const isSameBitcoinPublicKey = useMemo(() => arbiter.revenueBtcPubKey === currentPublicKey, [arbiter, currentPublicKey]);
 
   const handleSignInput = useCallback(async () => {
     console.log("Starting to sign bel2 transaction as input for the btc fee withdraw transaction");
 
-    if (!transactionInProgress)
-      throw new Error(`Transaction to sign was not found in the list of transaction in progress, whats going on?`);
+    if (!transactionInProgress) {
+      console.log("Transactions in progress:", transactionInProgress);
+      throw new Error(`Transaction to sign was not found in the list of transactions in progress, whats going on?`);
+    }
 
     try {
       const inputs: BTCFeeWithdrawlTxCreationInputs = {
         outputPubKey: arbiter.revenueBtcPubKey,
+        outputBtcAddress: arbiter.revenueBtcAddress,
         satsPerVb: await estimateBTCFeeRate(),
         inputs: transactionsInProgress.map(info => ({
           utxo: info.utxo,
@@ -162,7 +188,9 @@ const WithdrawableTransactionRow: FC<{
 
       const derSignature = rsSignatureToDer(signature);
 
-      console.log("DEBUG", hashForWitness, signature, derSignature)
+      console.log("HashForWitness:", hashForWitness);
+      console.log("Signature:", signature);
+      console.log("DerSignature:", derSignature);
 
       if (derSignature) {
         setIsSigned(true); // Use a state here, not a memo, as signature contained in transactions in progress array is not dynamic 
@@ -191,7 +219,11 @@ const WithdrawableTransactionRow: FC<{
             {
               !isSigned &&
               <EnsureWalletNetwork continuesTo="Sign" btcAccountNeeded bitcoinSignDataNeeded>
-                <Button onClick={handleSignInput}>Sign</Button>
+                <Button
+                  disabled={!isSameBitcoinPublicKey}
+                  onClick={handleSignInput}>
+                  {isSameBitcoinPublicKey ? "Sign" : "Wrong bitcoin address"}
+                </Button>
               </EnsureWalletNetwork>
             }
             {

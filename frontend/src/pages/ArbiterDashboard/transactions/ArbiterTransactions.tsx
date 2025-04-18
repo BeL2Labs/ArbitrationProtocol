@@ -79,6 +79,10 @@ export default function ArbiterTransactions() {
     }
   }, [selectedTransactions]);
 
+  const handleWithdrawBTCFeesSubmitted = useCallback(() => {
+    setSelectedTransactions([]);
+  }, []);
+
   // Refresh list when page loads
   useEffect(() => {
     void refreshTransactions();
@@ -161,7 +165,8 @@ export default function ArbiterTransactions() {
         btcFeesInfo={btcFeesInfo}
         withdrawableTransactions={selectedTransactions}
         onHandleClose={() => setOpenDialog(undefined)}
-        onContractUpdated={refreshTransactions} />
+        onTransactionSubmitted={handleWithdrawBTCFeesSubmitted}
+      />
     </div>
   );
 }

@@ -77,7 +77,7 @@ export const TransactionRow: FC<{
 
     if (key === 'btcFee') {
       const feeValue = btcFeesInfo?.withdrawableAmountBTC?.toNumber();
-      return feeValue ? <TokenWithValue amount={feeValue} token={getTokenBySymbol(activeChain, "BTC")} decimals={6} /> : "N/A";
+      return feeValue !== undefined ? <TokenWithValue amount={feeValue} token={getTokenBySymbol(activeChain, "BTC")} decimals={6} /> : "N/A";
     }
 
     return value;
