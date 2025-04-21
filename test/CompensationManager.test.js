@@ -35,6 +35,7 @@ describe("CompensationManager", function () {
     }];
     const VALID_EVIDENCE = "0xa8a0b55bd00df1287445685c7c4a7e0a3df8edd82fee186cfcfda436f2924cea";
     const STAKE_AMOUNT = ethers.utils.parseEther("1.0");
+    const ERC20_STAKE_AMOUNT = ethers.utils.parseEther("1000");
 
     beforeEach(async function () {
         [owner, dapp, arbitrator, user, user1, compensationReceiver, timeoutReceiver] = await ethers.getSigners();
@@ -139,6 +140,15 @@ describe("CompensationManager", function () {
         await tx.wait();
         await btcAddressParser.connect(owner).setBtcAddressToScript(btcAddress, btcScript);
 
+        // Arbitrator stake ERC20
+        const MockERC20 = await ethers.getContractFactory("MockERC20");
+        mockERC20 = await MockERC20.deploy("MockToken", "MT");
+        await mockERC20.connect(owner).mint(arbitrator.address, ERC20_STAKE_AMOUNT);
+        await tokenWhitelist.connect(owner).addToken(mockERC20.address);
+        await mockERC20.connect(arbitrator).approve(assetManager.address, ERC20_STAKE_AMOUNT);
+
+        await arbitratorManager.connect(arbitrator).stakeERC20(mockERC20.address, ERC20_STAKE_AMOUNT);
+
         const data = {
             arbitrator: arbitrator.address,
             deadline: Math.floor(Date.now() / 1000) + duration, // 30 days from now
@@ -147,7 +157,7 @@ describe("CompensationManager", function () {
         }
         const registerTx = await transactionManager.connect(dapp).registerTransaction(
             data,
-            { value: ethers.utils.parseEther("0.1") }
+            { value: ethers.utils.parseEther("10") }
         );
         const receipt = await registerTx.wait();
         const event = receipt.events.find(e => e.event === "TransactionRegistered");
@@ -198,7 +208,8 @@ describe("CompensationManager", function () {
             expect(compensationClaim.claimType).to.equal(0);
             expect(compensationClaim.withdrawn).to.equal(false);
             expect(compensationClaim.ethAmount).to.equal(STAKE_AMOUNT);
-            expect(compensationClaim.totalAmount).to.equal(STAKE_AMOUNT);
+            expect(compensationClaim.erc20Amount).to.equal(ERC20_STAKE_AMOUNT);
+            expect(compensationClaim.totalAmount).to.equal(STAKE_AMOUNT.add(ERC20_STAKE_AMOUNT));
             expect(compensationClaim.receivedCompensationAddress).to.equal(compensationReceiver.address);
         });
 
@@ -320,10 +331,10 @@ describe("CompensationManager", function () {
                dapp.address,
                arbitrator.address,
                STAKE_AMOUNT,
-               ethers.constants.AddressZero,
-               0,
+               mockERC20.address,
+               ERC20_STAKE_AMOUNT,
                [],
-               STAKE_AMOUNT,
+               STAKE_AMOUNT.add(ERC20_STAKE_AMOUNT),
                compensationReceiver.address,
                2
            );
@@ -339,9 +350,9 @@ describe("CompensationManager", function () {
            expect(compensationClaim.claimType).to.equal(2);
            expect(compensationClaim.withdrawn).to.equal(false);
            expect(compensationClaim.ethAmount).to.equal(STAKE_AMOUNT);
-           expect(compensationClaim.erc20Token).to.equal(ethers.constants.AddressZero);
-           expect(compensationClaim.erc20Amount).to.equal(0);
-           expect(compensationClaim.totalAmount).to.equal(STAKE_AMOUNT);
+           expect(compensationClaim.erc20Token).to.equal(mockERC20.address);
+           expect(compensationClaim.erc20Amount).to.equal(ERC20_STAKE_AMOUNT);
+           expect(compensationClaim.totalAmount).to.equal(STAKE_AMOUNT.add(ERC20_STAKE_AMOUNT));
            expect(compensationClaim.receivedCompensationAddress).to.equal(compensationReceiver.address);
        });
 
@@ -456,10 +467,10 @@ describe("CompensationManager", function () {
                    dapp.address,
                    arbitrator.address,
                    STAKE_AMOUNT,
-                   ethers.constants.AddressZero,
-                   0,
+                   mockERC20.address,
+                   ERC20_STAKE_AMOUNT,
                    [],
-                   STAKE_AMOUNT,
+                   STAKE_AMOUNT.add(ERC20_STAKE_AMOUNT),
                    timeoutReceiver.address,
                    1);
 
@@ -474,7 +485,9 @@ describe("CompensationManager", function () {
            expect(compensationClaim.claimType).to.equal(1);
            expect(compensationClaim.withdrawn).to.equal(false);
            expect(compensationClaim.ethAmount).to.equal(STAKE_AMOUNT);
-           expect(compensationClaim.totalAmount).to.equal(STAKE_AMOUNT);
+           expect(compensationClaim.erc20Token).to.equal(mockERC20.address);
+           expect(compensationClaim.erc20Amount).to.equal(ERC20_STAKE_AMOUNT);
+           expect(compensationClaim.totalAmount).to.equal(STAKE_AMOUNT.add(ERC20_STAKE_AMOUNT));
            expect(compensationClaim.receivedCompensationAddress).to.equal(timeoutReceiver.address);
        });
 
@@ -538,7 +551,7 @@ describe("CompensationManager", function () {
                [valid_evidence, arbitrator.address, timeoutReceiver.address, 2]
              );
            const feeRate = await configManager.getSystemCompensationFeeRate();
-           withdrawFee = STAKE_AMOUNT.mul(feeRate).div(10000);
+           withdrawFee = STAKE_AMOUNT.add(ERC20_STAKE_AMOUNT).mul(feeRate).div(10000);
        });
 
        it("should withdraw successfully", async function () {
@@ -548,8 +561,8 @@ describe("CompensationManager", function () {
                    compensationReceiver.address,
                    compensationReceiver.address,
                    STAKE_AMOUNT,
-                   ethers.constants.AddressZero,
-                   0,
+                   mockERC20.address,
+                   ERC20_STAKE_AMOUNT,
                    [],
                    withdrawFee,
                    0
@@ -559,6 +572,8 @@ describe("CompensationManager", function () {
        it("should withdraw successfully with correct amount", async function () {
            const balanceBefore = await ethers.provider.getBalance(compensationReceiver.address);
 
+           expect(await mockERC20.balanceOf(assetManager.address)).to.equal(0);
+           expect(await mockERC20.balanceOf(compensationManager.address)).to.equal(ERC20_STAKE_AMOUNT);
            const tx = await compensationManager.connect(compensationReceiver).withdrawCompensation(claimId, {value: withdrawFee});
            const receipt = await tx.wait();
            const gasUsed = receipt.gasUsed;
@@ -567,6 +582,8 @@ describe("CompensationManager", function () {
 
            const balanceAfter = await ethers.provider.getBalance(compensationReceiver.address);
            expect(balanceAfter.sub(balanceBefore)).to.equal(STAKE_AMOUNT.sub(withdrawFee).sub(txFee));
+           expect(await mockERC20.balanceOf(compensationManager.address)).to.equal(0);
+           expect(await mockERC20.balanceOf(compensationReceiver.address)).to.equal(ERC20_STAKE_AMOUNT);
         });
 
        it("should withdraw successfully by other account with correct amount", async function () {

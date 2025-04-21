@@ -394,7 +394,7 @@ contract CompensationManager is
         }
 
         if (claim.erc20Amount > 0) {
-            IERC20(claim.erc20Token).transferFrom(address(this), claim.receivedCompensationAddress, claim.erc20Amount);
+            IERC20(claim.erc20Token).transfer(claim.receivedCompensationAddress, claim.erc20Amount);
         }
 
         // Transfer NFT compensation

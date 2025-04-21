@@ -50,18 +50,6 @@ contract ArbitratorManager is
     mapping(address => DataTypes.ArbitratorOperationInfo) private arbitratorsOperation;
     mapping(address => DataTypes.ArbitratorRevenueInfo) private arbitratorsRevenue;
 
-    /**
-     * @notice Ensures arbitrator is not currently handling any transactions
-     * @dev Prevents critical state changes while arbitrator is working
-     */
-    modifier notWorking() {
-        DataTypes.ArbitratorOperationInfo memory arbitrator = arbitratorsOperation[msg.sender];
-        if (arbitrator.activeTransactionId != bytes32(0)) {
-            revert (Errors.ARBITRATOR_NOT_WORKING);
-        }
-        _;
-    }
-
     modifier onlyTransactionManager() {
         if (msg.sender != transactionManager) 
             revert (Errors.NOT_TRANSACTION_MANAGER);
@@ -339,7 +327,7 @@ contract ArbitratorManager is
      * @dev Can only be called when not handling any transactions
      * Withdraws entire stake amount at once
      */
-    function unstake() external override nonReentrant notWorking {
+    function unstake() external override nonReentrant {
         if(!isConfigModifiable(msg.sender)) revert (Errors.STAKE_STILL_LOCKED);
 
         DataTypes.ArbitratorAssets memory arbitratorAssets = assetManager.getArbitratorAssets(msg.sender);
