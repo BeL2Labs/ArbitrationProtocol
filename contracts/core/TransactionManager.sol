@@ -9,7 +9,6 @@ import "../interfaces/IDAppRegistry.sol";
 import "../interfaces/IConfigManager.sol";
 import "../interfaces/IBTCUtils.sol";
 import "../interfaces/IBtcAddress.sol";
-import "../interfaces/IAssetOracle.sol";
 import "../interfaces/IBtcBlockHeaders.sol";
 import "../core/ConfigManager.sol";
 import "../libraries/DataTypes.sol";
@@ -25,6 +24,9 @@ contract TransactionManager is
     ReentrancyGuardUpgradeable, 
     OwnableUpgradeable 
 {
+    // Transaction ID counter
+    uint256 private _transactionIdCounter;
+
     // Contract references
     IArbitratorManager public arbitratorManager;
     IDAppRegistry public dappRegistry;
@@ -32,6 +34,7 @@ contract TransactionManager is
     IBTCUtils public btcUtils;
     address public compensationManager;
     IBtcAddress public btcAddressParser;
+    IBtcBlockHeaders public btcBlockHeaders;
 
     // Transaction storage
     mapping(bytes32 => DataTypes.TransactionData) internal transactions_data;
@@ -44,9 +47,6 @@ contract TransactionManager is
     // key is the transaction signhash
     mapping(bytes32 => bytes) public transactionSignData;
     mapping(bytes32 => bytes32) public txHashToId;
-    uint256 private _transactionIdCounter;
-    IAssetOracle public assetOracle; // deprecated
-    IBtcBlockHeaders public btcBlockHeaders;
 
     modifier onlyCompensationManager() {
         if (msg.sender != compensationManager) revert(Errors.NOT_COMPENSATION_MANAGER);
@@ -153,7 +153,9 @@ contract TransactionManager is
     }
 
     function _validateRegistration(RegisterData calldata data) internal view {
-        if (data.arbitrator == address(0) || data.compensationReceiver == address(0) || data.refundAddress == address(0)) {
+        if (data.arbitrator == address(0)
+            || data.compensationReceiver == address(0)
+            || data.refundAddress == address(0)) {
             revert(Errors.ZERO_ADDRESS);
         }
 
@@ -333,16 +335,11 @@ contract TransactionManager is
 
     function isAbleCompletedTransaction(bytes32 id) external view returns (bool) {
         DataTypes.TransactionData memory transactionData = transactions_data[id];
-        if (transactionData.status == DataTypes.TransactionStatus.ToBeActive) {
-            return true;
-        }
-        if(transactionData.status == DataTypes.TransactionStatus.Active) {
-            return true;
-        } else if (transactionData.status == DataTypes.TransactionStatus.Arbitrated) {
-            if(isSubmitArbitrationOutTime(transactionData)) {
-                return true;
-            }
-        } else if (transactionData.status == DataTypes.TransactionStatus.Submitted) {
+        if (transactionData.status == DataTypes.TransactionStatus.ToBeActive
+            || transactionData.status == DataTypes.TransactionStatus.Active
+            || transactionData.status == DataTypes.TransactionStatus.Submitted
+            || (transactionData.status == DataTypes.TransactionStatus.Arbitrated
+                && isSubmitArbitrationOutTime(transactionData))) {
             return true;
         }
 
@@ -407,11 +404,15 @@ contract TransactionManager is
         }
         // Update transaction status to Completed
         transactionData.status = DataTypes.TransactionStatus.Completed;
-        // Transfer deposited fee to compensation address
-        (bool success, ) = payable(receivedCompensationAddress).call{value: transactionData.depositedFee}("");
-        if (!success) {
-            revert(Errors.TRANSFER_FAILED);
+        uint256 depositedFee = transactionData.depositedFee;
+        if (depositedFee > 0) {
+            // Transfer deposited fee to compensation address
+            (bool success, ) = payable(receivedCompensationAddress).call{value: depositedFee}("");
+            if (!success) {
+                revert(Errors.TRANSFER_FAILED);
+            }
         }
+
         // Release arbitrator from working status
         arbitratorManager.releaseArbitrator(transactionParties.arbitrator, id);
 
@@ -420,7 +421,7 @@ contract TransactionManager is
 
     function _completeTransaction(bytes32 id, DataTypes.TransactionParties memory parties) internal returns(uint256, uint256) {
         // Get arbitrator info and calculate duration-based fee
-        (uint256 finalArbitratorFee, uint256 systemFee) = transferCompletedTransactionFee(id,parties);
+        (uint256 finalArbitratorFee, uint256 systemFee) = transferCompletedTransactionFee(id, parties);
 
         arbitratorManager.releaseArbitrator(parties.arbitrator, id);
 
@@ -431,8 +432,11 @@ contract TransactionManager is
     }
 
     function transferCompletedTransactionFee(bytes32 id, DataTypes.TransactionParties memory parties) internal returns(uint256, uint256) {
-        // Get arbitrator info and calculate duration-based fee
         DataTypes.TransactionData memory transactionData = transactions_data[id];
+        if(transactionData.depositedFee == 0) {
+            return (0, 0);
+        }
+        // Get arbitrator info and calculate duration-based fee
         uint256 duration = block.timestamp > transactionData.deadline ? transactionData.deadline - transactionData.startTime : block.timestamp - transactionData.startTime;
         uint256 arbitratorFee = arbitratorManager.getFee(duration, parties.arbitrator);
         if(arbitratorFee == 0) {
@@ -507,7 +511,7 @@ contract TransactionManager is
         if (msg.sender != transactionParties.dapp) {
             revert(Errors.NOT_AUTHORIZED);
         }
-        DataTypes.UTXO[] storage transactionUtxos = transactions_utxos[data.id];
+        DataTypes.UTXO[] memory transactionUtxos = transactions_utxos[data.id];
         if (transactionUtxos.length == 0) {
             revert(Errors.UTXO_NOT_UPLOADED);
         }
@@ -573,8 +577,6 @@ contract TransactionManager is
         bytes calldata btcTxSignature
     ) external {
         DataTypes.TransactionData storage transactionData = transactions_data[id];
-        DataTypes.TransactionParties storage transactionParties = transactions_parties[id];
-
         if (transactionData.status != DataTypes.TransactionStatus.Arbitrated) {
             revert(Errors.INVALID_TRANSACTION_STATUS);
         }
@@ -583,6 +585,7 @@ contract TransactionManager is
             revert(Errors.SUBMITTED_SIGNATURES_OUTTIME);
         }
 
+        DataTypes.TransactionParties memory transactionParties = transactions_parties[id];
         if (!arbitratorManager.isOperatorOf(transactionParties.arbitrator, msg.sender)) {
             revert(Errors.NOT_AUTHORIZED);
         }
@@ -647,12 +650,13 @@ contract TransactionManager is
     function getTransactionStatus(bytes32 id) external view override returns (DataTypes.TransactionStatus status) {
         DataTypes.TransactionData memory transaction = transactions_data[id];
         status = transaction.status;
-        if (transaction.status == DataTypes.TransactionStatus.Active && transaction.deadline < block.timestamp) {
+        if ((transaction.status == DataTypes.TransactionStatus.Active
+                && transaction.deadline < block.timestamp)
+            || (transaction.status == DataTypes.TransactionStatus.Arbitrated
+                && isSubmitArbitrationOutTime(transaction))) {
             status = DataTypes.TransactionStatus.Expired;
         }
-        if (transaction.status == DataTypes.TransactionStatus.Arbitrated && isSubmitArbitrationOutTime(transaction)) {
-            status = DataTypes.TransactionStatus.Expired;
-        }
+
         return status;
     }
 
@@ -668,8 +672,10 @@ contract TransactionManager is
     ) external override onlyCompensationManager returns (uint256 arbitratorFee, uint256 systemFee) {
         DataTypes.TransactionParties memory transactionParties = transactions_parties[id];
         DataTypes.TransactionData memory transaction = transactions_data[id];
-        if ((transaction.status == DataTypes.TransactionStatus.Active && block.timestamp > transaction.deadline)
-            || (transaction.status == DataTypes.TransactionStatus.Submitted && !arbitratorManager.isFrozenStatus(transactionParties.arbitrator))) {
+        if ((transaction.status == DataTypes.TransactionStatus.Active
+                && block.timestamp > transaction.deadline)
+            || (transaction.status == DataTypes.TransactionStatus.Submitted
+                && !arbitratorManager.isFrozenStatus(transactionParties.arbitrator))) {
             return _completeTransaction(id, transactionParties);
         } else {
             revert(Errors.INVALID_TRANSACTION_STATUS);
@@ -677,6 +683,9 @@ contract TransactionManager is
     }
 
     function setArbitratorManager(address _arbitratorManager) external onlyOwner {
+        if (_arbitratorManager == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
+        }
         arbitratorManager = IArbitratorManager(_arbitratorManager);
         emit SetArbitratorManager(_arbitratorManager);
     }
@@ -707,11 +716,13 @@ contract TransactionManager is
 
     // Setter for ConfigManager
     function setConfigManager(address _configManager) external onlyOwner {
-        require(address(_configManager) != address(0), "Invalid ConfigManager address");
+        if (_configManager == address(0)) {
+            revert(Errors.ZERO_ADDRESS);
+        }
         configManager = IConfigManager(_configManager);
         emit ConfigManagerUpdated(address(_configManager));
     }
 
     // Add a gap for future storage variables
-    uint256[46] private __gap;
+    uint256[50] private __gap;
 }
