@@ -8,20 +8,26 @@ The TransactionManager is a core component in the arbitration protocol responsib
 ### 1. Transaction Registration and Management
 
 ```solidity
+struct RegisterData {
+    address arbitrator;
+    uint256 deadline;
+    address compensationReceiver;
+    address refundAddress;
+}
+
 function registerTransaction(
-    address arbitrator,
-    uint256 deadline,
-    address compensationReceiver,
-    address refundAddress
-) external payable returns (bytes32 id);
+    RegisterData calldata data
+) external payable returns (bytes32 id, string memory btcFeeAddress);
 ```
 Registers a new transaction.
-- `arbitrator`: Selected arbitrator address
-- `deadline`: Transaction deadline timestamp
-- `compensationReceiver`: Address to receive compensation if needed
-- `refundAddress`: Address to receive refunds
+- `data.arbitrator`: Selected arbitrator address
+- `data.deadline`: Transaction deadline timestamp
+- `data.compensationReceiver`: Address to receive compensation if needed
+- `data.refundAddress`: Address to receive refunds
 - `msg.value`: Must equal the required registration fee, can be queried via `getRegisterTransactionFee`
-- Returns: Unique transaction ID
+- Returns:
+  - `id`: Unique transaction ID
+  - `btcFeeAddress`: Bitcoin address for arbitration fee payment
 
 ```solidity
 function uploadUTXOs(
@@ -101,6 +107,33 @@ Calculates the required fee for registering a transaction.
 ### 4. Fee Management
 
 ```solidity
+function setDAppBtcFeeTransaction(
+    bytes32 id,
+    bytes calldata rawData,
+    bytes32[] calldata merkleProof,
+    uint256 index,
+    uint32 blockHeight
+) external;
+```
+Set the Bitcoin transaction that pays the arbitrator's fee.
+- `id`: Transaction ID in the arbitration protocol
+- `rawData`: Raw Bitcoin transaction data
+- `merkleProof`: Merkle proof array proving transaction inclusion
+- `index`: Index of the transaction in the merkle tree
+- `blockHeight`: Bitcoin block height containing this transaction
+This function verifies:
+1. The transaction output matches the P2SH address generated during registration
+2. The output amount meets the required fee
+3. The transaction is included in the specified block through merkle proof
+
+```solidity
+function closeUnpaidTransaction(bytes32 id) external;
+```
+Close a transaction that has not paid the BTC fee within the timeout period.
+- `id`: Transaction ID
+- Only callable by the assigned arbitrator of the transaction
+
+```solidity
 function transferArbitrationFee(
     bytes32 id
 ) external returns (uint256 arbitratorFee, uint256 systemFee);
@@ -128,7 +161,10 @@ event TransactionRegistered(
     address indexed arbitrator,
     uint256 deadline,
     uint256 depositFee,
-    address compensationReceiver
+    uint256 btcFee,
+    address compensationReceiver,
+    uint256 timestamp,
+    string btcFeeAddress
 );
 
 event UTXOsUploaded(
@@ -148,6 +184,13 @@ event ArbitrationRequested(
     bytes rawData,
     bytes script,
     address timeoutCompensationReceiver
+);
+
+event TransactionClosedUnpaid(
+    bytes32 indexed txId,
+    address indexed dapp,
+    address indexed arbitrator,
+    uint256 timestamp
 );
 
 event ArbitrationSubmitted(
@@ -171,6 +214,24 @@ event DepositFeeTransfer(
     uint256 arbitratorFee,
     uint256 systemFee,
     uint256 refundedFee
+);
+
+event DAppFeeTransactionSet(
+    bytes32 indexed id,
+    bytes32 indexed txHash,
+    uint256 blockHeight
+);
+
+event BtcBlockHeadersChanged(
+    address indexed newBtcBlockHeaders
+);
+
+event BtcUtilsChanged(
+    address indexed newBtcUtils
+);
+
+event ConfigManagerUpdated(
+    address indexed newConfigManager
 );
 ```
 

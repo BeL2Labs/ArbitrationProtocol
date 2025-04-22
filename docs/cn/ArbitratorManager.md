@@ -1,7 +1,7 @@
 # 仲裁人管理器 (ArbitratorManager)
 
 ## 概述
-ArbitratorManager 负责管理仲裁人的注册、质押、状态变更等操作。仲裁人需要质押 ETH 或 NFT 才能参与仲裁工作，其状态和活动在协议中被严格管理。
+ArbitratorManager 负责管理仲裁人的注册、质押、状态变更等操作。仲裁人需要质押 ETH、ERC20 代币或 NFT 才能参与仲裁工作，其状态和活动在协议中被严格管理。质押资产的价值由 AssetManager 合约评估和管理。
 
 ## 核心功能
 
@@ -9,6 +9,7 @@ ArbitratorManager 负责管理仲裁人的注册、质押、状态变更等操�
 
 ```solidity
 function stakeETH() external payable;
+function stakeERC20(address token, uint256 amount) external;
 function stakeNFT(uint256[] calldata tokenIds) external;
 function unstake() external;  // 取回所有质押资产
 ```
@@ -20,6 +21,7 @@ function registerArbitratorByStakeETH(
     string calldata defaultBtcAddress,
     bytes calldata defaultBtcPubKey,
     uint256 feeRate,
+    uint256 btcFeeRate,
     uint256 deadline
 ) external payable;
 ```
@@ -27,8 +29,32 @@ function registerArbitratorByStakeETH(
 - `defaultBtcAddress`: 接收收益的比特币地址，同时设置为收益地址和操作地址
 - `defaultBtcPubKey`: 对应的比特币公钥，同时设置为收益公钥和操作公钥
 - `feeRate`: 服务费率（放大10000倍）
+- `btcFeeRate`: BTC服务费率（放大10000倍）
 - `deadline`: 服务截止时间戳（0表示无截止时间）
 - 注册时必须满足最低ETH质押要求
+- 默认将发送者设置为操作者和收益接收者
+- 注册成功后会触发 ArbitratorRegistered 事件
+
+```solidity
+function registerArbitratorByStakeERC20(
+    address token,
+    uint256 amount,
+    string calldata defaultBtcAddress,
+    bytes calldata defaultBtcPubKey,
+    uint256 feeRate,
+    uint256 btcFeeRate,
+    uint256 deadline
+) external;
+```
+使用 ERC20 代币质押注册为仲裁人：
+- `token`: 要质押的 ERC20 代币合约地址
+- `amount`: 要质押的代币数量
+- `defaultBtcAddress`: 接收收益的比特币地址，同时设置为收益地址和操作地址
+- `defaultBtcPubKey`: 对应的比特币公钥，同时设置为收益公钥和操作公钥
+- `feeRate`: ETH服务费率（放大10000倍）
+- `btcFeeRate`: BTC服务费率（放大10000倍）
+- `deadline`: 服务截止时间戳（0表示无截止时间）
+- 必须质押足够价值的代币
 - 默认将发送者设置为操作者和收益接收者
 - 注册成功后会触发 ArbitratorRegistered 事件
 
@@ -38,6 +64,7 @@ function registerArbitratorByStakeNFT(
     string calldata defaultBtcAddress,
     bytes calldata defaultBtcPubKey,
     uint256 feeRate,
+    uint256 btcFeeRate,
     uint256 deadline
 ) external;
 ```
@@ -46,6 +73,7 @@ function registerArbitratorByStakeNFT(
 - `defaultBtcAddress`: 接收收益的比特币地址，同时设置为收益地址和操作地址
 - `defaultBtcPubKey`: 对应的比特币公钥，同时设置为收益公钥和操作公钥
 - `feeRate`: 服务费率（放大10000倍）
+- `btcFeeRate`: BTC服务费率（放大10000倍）
 - `deadline`: 服务截止时间戳（0表示无截止时间）
 - 必须质押足够数量的NFT
 - 默认将发送者设置为操作者和收益接收者
@@ -123,30 +151,36 @@ function terminateArbitratorWithSlash(address arbitrator) external;
 ```solidity
 function setTransactionManager(address _transactionManager) external;
 function setCompensationManager(address _compensationManager) external;
-function initTransactionAndCompensationManager(
-    address _transactionManager, 
-    address _compensationManager
-) external;
-function setNFTContract(address _nftContract) external;
+function setAssetManager(address _assetManager) external;
 ```
 
 ### 查询功能
 
 ```solidity
-function getArbitratorInfo(address arbitrator) external view returns (DataTypes.ArbitratorInfo memory);
+function getArbitratorBasicInfo(address arbitrator) external view returns (DataTypes.ArbitratorBasicInfo memory);
+function getArbitratorRevenueInfo(address arbitrator) external view returns (DataTypes.ArbitratorRevenueInfo memory);
+function getArbitratorOperationInfo(address arbitrator) external view returns (DataTypes.ArbitratorOperationInfo memory);
+function getArbitratorAssets(address arbitrator) external view returns (DataTypes.ArbitratorAssets memory);
 function getAvailableStake(address arbitrator) external view returns (uint256);
-function getTotalNFTStakeValue(address arbitrator) external view returns (uint256);
+function getFee(uint256 duration, address arbitrator) external view returns (uint256 fee);
+function getBtcFee(uint256 duration, address arbitrator) external view returns (uint256 fee);
 function isConfigModifiable(address arbitrator) external view returns (bool);
 function isActiveArbitrator(address arbitrator) external view returns (bool);
 function isOperatorOf(address arbitrator, address operator) external view returns (bool);
+function isPaused(address arbitrator) external view returns (bool);
 ```
 
-- `getArbitratorInfo`: 获取仲裁人的详细信息
+- `getArbitratorBasicInfo`: 获取仲裁人的基本信息
+- `getArbitratorRevenueInfo`: 获取仲裁人的收益信息
+- `getArbitratorOperationInfo`: 获取仲裁人的操作信息
+- `getArbitratorAssets`: 获取仲裁人的质押资产信息
 - `getAvailableStake`: 获取可用的质押金额
-- `getTotalNFTStakeValue`: 获取NFT质押总价值
+- `getFee`: 根据交易时长获取 ETH 仲裁费用
+- `getBtcFee`: 根据交易时长获取 BTC 仲裁费用
 - `isConfigModifiable`: 检查是否可以修改配置
 - `isActiveArbitrator`: 检查仲裁人是否处于活跃状态
 - `isOperatorOf`: 检查给定地址是否为仲裁人的操作者
+- `isPaused`: 检查仲裁人是否处于暂停状态
 
 ### 事件
 
@@ -167,8 +201,11 @@ event StakeAdded(
 
 event StakeWithdrawn(
     address indexed arbitrator,
-    address indexed assetAddress,  // 0x0 for ETH
-    uint256 amount
+    uint256 ethAmount,
+    address indexed erc20Address,
+    uint256 erc20Amount,
+    address indexed nftAddress,
+    uint256[] nftTokenIds
 );
 
 // 配置更新事件
@@ -205,9 +242,23 @@ event ArbitratorWorking(address indexed arbitrator, bytes32 indexed transactionI
 event ArbitratorReleased(address indexed arbitrator, bytes32 indexed transactionId);
 
 // 管理员配置事件
-event TransactionManagerUpdated(address indexed oldManager, address indexed newManager);
-event CompensationManagerUpdated(address indexed oldManager, address indexed newManager);
-event NFTContractUpdated(address indexed oldNFTContract, address indexed newNFTContract);
+event TransactionManagerUpdated(
+    address indexed oldManager,
+    address indexed newManager
+);
+
+event CompensationManagerUpdated(
+    address indexed oldManager,
+    address indexed newManager
+);
+
+event AssetManagerUpdated(
+    address indexed assetManager
+);
+
+event ConfigManagerUpdated(
+    address indexed newConfigManager
+);
 
 // 仲裁人注册事件
 event ArbitratorRegistered(
@@ -217,5 +268,6 @@ event ArbitratorRegistered(
     string btcAddress,
     bytes btcPubKey,
     uint256 feeRate,
+    uint256 btcFeeRate,
     uint256 deadline
 );

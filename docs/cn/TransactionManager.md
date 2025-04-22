@@ -8,20 +8,26 @@ TransactionManager 是仲裁协议中负责管理跨链交易生命周期的核�
 ### 1. 交易注册与管理
 
 ```solidity
+struct RegisterData {
+    address arbitrator;
+    uint256 deadline;
+    address compensationReceiver;
+    address refundAddress;
+}
+
 function registerTransaction(
-    address arbitrator,
-    uint256 deadline,
-    address compensationReceiver,
-    address refundAddress
-) external payable returns (bytes32 id);
+    RegisterData calldata data
+) external payable returns (bytes32 id, string memory btcFeeAddress);
 ```
 注册新的交易。
-- `arbitrator`: 选定的仲裁人地址
-- `deadline`: 交易截止时间戳
-- `compensationReceiver`: 补偿接收地址
-- `refundAddress`: 退款地址
+- `data.arbitrator`: 选定的仲裁人地址
+- `data.deadline`: 交易截止时间戳
+- `data.compensationReceiver`: 补偿接收地址
+- `data.refundAddress`: 退款地址
 - `msg.value`: 必须等于所需的注册费用，可通过 `getRegisterTransactionFee` 查询
-- 返回值: 唯一交易ID
+- 返回值: 
+  - `id`: 唯一交易ID
+  - `btcFeeAddress`: 仲裁费用的比特币地址
 
 ```solidity
 function uploadUTXOs(
@@ -101,6 +107,33 @@ function getRegisterTransactionFee(uint256 deadline, address arbitrator) externa
 ### 4. 费用管理
 
 ```solidity
+function setDAppBtcFeeTransaction(
+    bytes32 id,
+    bytes calldata rawData,
+    bytes32[] calldata merkleProof,
+    uint256 index,
+    uint32 blockHeight
+) external;
+```
+设置支付仲裁费用的比特币交易。
+- `id`: 仲裁协议中的交易ID
+- `rawData`: 原始比特币交易数据
+- `merkleProof`: 验证交易包含在区块中的默克尔证明
+- `index`: 交易在默克尔树中的索引
+- `blockHeight`: 包含该交易的比特币区块高度
+该函数会验证：
+1. 交易输出与注册时生成的 P2SH 地址匹配
+2. 输出金额满足所需费用
+3. 通过默克尔证明验证交易包含在指定区块中
+
+```solidity
+function closeUnpaidTransaction(bytes32 id) external;
+```
+关闭未在超时时间内支付比特币费用的交易。
+- `id`: 交易ID
+- 仅可由该交易的指定仲裁人调用
+
+```solidity
 function transferArbitrationFee(
     bytes32 id
 ) external returns (uint256 arbitratorFee, uint256 systemFee);
@@ -128,7 +161,10 @@ event TransactionRegistered(
     address indexed arbitrator,
     uint256 deadline,
     uint256 depositFee,
-    address compensationReceiver
+    uint256 btcFee,
+    address compensationReceiver,
+    uint256 timestamp,
+    string btcFeeAddress
 );
 
 event UTXOsUploaded(
@@ -148,6 +184,13 @@ event ArbitrationRequested(
     bytes rawData,
     bytes script,
     address timeoutCompensationReceiver
+);
+
+event TransactionClosedUnpaid(
+    bytes32 indexed txId,
+    address indexed dapp,
+    address indexed arbitrator,
+    uint256 timestamp
 );
 
 event ArbitrationSubmitted(
@@ -171,6 +214,24 @@ event DepositFeeTransfer(
     uint256 arbitratorFee,
     uint256 systemFee,
     uint256 refundedFee
+);
+
+event DAppFeeTransactionSet(
+    bytes32 indexed id,
+    bytes32 indexed txHash,
+    uint256 blockHeight
+);
+
+event BtcBlockHeadersChanged(
+    address indexed newBtcBlockHeaders
+);
+
+event BtcUtilsChanged(
+    address indexed newBtcUtils
+);
+
+event ConfigManagerUpdated(
+    address indexed newConfigManager
 );
 ```
 

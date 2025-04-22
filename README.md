@@ -41,7 +41,7 @@ The Decentralized Arbitration Protocol is a trustless guarantee system for Bitco
    - Access management
 
 2. **Arbiter Management**
-   - Arbiter registration with ETH/DPoS NFT staking
+   - Arbiter registration with ETH/DPoS NFT/ERC20 staking
    - Bitcoin credential management
    - Performance tracking
 
@@ -78,7 +78,7 @@ contracts/
 
 ## Security Features
 
-- Staked Assets: Arbiters must stake ETH or DPoS voting NFTs
+- Staked Assets: Arbiters must stake ETH or DPoS voting NFTs or ERC20 tokens
 - Zero-Knowledge Proofs: Automated verification of claims
 - Smart Contract Automation: No manual intervention needed
 - Multi-Chain Support: Works across ESC and other EVM chains

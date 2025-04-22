@@ -113,6 +113,8 @@ event CompensationClaimed(
     address indexed claimer,
     address indexed arbitrator,
     uint256 ethAmount,
+    address erc20Token,
+    uint256 erc20Amount,
     uint256[] nftTokenIds,
     uint256 totalAmount,
     address receivedCompensationAddress,
@@ -125,6 +127,8 @@ event CompensationWithdrawn(
     address indexed claimer,
     address indexed receivedCompensationAddress,
     uint256 ethAmount,
+    address erc20Token,
+    uint256 erc20Amount,
     uint256[] nftTokenIds,
     uint256 systemFee,
     uint256 excessPaymenttoClaimer
@@ -145,6 +149,8 @@ struct CompensationClaim {
     address claimer;              // 申请人地址
     address arbitrator;           // 仲裁人地址
     uint256 ethAmount;           // ETH补偿金额
+    address erc20Token;          // ERC20代币合约地址
+    uint256 erc20Amount;         // ERC20代币补偿金额
     address nftContract;         // NFT合约地址
     uint256[] nftTokenIds;       // NFT代币ID列表
     uint256 totalAmount;         // 总补偿金额
@@ -159,3 +165,113 @@ enum CompensationType {
     FailedArbitration, // 仲裁失败
     ArbitratorFee      // 仲裁人费用
 }
+
+## 功能特点
+- 非法签名补偿管理
+- 超时补偿管理
+- 仲裁失败补偿管理
+- 仲裁人费用补偿管理
+- 补偿计算和分配
+- 补偿申请状态追踪
+
+## 工作流程
+
+### 1. 非法签名补偿流程
+1. 检测到仲裁人提交了非法签名
+2. 准备证据（对此相关的btc交易的zk证明）
+3. 提交补偿申请，包含仲裁人地址和证据
+4. 等待申请审核
+5. 审核通过后提取补偿
+
+### 2. 超时补偿流程
+1. 交易超过截止时间
+2. 使用交易ID提交超时补偿申请
+3. 系统自动验证超时状态
+4. 验证通过后提取补偿
+
+### 3. 仲裁失败补偿流程
+1. 检测到仲裁结果出现错误
+2. 准备错误证据（仲裁交易签名验证不过的zk证明）
+3. 提交仲裁失败补偿申请
+4. 等待申请审核
+5. 审核通过后提取补偿
+
+### 4. 仲裁人费用补偿流程
+1. 仲裁人提交有效签名
+2. 锁定期已过
+3. 交易未完成
+4. 提交仲裁人费用补偿申请
+5. 验证通过后提取补偿
+
+## 安全考虑
+1. 使用加密安全的哈希算法处理交易ID和证据
+2. 严格的权限控制，确保只有授权用户可以申请补偿
+3. 多层次的补偿机制保护用户权益
+4. 使用超时机制防止交易无限期挂起
+5. 使用费用机制防止垃圾申请
+6. 状态检查防止重复操作
+
+## 示例代码
+
+### 示例1：申请非法签名补偿
+```javascript
+// 1. 准备证据对此相关的btc交易的zk证明）
+const evidence; // TODO: generate from zkService
+
+// 2. 提交补偿申请
+const claimId = await compensationManager.claimIllegalSignatureCompensation(
+    arbitrator,
+    evidence
+);
+
+// 3. 查询并提取补偿
+const amount = await compensationManager.getClaimableAmount(claimId);
+if (amount > 0) {
+    await compensationManager.withdrawCompensation(claimId);
+}
+```
+
+### 示例2：申请超时补偿
+```javascript
+// 1. 提交超时补偿申请
+const claimId = await compensationManager.claimTimeoutCompensation(txId);
+
+// 2. 查询补偿金额
+const amount = await compensationManager.getClaimableAmount(claimId);
+
+// 3. 提取补偿
+if (amount > 0) {
+    await compensationManager.withdrawCompensation(claimId);
+}
+```
+
+### 示例3：申请仲裁失败补偿
+```javascript
+// 1. 准备证据（仲裁交易签名验证不过的zk证明）
+const evidence; // TODO: generate from signature Validation Service
+
+// 2. 提交补偿申请
+const claimId = await compensationManager.claimFailedArbitrationCompensation(
+    evidence
+);
+
+// 3. 查询并提取补偿
+const amount = await compensationManager.getClaimableAmount(claimId);
+if (amount > 0) {
+    await compensationManager.withdrawCompensation(claimId);
+}
+```
+
+### 示例4：申请仲裁人费用补偿
+```javascript
+// 1. 提交仲裁人费用补偿申请
+const claimId = await compensationManager.claimArbitratorFee(txId);
+
+// 2. 查询补偿金额
+const amount = await compensationManager.getClaimableAmount(claimId);
+
+// 3. 提取补偿
+if (amount > 0) {
+    await compensationManager.withdrawCompensation(claimId);
+}
+```

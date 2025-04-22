@@ -113,6 +113,8 @@ event CompensationClaimed(
     address indexed claimer,
     address indexed arbitrator,
     uint256 ethAmount,
+    address erc20Token,
+    uint256 erc20Amount,
     uint256[] nftTokenIds,
     uint256 totalAmount,
     address receivedCompensationAddress,
@@ -125,6 +127,8 @@ event CompensationWithdrawn(
     address indexed claimer,
     address indexed receivedCompensationAddress,
     uint256 ethAmount,
+    address erc20Token,
+    uint256 erc20Amount,
     uint256[] nftTokenIds,
     uint256 systemFee,
     uint256 excessPaymenttoClaimer
@@ -145,6 +149,8 @@ struct CompensationClaim {
     address claimer;              // Claimer address
     address arbitrator;           // Arbitrator address
     uint256 ethAmount;           // ETH compensation amount
+    address erc20Token;          // ERC20 token contract address
+    uint256 erc20Amount;         // ERC20 token compensation amount
     address nftContract;         // NFT contract address
     uint256[] nftTokenIds;       // NFT token ID list
     uint256 totalAmount;         // Total compensation amount
@@ -173,7 +179,7 @@ enum CompensationType {
 
 ### 1. Illegal Signature Compensation Process
 1. Detect illegal signature submission by the arbitrator
-2. Prepare evidence (e.g., proof of signature verification failure)
+2. Prepare evidence (ZK proof of the related BTC transaction)
 3. Submit a compensation claim with the arbitrator's address and evidence
 4. Wait for claim review
 5. Withdraw compensation after approval
@@ -186,7 +192,7 @@ enum CompensationType {
 
 ### 3. Failed Arbitration Compensation Process
 1. Detect an error in the arbitration result
-2. Collect evidence of the error
+2. Prepare evidence (ZK proof of signature validation failure)
 3. Submit a failed arbitration compensation claim
 4. Wait for claim review
 5. Withdraw compensation after approval
@@ -199,47 +205,28 @@ enum CompensationType {
 5. Withdraw compensation after verification
 
 ## Security Considerations
-1. Evidence verification mechanism to prevent false claims
-2. Compensation amount cap control
-3. Duplicate claim check
-4. Authorization verification for secure withdrawal
-5. Status tracking to prevent duplicate withdrawals
-
-## Interaction with Other Components
-1. TransactionManager: Retrieve transaction information and status
-2. ArbitratorManager: Verify arbitrator information
-3. ConfigManager: Retrieve compensation-related configurations
-4. DAppRegistry: Verify DApp status
-
-## Best Practices
-1. Submit compensation claims promptly
-2. Provide sufficient evidence support
-3. Save compensation claim ID
-4. Regularly check compensation status
-5. Verify the correctness of the compensation amount
+1. Use cryptographically secure hash algorithms for transaction IDs and evidence
+2. Strict permission control to ensure only authorized users can claim compensation
+3. Multi-layer compensation mechanism to protect user rights
+4. Use timeout mechanism to prevent indefinite transaction suspension
+5. Use fee mechanism to prevent spam claims
+6. Status checks to prevent duplicate operations
 
 ## Usage Examples
 
 ### Example 1: Apply for Illegal Signature Compensation
 ```javascript
-// 1. Prepare evidence
-const evidence = ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(
-        ["bytes", "bytes"],
-        [btcTx, invalidSignature]
-    )
-);
+// 1. Prepare evidence (ZK proof of the related BTC transaction)
+const evidence; // TODO: generate from zkService
 
 // 2. Submit compensation claim
 const claimId = await compensationManager.claimIllegalSignatureCompensation(
-    arbitratorAddress,
+    arbitrator,
     evidence
 );
 
-// 3. Query compensation amount
+// 3. Query and withdraw compensation
 const amount = await compensationManager.getClaimableAmount(claimId);
-
-// 4. Withdraw compensation
 if (amount > 0) {
     await compensationManager.withdrawCompensation(claimId);
 }
@@ -261,13 +248,8 @@ if (amount > 0) {
 
 ### Example 3: Apply for Failed Arbitration Compensation
 ```javascript
-// 1. Prepare evidence
-const evidence = ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(
-        ["bytes32", "string"],
-        [txId, "Arbitration result conflicts with on-chain state"]
-    )
-);
+// 1. Prepare evidence (ZK proof of signature validation failure)
+const evidence; // TODO: generate from signature Validation Service
 
 // 2. Submit compensation claim
 const claimId = await compensationManager.claimFailedArbitrationCompensation(
