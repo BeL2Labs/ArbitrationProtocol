@@ -1,4 +1,4 @@
-import { Transaction as BTCTransaction } from "bitcoinjs-lib";
+import { address, Transaction as BTCTransaction, networks } from "bitcoinjs-lib";
 import { keccak256, toBeHex } from "ethers";
 import { BehaviorSubject } from "rxjs";
 import { UTXO } from "../nownodes-api/model/types";
@@ -67,7 +67,7 @@ export type BTCFeeWithdrawlTxCreationInputs = {
 }
 
 function computeTransactionValuesForBTCFeesWithdrawal(inputs: BTCFeeWithdrawlTxCreationInputs) {
-  // First create a fake TX with placeholder witnesses, to simulate the largest 
+  // First create a fake TX with placeholder witnesses, to simulate the largest
   // possible fully signed transaction, to ensure we compute enough gas
   const fakeTx = new BTCTransaction();
   fakeTx.version = 2;
@@ -97,9 +97,8 @@ export function generateRawTransactionForBTCFeeWithdrawal(inputs: BTCFeeWithdraw
   const computedValues = computeTransactionValuesForBTCFeesWithdrawal(inputs);
   console.log("computedValues", computedValues)
 
-  // TMP - RESTORE THIS
-  // if (computedValues.realOutputValueSat <= DUST_VALUE)
-  //   throw new Error(`Transaction output value is too small (dust). Planning to output ${computedValues.realOutputValueSat} sats, which is smaller than dust's ${computedValues.txCostSat} sats.`);
+  if (computedValues.realOutputValueSat <= DUST_VALUE)
+    throw new Error(`Transaction output value is too small (dust). Planning to output ${computedValues.realOutputValueSat} sats, which is smaller than dust's ${computedValues.txCostSat} sats.`);
 
   const tx = new BTCTransaction();
   tx.version = 2;
@@ -109,23 +108,25 @@ export function generateRawTransactionForBTCFeeWithdrawal(inputs: BTCFeeWithdraw
     if (addWitnesses) {
       if (!input.signature)
         throw new Error(`Missing signature for input at index ${index}`);
-      tx.setWitness(index, [Buffer.from(input.signature, "hex"), input.script]);
+      tx.setWitness(index, [Buffer.concat([Buffer.from(input.signature, 'hex'), SIGHASH_ALL_BUFFER]), input.script])
     }
   });
 
-  tx.addOutput(Buffer.from(inputs.outputBtcAddress, "hex"), computedValues.realOutputValueSat);
+  const network = networks.bitcoin;
+  const scriptAddress = address.toOutputScript(inputs.outputBtcAddress, network);
+  tx.addOutput(scriptAddress, computedValues.realOutputValueSat);
 
   return tx;
 }
 
 /**
- * Generates the script that needs to be used to sign every btc fee input from which an arbiter wants to withdraw 
+ * Generates the script that needs to be used to sign every btc fee input from which an arbiter wants to withdraw
  * BTC fees from.
  */
 export function generateBtcFeeScript(outputPubKey: string, transaction: Transaction): Buffer {
   const pubkey = outputPubKey;
   const id = transaction.id;
-  const sender = transaction.createdBy;
+  let sender = transaction.dapp;
   const timestamp = transaction.startTime.unix();
 
   // Convert inputs to Buffers
@@ -135,7 +136,7 @@ export function generateBtcFeeScript(outputPubKey: string, transaction: Transact
 
   const senderBuf = Buffer.from(sender.slice(2), 'hex'); // Remove '0x' prefix
   const idBuf = Buffer.from(id.slice(2), 'hex'); // Remove '0x' prefix if present
-  const pubkeyBuf = Buffer.from(pubkey.slice(2), 'hex'); // Remove '0x' prefix
+  const pubkeyBuf = Buffer.from(pubkey, 'hex'); // pubkey without '0x' prefix
 
   const data = Buffer.concat([timestampBuf, senderBuf, idBuf]);
 
@@ -151,6 +152,11 @@ export function generateBtcFeeScript(outputPubKey: string, transaction: Transact
     pubkeyBuf,                   // The actual public key
     Buffer.from('ac', 'hex')   // OP_CHECKSIG
   ]);
+
+  // DEBUG: the address is the arbitratorFeeBtcAddress
+  // const p2wsh = payments.p2wsh({ redeem: { output: lockScript, network:  networks.bitcoin } });
+  // const address = p2wsh.address;
+  // console.log("address", address);
 
   return lockScript;
 }
