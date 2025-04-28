@@ -23,15 +23,15 @@ module.exports = {
     artifacts: "./artifacts"
   },
   networks: {
-    prod: {
+    stake_prod: {
       url: "https://api.elastos.io/esc",
       accounts: [...(prod_key ? [prod_key, operator_key] : [])]
     },
-    stage: {
+    stake_mainnet: {
       url: "https://api.elastos.io/esc",
       accounts: [...(staging_key ? [staging_key, operator_key] : [])]
     },
-    testnet: {
+    stake_testnet: {
       url: "https://api-testnet.elastos.io/esc",
       accounts: [...(staging_key ? [staging_key, operator_key] : [])],
     },
@@ -44,5 +44,29 @@ module.exports = {
       ],
       blockGasLimit: 8000000
     }
-  }
+  },
+  etherscan: {
+    apiKey: {
+      'stake_testnet': 'empty',
+      "stake_mainnet": "empty",
+    },
+    customChains: [
+      {
+        network: "stake_testnet",
+        chainId: 21,
+        urls: {
+          apiURL: "https://esc-testnet.elastos.io:443/api",
+          browserURL: "https://esc-testnet.elastos.io:443"
+        }
+      },
+      {
+        network: "stake_mainnet",
+        chainId: 20,
+        urls: {
+          apiURL: "https://esc.elastos.io:443/api",
+          browserURL: "https://esc.elastos.io:443"
+        }
+      }
+    ]
+  },
 };

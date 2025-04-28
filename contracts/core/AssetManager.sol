@@ -69,6 +69,11 @@ contract AssetManager is ReentrancyGuardUpgradeable, OwnableUpgradeable {
         }
         _;
     }
+    
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
 
     function initialize(
         address _arbitratorManager,
@@ -76,7 +81,7 @@ contract AssetManager is ReentrancyGuardUpgradeable, OwnableUpgradeable {
         address _nftInfo,
         address _assetOracle,
         address _tokenWhitelist
-    ) external initializer {
+    ) public initializer virtual {
         __ReentrancyGuard_init();
         __Ownable_init(msg.sender);
 

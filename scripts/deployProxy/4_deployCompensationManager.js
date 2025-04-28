@@ -31,12 +31,6 @@ async function main() {
         }
         console.log("Using ArbitratorManager at:", arbitratorManagerAddress);
 
-        const transactionManagerAddress = await readConfig(network.name, "TRANSACTION_MANAGER");
-        if (!transactionManagerAddress) {
-            throw new Error("TransactionManager address not found.");
-        }
-        console.log("Using TransactionManager at:", transactionManagerAddress);
-
         const signatureValidationService = await readConfig(network.name, "SIGNATURE_VALIDATION_SERVICE");
         if (!signatureValidationService) {
             throw new Error("SignatureValidationService address not found.");

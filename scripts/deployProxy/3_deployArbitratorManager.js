@@ -19,17 +19,12 @@ async function main() {
         }
         console.log("Using ConfigManager at:", configManagerAddress);
 
-        const nftAddress = await readConfig(network.name, "ERC721_ADDRESS");
-        console.log("nftAddress:", nftAddress);
-
-        const nftInfoAddress = await readConfig(network.name, "BNFT_INFO");
-        console.log("nftInfoAddress:", nftInfoAddress);
 
         console.log("\nDeploying ArbitratorManager...");
         const ArbitratorManager = await ethers.getContractFactory("ArbitratorManager", deployer);
         
         const arbitratorManager = await upgrades.deployProxy(ArbitratorManager, 
-            [configManagerAddress, nftAddress, nftInfoAddress], 
+            [configManagerAddress], 
             { 
                 initializer: "initialize",
                 timeout: 60000,
@@ -47,7 +42,7 @@ async function main() {
         // Save contract addresses
         await writeConfig(network.name, "ARBITRATOR_MANAGER", contractAddress);
         
-        console.log("\nDeployment completed successfully!");
+        console.log("\nDeployment completed successfully! \n REMEMBER TO RUN 9_initialize_arbitrator_manager.js");
         
     } catch (error) {
         console.error("Deployment failed!", error);

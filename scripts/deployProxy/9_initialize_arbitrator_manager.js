@@ -15,22 +15,34 @@ async function main() {
   
   // Replace these addresses with your actual addresses
   const transactionManagerAddress = await readConfig(network.name, "TRANSACTION_MANAGER");
+  if (!transactionManagerAddress) {
+    throw new Error("TransactionManager address not found");
+  }
   const compensationManagerAddress = await readConfig(network.name, "COMPENSATION_MANAGER");
+  if (!compensationManagerAddress) {
+    throw new Error("CompensationManager address not found");
+  }
+  const assetManagerAddress = await readConfig(network.name, "ASSET_MANAGER");
+  if (!assetManagerAddress) {
+    throw new Error("AssetManager address not found");
+  }
   console.log("arbitratorManagerAddress", arbitratorManagerAddress);
   console.log("transactionManagerAddress", transactionManagerAddress);
   console.log("compensationManagerAddress", compensationManagerAddress);
   // Call initialize
-  const tx = await arbitratorManager.initTransactionAndCompensationManager(
-    transactionManagerAddress,
-    compensationManagerAddress,
-      { gasLimit: 2000000 }
-  );
-  
-  // Wait for the transaction to be mined
+  const tx = await arbitratorManager.setTransactionManager(transactionManagerAddress);
   await tx.wait();
+  console.log("TransactionManager set successfully. Transaction hash: ", tx.hash);
   
+  const tx2 = await arbitratorManager.setCompensationManager(compensationManagerAddress);
+  await tx2.wait();
+  console.log("CompensationManager set successfully. Transaction hash: ", tx2.hash);
+  
+  const tx3 = await arbitratorManager.setAssetManager(assetManagerAddress);
+  await tx3.wait();
+  console.log("AssetManager set successfully. Transaction hash: ", tx3.hash);
+
   console.log("ArbitratorManager initialized successfully!");
-  console.log("Transaction hash:", tx.hash);
 }
 
 main()
