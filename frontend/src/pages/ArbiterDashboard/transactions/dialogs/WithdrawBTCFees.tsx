@@ -8,6 +8,7 @@ import { useBitcoinPublicKey } from "@/services/btc/hooks/useBitcoinPublicKey";
 import { useBitcoinWalletAction } from "@/services/btc/hooks/useBitcoinWalletAction";
 import { estimateBTCFeeRate } from "@/services/mempool-api/mempool-api";
 import { UTXO } from "@/services/nownodes-api/model/types";
+import { publishBitcoinTransaction } from "@/services/nownodes-api/nownodes-api";
 import { TransactionBTCFeeInfo } from "@/services/transactions/hooks/useBTCFees";
 import { Transaction } from "@/services/transactions/model/transaction";
 import { BTCFeeWithdrawlTxCreationInputs, generateBtcFeeScript, generateRawTransactionForBTCFeeWithdrawal, markTransactionBTCFeesWithdrawn } from "@/services/transactions/transaction-btc-fees.service";
@@ -76,12 +77,12 @@ export const WithdrawBTCFeesDialog: FC<{
     console.log("btcTxWithAllWitnesses", btcTxWithAllWitnesses.toHex());
 
     // Broadcast the transaction
-    // publishBitcoinTransaction(btcTxWithAllWitnesses.toHex());
-
-    // If transaction publishing was successful, mark all transactions as processed
-    transactionsInProgress.forEach(t => markTransactionBTCFeesWithdrawn(t.transaction.id));
-
-    successToast("Transaction published, wait for bitcoin chain confirmation");
+    const btcTxId = await publishBitcoinTransaction(btcTxWithAllWitnesses.toHex());
+    if (btcTxId) {
+      // If transaction publishing was successful, mark all transactions as processed
+      transactionsInProgress.forEach(t => markTransactionBTCFeesWithdrawn(t.transaction.id));
+      successToast("Transaction published, wait for bitcoin chain confirmation");
+    }
 
     setPublishingTx(false);
     onHandleClose();
@@ -107,8 +108,8 @@ export const WithdrawBTCFeesDialog: FC<{
   if (!arbiter || !btcFeesInfo || !isOpen)
     return null;
 
-  if (Object.values(btcFeesInfo).length != withdrawableTransactions.length)
-    throw new Error("btcFeesInfo and withdrawableTransactions should have the same length");
+  // if (Object.values(btcFeesInfo).length != withdrawableTransactions.length)
+  //   throw new Error("btcFeesInfo and withdrawableTransactions should have the same length");
 
   return (
     <Dialog {...rest} open={isOpen} onOpenChange={onHandleClose}>
@@ -193,7 +194,7 @@ const WithdrawableTransactionRow: FC<{
       console.log("DerSignature:", derSignature);
 
       if (derSignature) {
-        setIsSigned(true); // Use a state here, not a memo, as signature contained in transactions in progress array is not dynamic 
+        setIsSigned(true); // Use a state here, not a memo, as signature contained in transactions in progress array is not dynamic
 
         onSigned({
           signature: derSignature,
@@ -204,7 +205,7 @@ const WithdrawableTransactionRow: FC<{
       }
     }
     catch (e) {
-      errorToast(`${e}`);
+      errorToast(e.message || `${e}`);
     }
   }, [arbiter, onSigned, transactionsInProgress, transactionInProgress, transaction, unsafeSignData, errorToast]);
 
