@@ -39,22 +39,17 @@ export const WithdrawBTCFeesDialog: FC<{
 }> = ({ arbiter, btcFeesInfo, withdrawableTransactions, isOpen, onHandleClose, onTransactionSubmitted, ...rest }) => {
   const { successToast } = useToasts();
   const [transactionsInProgress, setTransactionsInProgress] = useState<TransactionSignatureInProgress[]>([]);
-  const allInputsSigned = useMemo(() => transactionsInProgress.find(t => !!t.signature), [transactionsInProgress]);
   const currentPublicKey = useBitcoinPublicKey(); // Bitcoin public key of currently active wallet
   const isSameBitcoinPublicKey = useMemo(() => arbiter.revenueBtcPubKey === currentPublicKey, [arbiter, currentPublicKey]);
   const [publishingTx, setPublishingTx] = useState<boolean>(false);
+  const [allInputsSigned, setAllInputsSigned] = useState<boolean>(false);
 
   const handleTransactionSigned = useCallback((signResult: TransactionSignatureInProgress) => {
     // A transaction in the list has been signed by the arbiter wallet.
     const workedTransaction = transactionsInProgress.find(t => t.transaction.id === signResult.transaction.id);
     workedTransaction.signature = signResult.signature;
 
-    // Update global list for reactivity
-    setTransactionsInProgress(
-      transactionsInProgress
-        .filter(t => t.transaction.id !== workedTransaction.transaction.id)
-        .concat([workedTransaction])
-    );
+    setAllInputsSigned(transactionsInProgress.every(t => !!t.signature));
   }, [transactionsInProgress]);
 
   const publishWithdrawal = useCallback(async () => {
@@ -92,9 +87,14 @@ export const WithdrawBTCFeesDialog: FC<{
   useEffect(() => {
     if (!isOpen) {
       // When reopening the dialog, reset all previous state
-      setTransactionsInProgress([]);
+      setTransactionsInProgress(withdrawableTransactions?.map(wt => ({
+        transaction: wt,
+        script: generateBtcFeeScript(arbiter.revenueBtcPubKey, wt),
+        utxo: btcFeesInfo[wt.id].utxo
+      })));
+      setAllInputsSigned(false);
     }
-  }, [isOpen]);
+  }, [isOpen, arbiter, btcFeesInfo, withdrawableTransactions]);
 
   useEffect(() => {
     // When the initial array of transactions to work on changes, we rebuild of transactions in progress list
@@ -183,8 +183,9 @@ const WithdrawableTransactionRow: FC<{
       // Build the real transaction, using the right output value
       const rawBtcTx = generateRawTransactionForBTCFeeWithdrawal(inputs, false);
 
+      const index = inputs.inputs.findIndex( (i => i.utxo.txid === transactionInProgress.utxo.txid))
       const feeSatsValue = btcToSats(transaction.arbitratorFeeBTC).toNumber();
-      const hashForWitness = rawBtcTx.hashForWitnessV0(0, transactionInProgress.script, feeSatsValue, BTCTransaction.SIGHASH_ALL).toString("hex");
+      const hashForWitness = rawBtcTx.hashForWitnessV0(index, transactionInProgress.script, feeSatsValue, BTCTransaction.SIGHASH_ALL).toString("hex");
       const signature = await unsafeSignData(hashForWitness);
 
       const derSignature = rsSignatureToDer(signature);
