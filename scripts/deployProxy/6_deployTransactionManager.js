@@ -50,6 +50,12 @@ async function main() {
         }
         console.log("Using BTCAddressParser at:", btcAddressParser);
 
+        const btcBlockHeaders = await readConfig(network.name, "BTC_BLOCK_HEADERS");
+        if (!btcBlockHeaders) {
+            throw new Error("BTCBlockHeaders address not found.");
+        }
+        console.log("Using BTCBlockHeaders at:", btcBlockHeaders);
+
         console.log("\nDeploying TransactionManager...");
         const TransactionManager = await ethers.getContractFactory("TransactionManager", deployer);
         
@@ -60,7 +66,8 @@ async function main() {
                 configManagerAddress,
                 compensationManager,
                 btc_utils,
-                btcAddressParser
+                btcAddressParser,
+                btcBlockHeaders
             ],
             { 
                 initializer: "initialize",

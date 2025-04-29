@@ -74,7 +74,8 @@ contract TransactionManager is
         address _configManager,
         address _compensationManager,
         address _btcUtils,
-        address _btcAddressParser
+        address _btcAddressParser,
+        address _btcBlockHeaders
     ) public initializer {
         __ReentrancyGuard_init();
         __Ownable_init(msg.sender);
@@ -92,6 +93,7 @@ contract TransactionManager is
         compensationManager = _compensationManager;
         btcUtils = IBTCUtils(_btcUtils);
         btcAddressParser = IBtcAddress(_btcAddressParser);
+        btcBlockHeaders = IBtcBlockHeaders(_btcBlockHeaders);
     }
 
     /**
@@ -289,13 +291,13 @@ contract TransactionManager is
         if (rawData.length == 0 || merkleProof.length == 0) {
             revert(Errors.INVALID_PARAMETER);
         }
-
+    
         DataTypes.TransactionParties storage parties = transactions_parties[id];
         // Check caller authorization
         if (msg.sender != parties.dapp) {
             revert(Errors.NOT_AUTHORIZED);
         }
-
+      
         // If no BTC fee is required, return immediately
         DataTypes.TransactionData storage transactionData = transactions_data[id];
         if (transactionData.arbitratorBtcFee == 0) {
