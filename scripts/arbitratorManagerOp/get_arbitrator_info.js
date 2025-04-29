@@ -26,36 +26,9 @@ async function main() {
   const arbitratorAddress = "0x3Cf0BB575527cACf9e274a6eE879f876Dae0BC40";//deployer.address;
   console.log("\nGetting arbitrator info for address:", arbitratorAddress);
   console.log("Account balance:", ethers.utils.formatEther(await deployer.provider.getBalance(deployer.address)).toString());
-  const info = await arbitratorManager.getArbitratorInfo(arbitratorAddress);
+  const info = await arbitratorManager.getArbitratorBasicInfo(arbitratorAddress);
   console.log("info:", info);
-  const infoExt = await arbitratorManager.getArbitratorInfoExt(arbitratorAddress);
-  console.log("infoExt=", infoExt);
-  // Format and display the information
-  console.log("\nArbitrator Information:");
-  console.log("------------------------");
-  console.log("Arbitrator Address:", info.arbitrator);
-  console.log("Current Fee Rate:", info.currentFeeRate.toString(), "basis points");
-  console.log("ETH Stake Amount:", ethers.utils.formatEther(info.ethAmount), "ETH");
-  console.log("Active Transaction ID:", info.activeTransactionId);
-  console.log("Operator Address:", info.operator);
-  console.log("Operator BTC Public Key:", info.operatorBtcPubKey);
-  console.log("Operator BTC Address:", info.operatorBtcAddress);
-  console.log("Last Arbitration Time:", new Date(Number(info.deadLine) * 1000).toLocaleString());
-  console.log("NFT Contract:", info.nftContract);
-  console.log("NFT Token IDs:", info.nftTokenIds.map(id => id.toString()));
-
-  // Get additional information
-  const isActive = await arbitratorManager.isActiveArbitrator(arbitratorAddress);
-  const availableStake = await arbitratorManager.getAvailableStake(arbitratorAddress);
-  const isConfigModifiable = await arbitratorManager.isConfigModifiable(arbitratorAddress);
-  const isPaused = await arbitratorManager.isPaused(arbitratorAddress);
-
-  console.log("\nAdditional Status:");
-  console.log("------------------------");
-  console.log("Is Active Arbitrator:", isActive);
-  console.log("Available Stake:", ethers.utils.formatEther(availableStake), "ETH");
-  console.log("IsConfigModifiable:", isConfigModifiable);
-  console.log("Is Paused:", isPaused);
+  
 }
 
 main()

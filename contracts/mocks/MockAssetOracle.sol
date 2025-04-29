@@ -21,6 +21,9 @@ contract MockAssetOracle is IAssetOracle {
         if(asset == 0xA06be0F5950781cE28D965E5EFc6996e88a8C141) {//usdc
             return 1000230934041853184;
         }
+        if (asset == 0x828DF1d34Db7A27E149d2cAefAa5c6E9A8CE225A) {//NBW
+            return 1000000000000000000;
+        }
         return 2691927811995680256;
     }
 }

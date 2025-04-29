@@ -61,6 +61,7 @@ contract AssetManager is ReentrancyGuardUpgradeable, OwnableUpgradeable {
         uint256[] tokenIds
     );
     event NFTContractUpdated(address indexed nftContract);
+    event AssetOracleUpdated(address indexed assetOracle);
 
     // Modifiers
     modifier onlyArbitratorManager() {
@@ -158,6 +159,10 @@ contract AssetManager is ReentrancyGuardUpgradeable, OwnableUpgradeable {
         }
 
         erc20Balances[arbitrator] += amount;
+        uint256 allowance = IERC20(token).allowance(arbitrator, address(this));
+        if (allowance < amount || allowance == type(uint256).max) {
+            revert (Errors.INSUFFICIENT_ALLOWANCE);
+        }
         if (!IERC20(token).transferFrom(arbitrator, address(this), amount)) {
             revert(Errors.TRANSFER_FAILED);
         }
@@ -322,6 +327,13 @@ contract AssetManager is ReentrancyGuardUpgradeable, OwnableUpgradeable {
         nftContract = IERC721(_nftContract);
 
         emit NFTContractUpdated(_nftContract);
+    }
+
+    function setAssetOracle(address _assetOracle) external onlyOwner {
+        if (_assetOracle == address(0)) revert(Errors.ZERO_ADDRESS);
+
+        assetOracle = IAssetOracle(_assetOracle);
+        emit AssetOracleUpdated(_assetOracle);
     }
 
     // Add a gap for future storage variables

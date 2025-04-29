@@ -23,7 +23,7 @@ async function main() {
   // Get the contract instance
   const contract = await DAppRegistry.attach(dappRegistryAddress).connect(deployer);
 
-  const payAmount = ethers.utils.parseEther("10.0"); // Staking 10 ETH, adjust as needed
+  const payAmount = ethers.utils.parseEther("0.0"); // Staking 10 ETH, adjust as needed
   console.log("payAmount:", ethers.utils.formatEther(payAmount), "ETH");
   let gasLimit = await contract.estimateGas.registerDApp(dapp, {value:payAmount});
   console.log("gasLimit:", gasLimit);

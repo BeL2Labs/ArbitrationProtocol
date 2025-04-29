@@ -67,6 +67,7 @@ library Errors {
     string constant TOKEN_NOT_SUPPORTED = "W0";
     string constant ALREADY_PAUSED = "A7";
     string constant NOT_PAUSED = "A8";
+    string constant INSUFFICIENT_ALLOWANCE = "A9";
 
     // Compensation related errors (M0-M9, E0-E9)
     string constant EMPTY_PUBLIC_KEY = "E1";

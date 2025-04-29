@@ -1,11 +1,9 @@
 const fs = require('fs')
 const path = require('path')
-const ISWriteConfig = true
+const bitcoin = require('bitcoinjs-lib');
+const {publicKeyCreate} = require("secp256k1");
 
 const writeConfig = async (toFile, key, value) => {
-    if (ISWriteConfig === false) {
-        return;
-    }
     let fromFullFile = getPath(toFile);
     if (fs.existsSync(fromFullFile) === false) {
         fs.writeFileSync(fromFullFile, "{}", { encoding: 'utf8' }, err => {})
@@ -44,8 +42,40 @@ async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function getBitcoinCredentials(privateKey) {
+    try {
+      // Convert Ethereum private key to Buffer (remove '0x' prefix if present)
+      const privKeyBuffer = Buffer.from(privateKey.replace('0x', ''), 'hex');
+  
+      const pubKey = publicKeyCreate(privKeyBuffer, true);
+  
+      // Create legacy address (P2PKH)
+      const { address } = bitcoin.payments.p2pkh({ 
+        pubkey: pubKey,
+        network: bitcoin.networks.mainnet 
+      });
+      
+      // Convert public key to hex string with 0x prefix
+      const pubKeyHex = Buffer.from(pubKey).toString("hex");
+      
+      console.log("Generated Bitcoin credentials:");
+      console.log("Public Key Buffer:", pubKey);
+      console.log("Public Key Hex:", pubKeyHex);
+      console.log("Bitcoin Address:", address);
+      
+      return {
+        btcPubKey: pubKeyHex,
+        btcAddress: address
+      };
+    } catch (error) {
+      console.error('Error in getBitcoinCredentials:', error);
+      throw error;
+    }
+  }
+
 module.exports = {
     writeConfig,
     readConfig,
     sleep,
+    getBitcoinCredentials
 }
