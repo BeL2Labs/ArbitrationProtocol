@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/ICompensationManager.sol";
 import "../interfaces/IZkService.sol";
 import "../interfaces/ISignatureValidationService.sol";
@@ -17,6 +18,8 @@ contract CompensationManager is
     ICompensationManager,
     OwnableUpgradeable 
 {
+    using SafeERC20 for IERC20;
+
     IZkService public zkService;
     ITransactionManager public transactionManager;
     IConfigManager public configManager;
@@ -394,7 +397,7 @@ contract CompensationManager is
         }
 
         if (claim.erc20Amount > 0) {
-            IERC20(claim.erc20Token).transfer(claim.receivedCompensationAddress, claim.erc20Amount);
+            IERC20(claim.erc20Token).safeTransfer(claim.receivedCompensationAddress, claim.erc20Amount);
         }
 
         // Transfer NFT compensation

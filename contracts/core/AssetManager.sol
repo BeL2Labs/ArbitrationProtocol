@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "../interfaces/IBNFTInfo.sol";
 import "../interfaces/IAssetOracle.sol";
@@ -18,6 +19,8 @@ import "../libraries/Errors.sol";
  * @dev This contract handles the storage and transfer of staked ETH, ERC20 tokens and NFTs
  */
 contract AssetManager is ReentrancyGuardUpgradeable, OwnableUpgradeable {
+    using SafeERC20 for IERC20;
+
     address private constant ETH_TOKEN =
         address(0x517E9e5d46C1EA8aB6f78677d6114Ef47F71f6c4);
     address private constant BTC_TOKEN =
@@ -158,14 +161,8 @@ contract AssetManager is ReentrancyGuardUpgradeable, OwnableUpgradeable {
             erc20Tokens[arbitrator] = token;
         }
 
+        IERC20(token).safeTransferFrom(arbitrator, address(this), amount);
         erc20Balances[arbitrator] += amount;
-        uint256 allowance = IERC20(token).allowance(arbitrator, address(this));
-        if (allowance < amount || allowance == type(uint256).max) {
-            revert (Errors.INSUFFICIENT_ALLOWANCE);
-        }
-        if (!IERC20(token).transferFrom(arbitrator, address(this), amount)) {
-            revert(Errors.TRANSFER_FAILED);
-        }
 
         emit ERC20Deposited(arbitrator, token, amount);
     }
@@ -200,9 +197,7 @@ contract AssetManager is ReentrancyGuardUpgradeable, OwnableUpgradeable {
             erc20Tokens[arbitrator] = address(0);
         }
 
-        if (!IERC20(token).transfer(recipient, amount)) {
-            revert(Errors.TRANSFER_FAILED);
-        }
+        IERC20(token).safeTransfer(recipient, amount);
 
         emit ERC20Withdrawn(arbitrator, token, recipient, amount);
     }
