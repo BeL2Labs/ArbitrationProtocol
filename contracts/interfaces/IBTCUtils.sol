@@ -39,4 +39,17 @@ interface IBTCUtils {
     /// @param txData Raw transaction data
     /// @return Transaction ID
     function calculateTxId(bytes calldata txData) external pure returns (bytes32);
+
+    /**
+     * @notice Verify if the lockScript is valid and matches the expected owner
+     * @param lockScript The witness script to verify
+     * @param expectedOwner The expected owner address
+     * @param utxoScript The P2WSH script from UTXO
+     * @return isExpected True if the script is valid and matches the owner
+     */
+    function isExpectLockScript(
+        bytes calldata lockScript,
+        address expectedOwner,
+        bytes calldata utxoScript
+    ) external pure returns (bool isExpected);
 }

@@ -587,4 +587,47 @@ contract BTCUtils is IBTCUtils {
         // Non-witness transaction, calculate directly
         return BytesLib.doubleSha256Bitcoin(txData);
     }
+
+    /**
+     * @notice Verify if the lockScript is valid and matches the expected owner
+     * @param lockScript The witness script to verify
+     * @param expectedOwner The expected owner address
+     * @param utxoScript The P2WSH script from UTXO
+     * @return isExpected True if the script is valid and matches the owner
+     */
+    function isExpectLockScript(
+        bytes calldata lockScript,
+        address expectedOwner,
+        bytes calldata utxoScript
+    ) external pure returns (bool isExpected) {
+        // Verify lockScript length and owner address length
+        if (lockScript.length < 21) return false; // At least 1 byte length + 20 bytes address
+        uint8 ownerLength = uint8(lockScript[0]);
+        if (ownerLength != 20) return false; // Owner address must be 20 bytes
+
+        // Extract and verify owner address
+        address owner;
+        bytes memory pubKeyHash = new bytes(20);
+        for (uint i = 0; i < 20; i++) {
+            pubKeyHash[i] = lockScript[i + 1];
+        }
+        assembly {
+            owner := mload(add(pubKeyHash, 20))
+        }
+        if (owner != expectedOwner) return false;
+
+        // Calculate double SHA256 of lockScript
+        bytes32 scriptHash = sha256(lockScript);
+
+        // Verify P2WSH format: OP_0 <32-byte-hash>
+        if (utxoScript.length != 34 ||
+            utxoScript[0] != 0x00 ||
+            utxoScript[1] != 0x20) {
+            return false;
+        }
+
+        // Compare script hash
+        bytes32 hashFromScript = bytes32(utxoScript[2:34]);
+        return hashFromScript == scriptHash;
+    }
 }

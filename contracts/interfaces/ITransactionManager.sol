@@ -19,7 +19,8 @@ interface ITransactionManager {
     // Upload transaction utxos, only once
     function uploadUTXOs(
         bytes32 id,
-        DataTypes.UTXO[] calldata utxos) external;
+        DataTypes.UTXO[] calldata utxos,
+        bytes calldata lockScript) external;
     
     // Complete transaction
     function completeTransaction(bytes32 id) external;
@@ -47,6 +48,8 @@ interface ITransactionManager {
     function getTransactionSignatureByTxHash(bytes32 txHash) external view returns (bytes memory);
     function getTransactionBtcRawDataById(bytes32 id) external view returns (bytes memory);
     function getTransactionSignHashById(bytes32 id) external view returns (bytes32);
+
+    function getTransactionUTXOScriptById(bytes32 id) external view returns (bytes memory);
 
     function txHashToId(bytes32 txHash) external view returns (bytes32);
 

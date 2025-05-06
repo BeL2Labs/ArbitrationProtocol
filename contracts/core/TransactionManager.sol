@@ -43,6 +43,7 @@ contract TransactionManager is
     mapping(bytes32 => bytes) internal transactions_btc_signature;
     mapping(bytes32 => bytes) internal transactions_btc_script;
     mapping(bytes32 => DataTypes.UTXO[]) internal transactions_utxos;
+    mapping(bytes32 => bytes) internal transactions_utxo_script;
     mapping(bytes32 => bytes32) internal transactions_sign_hash;
     // key is the transaction signhash
     mapping(bytes32 => bytes) public transactionSignData;
@@ -226,7 +227,8 @@ contract TransactionManager is
     */
     function uploadUTXOs(
         bytes32 id,
-        DataTypes.UTXO[] calldata utxos) external {
+        DataTypes.UTXO[] calldata utxos,
+        bytes calldata lockScript) external {
         // Validate UTXO input, only one UTXO is allowed
         if (utxos.length != 1) revert(Errors.INVALID_UTXO);
 
@@ -240,6 +242,13 @@ contract TransactionManager is
             revert(Errors.NOT_AUTHORIZED);
         }
 
+        // Get DApp owner from registry and verify lock script
+        address dappOwner = dappRegistry.getDAppOwner(transaction.dapp);
+
+        if (!btcUtils.isExpectLockScript(lockScript, dappOwner, utxos[0].script)) {
+            revert(Errors.INVALID_LOCK_SCRIPT);
+        }
+
         DataTypes.UTXO[] storage transaction_utxos = transactions_utxos[id];
         if (transaction_utxos.length != 0) {
             revert(Errors.UTXO_ALREADY_UPLOADED);
@@ -248,6 +257,8 @@ contract TransactionManager is
         for (uint i = 0; i < utxos.length; i++) {
             transaction_utxos.push(utxos[i]);
         }
+
+        transactions_utxo_script[id] = lockScript;
 
         emit UTXOsUploaded(id, msg.sender);
     }
@@ -614,6 +625,10 @@ contract TransactionManager is
 
     function getTransactionUTXOsById(bytes32 id) external view returns (DataTypes.UTXO[] memory) {
         return transactions_utxos[id];
+    }
+
+    function getTransactionUTXOScriptById(bytes32 id) external view returns (bytes memory) {
+        return transactions_utxo_script[id];
     }
 
     function getTransactionSignatureById(bytes32 id) external view returns (bytes memory) {

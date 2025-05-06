@@ -45,6 +45,12 @@ library Errors {
     string constant NO_BTC_FEE = "B2";
     string constant TIMEOUT_NOT_REACHED = "T1";
 
+    // Lock script related errors (L0-L9)
+    string constant INVALID_LOCK_SCRIPT = "L1";
+    string constant INVALID_LOCK_SCRIPT_OWNER = "L2";
+    string constant INVALID_P2WSH_SCRIPT = "L3";
+    string constant SCRIPT_HASH_MISMATCH = "L4";
+
     // Arbitrator related errors (A0-A9, S0-S9)
     string constant ARBITRATOR_ALREADY_REGISTERED = "A1";
     string constant ARBITRATOR_NOT_REGISTERED = "A2";

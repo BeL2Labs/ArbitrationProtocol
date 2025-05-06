@@ -10,6 +10,7 @@ describe("TransactionManager", function () {
     let configManager;
     let compensationManager;
     let btcAddressParser;
+    let btcBlockHeaders;
     let owner;
     let dapp;
     let arbitrator;
@@ -21,6 +22,8 @@ describe("TransactionManager", function () {
     const MIN_STAKE = ethers.utils.parseEther("10");
     const MIN_TRANSACTION_DURATION = 24 * 60 * 60; // 1 day
     const MAX_TRANSACTION_DURATION = 30 * 24 * 60 * 60; // 30 days
+    const lockScript = "0x14f39fd6e51aad88f6f4ce6ab8827279cfffb92266756321020f8cb5261195d88c95a76fd3007e16814a2e39f994c685988e770ce45d9783f7ad2102a12298f9e970f87b2d2059c8ac5bb95f34c1b4a2b5013c5120fabb7120e184e2ac676321020f8cb5261195d88c95a76fd3007e16814a2e39f994c685988e770ce45d9783f7ad210200493eb975eedf5d5d2f7f5458e790e8264576ec137df06c8f3f90c91b0a6f78ac676303010040b2752102a12298f9e970f87b2d2059c8ac5bb95f34c1b4a2b5013c5120fabb7120e184e2ada820f780df5d1126efc55919f28c1d3874c1b428d708f9bd3ce63548a1d49c37758b876703fa0140b27521020f8cb5261195d88c95a76fd3007e16814a2e39f994c685988e770ce45d9783f7ac686868";
+    const p2wshScript = "0x0020e5cc3f5d28a5ecdb759bdab627070c10a8e3d7975e459b7c481ee3487efa5c0b";
 
     beforeEach(async function () {
         [owner, dapp, arbitrator, other] = await ethers.getSigners();
@@ -80,6 +83,10 @@ describe("TransactionManager", function () {
         const BTCAddressParser = await ethers.getContractFactory("MockBtcAddress");
         btcAddressParser = await BTCAddressParser.deploy();
 
+        // Deploy MockBtcBlockHeaders
+        const MockBtcBlockHeaders = await ethers.getContractFactory("MockBtcBlockHeaders");
+        btcBlockHeaders = await MockBtcBlockHeaders.deploy();
+
         // Deploy TransactionManager
         const TransactionManager = await ethers.getContractFactory("TransactionManager");
         transactionManager = await upgrades.deployProxy(TransactionManager, [
@@ -88,7 +95,8 @@ describe("TransactionManager", function () {
             configManager.address,
             compensationManager.address,
             btcUtils.address,
-            btcAddressParser.address
+            btcAddressParser.address,
+            btcBlockHeaders.address
         ], { initializer: 'initialize' });
 
         // Set transactionManager
@@ -240,25 +248,63 @@ describe("TransactionManager", function () {
                 {
                     txHash: ethers.utils.randomBytes(32),
                     index: 0,
-                    script: ethers.utils.randomBytes(20),
+                    script: p2wshScript,
                     amount: ethers.utils.parseEther("1")
                 }
             ];
-            expect(await transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos))
-                .to.emit(transactionManager, "UtxosUploaded").withArgs(transactionId, dapp.address, utxos);
+
+            await expect(transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos, lockScript))
+                .to.emit(transactionManager, "UTXOsUploaded").withArgs(transactionId, dapp.address);
+
+            // Verify the stored data
+            const storedScript = await transactionManager.getTransactionUTXOScriptById(transactionId);
+            expect(storedScript).to.equal(lockScript);
         });
 
         it("Should upload utxos fail with not authorized", async function () {
+            const lockScript = ethers.utils.concat([
+                [20],
+                ethers.utils.arrayify(owner.address),
+                ethers.utils.randomBytes(10)
+            ]);
+
             const utxos = [
                 {
                     txHash: ethers.utils.randomBytes(32),
                     index: 0,
-                    script: ethers.utils.randomBytes(20),
+                    script: ethers.utils.randomBytes(34), // wrong format
                     amount: ethers.utils.parseEther("1")
                 }
             ];
-            await expect(transactionManager.connect(owner).uploadUTXOs(transactionId, utxos))
+            await expect(transactionManager.connect(owner).uploadUTXOs(transactionId, utxos, lockScript))
                 .to.be.revertedWith("N0");
+        });
+
+        it("Should upload utxos fail with invalid lock script", async function () {
+            // Create an invalid lockScript with wrong owner
+            const lockScript = ethers.utils.concat([
+                [20],
+                ethers.utils.arrayify(other.address), // wrong owner
+                ethers.utils.randomBytes(10)
+            ]);
+
+            const scriptHash = ethers.utils.sha256(lockScript);
+            const p2wshScript = ethers.utils.concat([
+                [0x00, 0x20],
+                scriptHash
+            ]);
+
+            const utxos = [
+                {
+                    txHash: ethers.utils.randomBytes(32),
+                    index: 0,
+                    script: p2wshScript,
+                    amount: ethers.utils.parseEther("1")
+                }
+            ];
+
+            await expect(transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos, lockScript))
+                .to.be.revertedWith("L1");
         });
 
         it("Should upload utxos twice failed", async function () {
@@ -266,12 +312,13 @@ describe("TransactionManager", function () {
                 {
                     txHash: ethers.utils.randomBytes(32),
                     index: 0,
-                    script: ethers.utils.randomBytes(20),
+                    script: p2wshScript,
                     amount: ethers.utils.parseEther("1")
                 }
             ];
-            await transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos);
-            await expect(transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos))
+
+            await transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos, lockScript);
+            await expect(transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos, lockScript))
                 .to.be.revertedWith("U2");
         });
 
@@ -280,12 +327,12 @@ describe("TransactionManager", function () {
                 {
                     txHash: ethers.utils.randomBytes(32),
                     index: 0,
-                    script: ethers.utils.randomBytes(20),
+                    script: ethers.utils.randomBytes(34),
                     amount: ethers.utils.parseEther("1")
                 }
             ];
             await transactionManager.connect(dapp).completeTransaction(transactionId);
-            await expect(transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos))
+            await expect(transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos, lockScript))
                 .to.be.revertedWith("T2");
         });
     });
@@ -318,17 +365,16 @@ describe("TransactionManager", function () {
                 {
                     txHash: "0xada163a3cf919ea68882a6cdc43f5910863d4db14b47403f4b6e3cbac4199192",
                     index: 0,
-                    script: "0x00200a00f7c850b180f51bbb20f59e87f00150fda6974c04059fab771f04b300e97e",
+                    script: p2wshScript,
                     amount: 7922
                 }
             ];
-            await transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos);
+            await transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos, lockScript);
 
             const rawData = "0x02000000000101929119c4ba3c6e4b3f40474bb14d3d8610593fc4cda68288a69e91cfa363a1ad00000000000000000001a01b0000000000001976a914cb539f4329eeb589e83659c8304bcc6c99553a9688ac05483045022100f1296c9b96f1029d6b74782c9a827ee334a773e33d3a3593816543594ffd1b940220453bfa91aec7a445619cea8f3a5219945260d5ef529d6e02f399318eed96e6a901473044022007974847cf4d0397b4ca736e92e8c3ada42dc8f1c2cb2f98b0038e9967be684f0220241464a067fe1bb3ffbecb178a12004993ec0f51ea9dfc09521096f855f3f3d201010100fd0a016321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ac676321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad21036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac676303ab0440b275210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ada820c7edc93e03202c56d1067d602476e3dd982689b0a6be6a44d016404926cd66ce876703b20440b27521036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac68686800000000";
             const signData = "0x020000005228f7c3672dcb443b52466b8db55c6eab19c48b20566fd9b4dffcef22aa1ea68cb9012517c817fead650287d61bdd9c68803b6bf9c64133dcab3e65b5a50cb9929119c4ba3c6e4b3f40474bb14d3d8610593fc4cda68288a69e91cfa363a1ad00000000fd0a016321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ac676321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad21036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac676303ab0440b275210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ada820c7edc93e03202c56d1067d602476e3dd982689b0a6be6a44d016404926cd66ce876703b20440b27521036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac686868f21e00000000000000000000ead446471e4af625670645be820c1169499315744764fd4ab6a89d86e24593510000000001000000";
             const signHash = "0xbc671702bd4023e7088f9abf540bfdeb2648c5b35ec75335f181dca02cd36b40";
             const script = "0x6321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ac676321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad21036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac676303ab0440b275210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ada820c7edc93e03202c56d1067d602476e3dd982689b0a6be6a44d016404926cd66ce876703b20440b27521036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac686868";
-
             let arbitrationData = {
                 id: transactionId,
                 rawData: rawData,
@@ -378,11 +424,11 @@ describe("TransactionManager", function () {
                 {
                     txHash: "0x877acb3004a0e90c98489486231f04c32fd4f693386b90c044286e7c7850b6a7",
                     index: 0,
-                    script: "0x76a914cb539f4329eeb589e83659c8304bcc6c99553a9688ac",
+                    script: p2wshScript,
                     amount: 12361
                 }
             ];
-            await transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos);
+            await transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos, lockScript);
 
             const rawData = "0x02000000000101a7b650787c6e2844c0906b3893f6d42fc3041f23869448980ce9a00430cb7a870000000000000000000268210000000000001976a9149b42587007f85e456b5d0d702e828f34ea1f55b188ac640000000000000017a9146fb7f3048e4b6d3eb81ecb1760221650734bab2887050000010100fd0a0163210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac6763210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad2102098cf93afc2c0682e0b6d7e132f9fbeedc610dc1c0d09dbcd75db1892f975641ac676303b60040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ada8205a0737e8cbcfa24dcc118b0ab1e6d98bee17c57daa8a1686024159aae707ed6f876703bd0040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac68686800000000";
             const script = "0x6321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ac676321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad21036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac676303ab0440b275210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ada820c7edc93e03202c56d1067d602476e3dd982689b0a6be6a44d016404926cd66ce876703b20440b27521036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac686868";
@@ -438,11 +484,11 @@ describe("TransactionManager", function () {
                 {
                     txHash: "0x877acb3004a0e90c98489486231f04c32fd4f693386b90c044286e7c7850b6a7",
                     index: 0,
-                    script: "0x76a914cb539f4329eeb589e83659c8304bcc6c99553a9688ac",
+                    script: p2wshScript,
                     amount: 12361
                 }
             ];
-            await transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos);
+            await transactionManager.connect(dapp).uploadUTXOs(transactionId, utxos, lockScript);
 
             const rawData = "0x02000000000101a7b650787c6e2844c0906b3893f6d42fc3041f23869448980ce9a00430cb7a870000000000000000000268210000000000001976a9149b42587007f85e456b5d0d702e828f34ea1f55b188ac640000000000000017a9146fb7f3048e4b6d3eb81ecb1760221650734bab2887050000010100fd0a0163210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac6763210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ad2102098cf93afc2c0682e0b6d7e132f9fbeedc610dc1c0d09dbcd75db1892f975641ac676303b60040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ada8205a0737e8cbcfa24dcc118b0ab1e6d98bee17c57daa8a1686024159aae707ed6f876703bd0040b275210250a9449960929822ac7020f92aad17cdd1c74c6db04d9f383b3c77489d753d19ac68686800000000";
             const script = "0x6321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ac676321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad21036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac676303ab0440b275210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ada820c7edc93e03202c56d1067d602476e3dd982689b0a6be6a44d016404926cd66ce876703b20440b27521036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac686868";
