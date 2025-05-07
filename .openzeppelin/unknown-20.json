@@ -6,11 +6,6 @@
   },
   "proxies": [
     {
-      "address": "0x6Ae8A5C3290AD85D87ba6E7fC3938c0A45Bc622A",
-      "txHash": "0xf5d73440a4697f41b1a30671f9c6a5ea0556ba25dfa5bb646276342b3c312fc1",
-      "kind": "transparent"
-    },
-    {
       "address": "0x4Ad5DA5e8030cc29D931D756D2e88CD61E58a614",
       "txHash": "0x30d432b2c97527128154fd77a3cb92b2118e0e8e836adf9fb0013a65f9fb3aca",
       "kind": "transparent"
@@ -28,6 +23,10 @@
     {
       "address": "0xa5EEFBcc8b4a1fb55dd7F8d5422B688557641a56",
       "txHash": "0x4bec031494bb7c5f3aa3689bd1798485d5602f5a71ba2761e4bf1e90d1066631",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x6Ae8A5C3290AD85D87ba6E7fC3938c0A45Bc622A",
       "kind": "transparent"
     }
   ],
@@ -1484,7 +1483,7 @@
             "label": "configManager",
             "offset": 0,
             "slot": "0",
-            "type": "t_contract(ConfigManager)14848",
+            "type": "t_contract(ConfigManager)7894",
             "contract": "ArbitratorManager",
             "src": "contracts/core/ArbitratorManager.sol:46"
           },
@@ -1492,7 +1491,7 @@
             "label": "nftContract",
             "offset": 0,
             "slot": "1",
-            "type": "t_contract(IERC721)1996",
+            "type": "t_contract(IERC721)754",
             "contract": "ArbitratorManager",
             "src": "contracts/core/ArbitratorManager.sol:49"
           },
@@ -1500,7 +1499,7 @@
             "label": "nftInfo",
             "offset": 0,
             "slot": "2",
-            "type": "t_contract(IBNFTInfo)18018",
+            "type": "t_contract(IBNFTInfo)8323",
             "contract": "ArbitratorManager",
             "src": "contracts/core/ArbitratorManager.sol:50"
           },
@@ -1508,7 +1507,7 @@
             "label": "arbitrators",
             "offset": 0,
             "slot": "3",
-            "type": "t_mapping(t_address,t_struct(ArbitratorInfo)19871_storage)",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfo)8602_storage)",
             "contract": "ArbitratorManager",
             "src": "contracts/core/ArbitratorManager.sol:53"
           },
@@ -1540,7 +1539,7 @@
             "label": "arbitratorsExt",
             "offset": 0,
             "slot": "6",
-            "type": "t_mapping(t_address,t_struct(ArbitratorInfoExt)19874_storage)",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfoExt)8605_storage)",
             "contract": "ArbitratorManager",
             "src": "contracts/core/ArbitratorManager.sol:59"
           },
@@ -1548,7 +1547,7 @@
             "label": "assetOracle",
             "offset": 0,
             "slot": "7",
-            "type": "t_contract(IAssetOracle)17959",
+            "type": "t_contract(IAssetOracle)8264",
             "contract": "ArbitratorManager",
             "src": "contracts/core/ArbitratorManager.sol:61"
           },
@@ -1586,27 +1585,27 @@
             "label": "bytes",
             "numberOfBytes": "32"
           },
-          "t_contract(ConfigManager)14848": {
+          "t_contract(ConfigManager)7894": {
             "label": "contract ConfigManager",
             "numberOfBytes": "20"
           },
-          "t_contract(IAssetOracle)17959": {
+          "t_contract(IAssetOracle)8264": {
             "label": "contract IAssetOracle",
             "numberOfBytes": "20"
           },
-          "t_contract(IBNFTInfo)18018": {
+          "t_contract(IBNFTInfo)8323": {
             "label": "contract IBNFTInfo",
             "numberOfBytes": "20"
           },
-          "t_contract(IERC721)1996": {
+          "t_contract(IERC721)754": {
             "label": "contract IERC721",
             "numberOfBytes": "20"
           },
-          "t_mapping(t_address,t_struct(ArbitratorInfo)19871_storage)": {
+          "t_mapping(t_address,t_struct(ArbitratorInfo)8602_storage)": {
             "label": "mapping(address => struct DataTypes.ArbitratorInfo)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_struct(ArbitratorInfoExt)19874_storage)": {
+          "t_mapping(t_address,t_struct(ArbitratorInfoExt)8605_storage)": {
             "label": "mapping(address => struct DataTypes.ArbitratorInfoExt)",
             "numberOfBytes": "32"
           },
@@ -1614,7 +1613,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(ArbitratorInfo)19871_storage": {
+          "t_struct(ArbitratorInfo)8602_storage": {
             "label": "struct DataTypes.ArbitratorInfo",
             "members": [
               {
@@ -1716,7 +1715,1934 @@
             ],
             "numberOfBytes": "480"
           },
-          "t_struct(ArbitratorInfoExt)19874_storage": {
+          "t_struct(ArbitratorInfoExt)8605_storage": {
+            "label": "struct DataTypes.ArbitratorInfoExt",
+            "members": [
+              {
+                "label": "currentBTCFeeRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:43"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "5f3fbfe60b7f63fc43b07aca5da66d0592fecac3c0f4253bedf3808edf5a5704": {
+      "address": "0x0b53A9d9B8dd3CE2870C9E9a4b9866AA7a117207",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "configs",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_bytes32,t_uint256)",
+            "contract": "ConfigManager",
+            "src": "contracts/core/ConfigManager.sol:16"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ConfigManager",
+            "src": "contracts/core/ConfigManager.sol:321"
+          }
+        ],
+        "types": {
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "032754ddcb8d8b23f9f3a2494e3ca4c097f2977d39026f3cf86ca7ef48ff906c": {
+      "address": "0xDF146409b1d5F4b2EeB467c9b2BB53E1C8F6aD87",
+      "txHash": "0x136f0d09fd532c2b64e35f37d078d761cf21a463946792df30d62a89e43e4ef8",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "configs",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_bytes32,t_uint256)",
+            "contract": "ConfigManager",
+            "src": "contracts/core/ConfigManager.sol:16"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ConfigManager",
+            "src": "contracts/core/ConfigManager.sol:325"
+          }
+        ],
+        "types": {
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "cde38683c6b7d0aa47b15b1953ac4895fb2eeb6b07d93ddf2145114f097fabbe": {
+      "address": "0x281d6E27e1CcBf62eE3D5b6907a21401b1914793",
+      "txHash": "0x77aa482b08ec019380add2b9de705df0fd29d8bf24fcf72302c29989e9dadc71",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "configManager",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(ConfigManager)7898",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:46"
+          },
+          {
+            "label": "nftContract",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(IERC721)754",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:49"
+          },
+          {
+            "label": "nftInfo",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_contract(IBNFTInfo)8327",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:50"
+          },
+          {
+            "label": "arbitrators",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfo)8606_storage)",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:53"
+          },
+          {
+            "label": "transactionManager",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:56"
+          },
+          {
+            "label": "compensationManager",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_address",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:57"
+          },
+          {
+            "label": "initialized",
+            "offset": 20,
+            "slot": "5",
+            "type": "t_bool",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:58"
+          },
+          {
+            "label": "arbitratorsExt",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfoExt)8609_storage)",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:59"
+          },
+          {
+            "label": "assetOracle",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(IAssetOracle)8268",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:915"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ConfigManager)7898": {
+            "label": "contract ConfigManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IAssetOracle)8268": {
+            "label": "contract IAssetOracle",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IBNFTInfo)8327": {
+            "label": "contract IBNFTInfo",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC721)754": {
+            "label": "contract IERC721",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(ArbitratorInfo)8606_storage)": {
+            "label": "mapping(address => struct DataTypes.ArbitratorInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(ArbitratorInfoExt)8609_storage)": {
+            "label": "mapping(address => struct DataTypes.ArbitratorInfoExt)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(ArbitratorInfo)8606_storage": {
+            "label": "struct DataTypes.ArbitratorInfo",
+            "members": [
+              {
+                "label": "arbitrator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "paused",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "currentFeeRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "activeTransactionId",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "ethAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "erc20Token",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "nftContract",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "nftTokenIds",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "operator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "operatorBtcPubKey",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "operatorBtcAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "9"
+              },
+              {
+                "label": "deadLine",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "10"
+              },
+              {
+                "label": "revenueBtcPubKey",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "11"
+              },
+              {
+                "label": "revenueBtcAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "12"
+              },
+              {
+                "label": "revenueETHAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "13"
+              },
+              {
+                "label": "lastSubmittedWorkTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "14"
+              }
+            ],
+            "numberOfBytes": "480"
+          },
+          "t_struct(ArbitratorInfoExt)8609_storage": {
+            "label": "struct DataTypes.ArbitratorInfoExt",
+            "members": [
+              {
+                "label": "currentBTCFeeRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:43"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "98c6cb14811c0aec118a160380e3936949357f0a7e61d3f3bb125710dd7f2e86": {
+      "address": "0x8Ef3f3e8E508e3a5B593Fb3276Db73BA48df4f6b",
+      "txHash": "0xdbb99b9e4631369220c8fec4e7a4dc00b98e33bc37acf435ab1c2db3190579cb",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "configManager",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(ConfigManager)7805",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:46"
+          },
+          {
+            "label": "nftContract",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(IERC721)754",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:49"
+          },
+          {
+            "label": "nftInfo",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_contract(IBNFTInfo)8234",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:50"
+          },
+          {
+            "label": "arbitrators",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfo)8513_storage)",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:53"
+          },
+          {
+            "label": "transactionManager",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:56"
+          },
+          {
+            "label": "compensationManager",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_address",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:57"
+          },
+          {
+            "label": "initialized",
+            "offset": 20,
+            "slot": "5",
+            "type": "t_bool",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:58"
+          },
+          {
+            "label": "arbitratorsExt",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfoExt)8516_storage)",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:59"
+          },
+          {
+            "label": "assetOracle",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(IAssetOracle)8175",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:911"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ConfigManager)7805": {
+            "label": "contract ConfigManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IAssetOracle)8175": {
+            "label": "contract IAssetOracle",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IBNFTInfo)8234": {
+            "label": "contract IBNFTInfo",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC721)754": {
+            "label": "contract IERC721",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(ArbitratorInfo)8513_storage)": {
+            "label": "mapping(address => struct DataTypes.ArbitratorInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(ArbitratorInfoExt)8516_storage)": {
+            "label": "mapping(address => struct DataTypes.ArbitratorInfoExt)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(ArbitratorInfo)8513_storage": {
+            "label": "struct DataTypes.ArbitratorInfo",
+            "members": [
+              {
+                "label": "arbitrator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "paused",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "currentFeeRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "activeTransactionId",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "ethAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "erc20Token",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "nftContract",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "nftTokenIds",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "operator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "operatorBtcPubKey",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "operatorBtcAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "9"
+              },
+              {
+                "label": "deadLine",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "10"
+              },
+              {
+                "label": "revenueBtcPubKey",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "11"
+              },
+              {
+                "label": "revenueBtcAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "12"
+              },
+              {
+                "label": "revenueETHAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "13"
+              },
+              {
+                "label": "lastSubmittedWorkTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "14"
+              }
+            ],
+            "numberOfBytes": "480"
+          },
+          "t_struct(ArbitratorInfoExt)8516_storage": {
+            "label": "struct DataTypes.ArbitratorInfoExt",
+            "members": [
+              {
+                "label": "currentBTCFeeRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:43"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "8ea712dbc077488b3517b7788dd54494d83d92ed8049a4c329ccd858e80d9d7e": {
+      "address": "0x2ED1D61d27135171F731EE003AFeFC13230ECE06",
+      "txHash": "0xf3d04b610635c5780d7a3bc961f321160e659893f275fdb3db42b08a25021d3c",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "configManager",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(ConfigManager)7881",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:46"
+          },
+          {
+            "label": "nftContract",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(IERC721)754",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:49"
+          },
+          {
+            "label": "nftInfo",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_contract(IBNFTInfo)8310",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:50"
+          },
+          {
+            "label": "arbitrators",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfo)8589_storage)",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:53"
+          },
+          {
+            "label": "transactionManager",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:56"
+          },
+          {
+            "label": "compensationManager",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_address",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:57"
+          },
+          {
+            "label": "initialized",
+            "offset": 20,
+            "slot": "5",
+            "type": "t_bool",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:58"
+          },
+          {
+            "label": "arbitratorsExt",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfoExt)8592_storage)",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:59"
+          },
+          {
+            "label": "assetOracle",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(IAssetOracle)8251",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:911"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ConfigManager)7881": {
+            "label": "contract ConfigManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IAssetOracle)8251": {
+            "label": "contract IAssetOracle",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IBNFTInfo)8310": {
+            "label": "contract IBNFTInfo",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC721)754": {
+            "label": "contract IERC721",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(ArbitratorInfo)8589_storage)": {
+            "label": "mapping(address => struct DataTypes.ArbitratorInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(ArbitratorInfoExt)8592_storage)": {
+            "label": "mapping(address => struct DataTypes.ArbitratorInfoExt)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(ArbitratorInfo)8589_storage": {
+            "label": "struct DataTypes.ArbitratorInfo",
+            "members": [
+              {
+                "label": "arbitrator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "paused",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "currentFeeRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "activeTransactionId",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "ethAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "erc20Token",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "nftContract",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "nftTokenIds",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "operator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "operatorBtcPubKey",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "operatorBtcAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "9"
+              },
+              {
+                "label": "deadLine",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "10"
+              },
+              {
+                "label": "revenueBtcPubKey",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "11"
+              },
+              {
+                "label": "revenueBtcAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "12"
+              },
+              {
+                "label": "revenueETHAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "13"
+              },
+              {
+                "label": "lastSubmittedWorkTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "14"
+              }
+            ],
+            "numberOfBytes": "480"
+          },
+          "t_struct(ArbitratorInfoExt)8592_storage": {
+            "label": "struct DataTypes.ArbitratorInfoExt",
+            "members": [
+              {
+                "label": "currentBTCFeeRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:43"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "a67475aa9efbce56d9552e82d981625ba232ec9f883b49aa17b5a3a00b0fe533": {
+      "address": "0x9D845909e934Dc77CA57bcc27Ca145827ac52FD1",
+      "txHash": "0x79d05e3267020c30919bfc8759aed312930d5e8d8be6ef3fb5f2c564e959df7f",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "configManager",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(ConfigManager)7925",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:46"
+          },
+          {
+            "label": "nftContract",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(IERC721)754",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:49"
+          },
+          {
+            "label": "nftInfo",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_contract(IBNFTInfo)8354",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:50"
+          },
+          {
+            "label": "arbitrators",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfo)8633_storage)",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:53"
+          },
+          {
+            "label": "transactionManager",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:56"
+          },
+          {
+            "label": "compensationManager",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_address",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:57"
+          },
+          {
+            "label": "initialized",
+            "offset": 20,
+            "slot": "5",
+            "type": "t_bool",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:58"
+          },
+          {
+            "label": "arbitratorsExt",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfoExt)8636_storage)",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:59"
+          },
+          {
+            "label": "assetOracle",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(IAssetOracle)8295",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:918"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ConfigManager)7925": {
+            "label": "contract ConfigManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IAssetOracle)8295": {
+            "label": "contract IAssetOracle",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IBNFTInfo)8354": {
+            "label": "contract IBNFTInfo",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC721)754": {
+            "label": "contract IERC721",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(ArbitratorInfo)8633_storage)": {
+            "label": "mapping(address => struct DataTypes.ArbitratorInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(ArbitratorInfoExt)8636_storage)": {
+            "label": "mapping(address => struct DataTypes.ArbitratorInfoExt)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(ArbitratorInfo)8633_storage": {
+            "label": "struct DataTypes.ArbitratorInfo",
+            "members": [
+              {
+                "label": "arbitrator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "paused",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "currentFeeRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "activeTransactionId",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "ethAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "erc20Token",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "nftContract",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "nftTokenIds",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "operator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "operatorBtcPubKey",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "operatorBtcAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "9"
+              },
+              {
+                "label": "deadLine",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "10"
+              },
+              {
+                "label": "revenueBtcPubKey",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "11"
+              },
+              {
+                "label": "revenueBtcAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "12"
+              },
+              {
+                "label": "revenueETHAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "13"
+              },
+              {
+                "label": "lastSubmittedWorkTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "14"
+              }
+            ],
+            "numberOfBytes": "480"
+          },
+          "t_struct(ArbitratorInfoExt)8636_storage": {
+            "label": "struct DataTypes.ArbitratorInfoExt",
+            "members": [
+              {
+                "label": "currentBTCFeeRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:43"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "e4af3d2e6bd39dc7a199e99cf6b73320ba7659bcab3ed56a9d8d9607759cbde3": {
+      "address": "0xE2b84b0abB004e383EA5158e387F2Bb5353e8a18",
+      "txHash": "0x1762fc6863536c2f8eb02db097d54f4c5d81581ac0ffd213cf8de2122dfdc76e",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "configManager",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(ConfigManager)7917",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:46"
+          },
+          {
+            "label": "nftContract",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(IERC721)754",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:49"
+          },
+          {
+            "label": "nftInfo",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_contract(IBNFTInfo)8346",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:50"
+          },
+          {
+            "label": "arbitrators",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfo)8625_storage)",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:53"
+          },
+          {
+            "label": "transactionManager",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:56"
+          },
+          {
+            "label": "compensationManager",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_address",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:57"
+          },
+          {
+            "label": "initialized",
+            "offset": 20,
+            "slot": "5",
+            "type": "t_bool",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:58"
+          },
+          {
+            "label": "arbitratorsExt",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfoExt)8628_storage)",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:59"
+          },
+          {
+            "label": "assetOracle",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(IAssetOracle)8287",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:916"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ConfigManager)7917": {
+            "label": "contract ConfigManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IAssetOracle)8287": {
+            "label": "contract IAssetOracle",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IBNFTInfo)8346": {
+            "label": "contract IBNFTInfo",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC721)754": {
+            "label": "contract IERC721",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(ArbitratorInfo)8625_storage)": {
+            "label": "mapping(address => struct DataTypes.ArbitratorInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(ArbitratorInfoExt)8628_storage)": {
+            "label": "mapping(address => struct DataTypes.ArbitratorInfoExt)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(ArbitratorInfo)8625_storage": {
+            "label": "struct DataTypes.ArbitratorInfo",
+            "members": [
+              {
+                "label": "arbitrator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "paused",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "currentFeeRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "activeTransactionId",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "ethAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "erc20Token",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "nftContract",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "nftTokenIds",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "operator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "operatorBtcPubKey",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "operatorBtcAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "9"
+              },
+              {
+                "label": "deadLine",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "10"
+              },
+              {
+                "label": "revenueBtcPubKey",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "11"
+              },
+              {
+                "label": "revenueBtcAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "12"
+              },
+              {
+                "label": "revenueETHAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "13"
+              },
+              {
+                "label": "lastSubmittedWorkTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "14"
+              }
+            ],
+            "numberOfBytes": "480"
+          },
+          "t_struct(ArbitratorInfoExt)8628_storage": {
+            "label": "struct DataTypes.ArbitratorInfoExt",
+            "members": [
+              {
+                "label": "currentBTCFeeRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:43"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "de764cd71fa1b7c0b5fdc8ce6615090b9b7f42e23a5d05d327dcdcbb6bb34c9a": {
+      "address": "0x726Ee3503354257157bD818E8D8C8f15e5880aFf",
+      "txHash": "0xa5c1ce46952e8c6ef2e4b7bc4ccfc25f289843439604b6aa77e81471ae274ddd",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "configManager",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(ConfigManager)7893",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:46"
+          },
+          {
+            "label": "nftContract",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(IERC721)754",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:49"
+          },
+          {
+            "label": "nftInfo",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_contract(IBNFTInfo)8322",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:50"
+          },
+          {
+            "label": "arbitrators",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfo)8601_storage)",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:53"
+          },
+          {
+            "label": "transactionManager",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:56"
+          },
+          {
+            "label": "compensationManager",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_address",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:57"
+          },
+          {
+            "label": "initialized",
+            "offset": 20,
+            "slot": "5",
+            "type": "t_bool",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:58"
+          },
+          {
+            "label": "arbitratorsExt",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_address,t_struct(ArbitratorInfoExt)8604_storage)",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:59"
+          },
+          {
+            "label": "assetOracle",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(IAssetOracle)8263",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "ArbitratorManager",
+            "src": "contracts/core/ArbitratorManager.sol:911"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ConfigManager)7893": {
+            "label": "contract ConfigManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IAssetOracle)8263": {
+            "label": "contract IAssetOracle",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IBNFTInfo)8322": {
+            "label": "contract IBNFTInfo",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC721)754": {
+            "label": "contract IERC721",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(ArbitratorInfo)8601_storage)": {
+            "label": "mapping(address => struct DataTypes.ArbitratorInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(ArbitratorInfoExt)8604_storage)": {
+            "label": "mapping(address => struct DataTypes.ArbitratorInfoExt)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(ArbitratorInfo)8601_storage": {
+            "label": "struct DataTypes.ArbitratorInfo",
+            "members": [
+              {
+                "label": "arbitrator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "paused",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "currentFeeRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "activeTransactionId",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "ethAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "erc20Token",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "nftContract",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "nftTokenIds",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "operator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "operatorBtcPubKey",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "operatorBtcAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "9"
+              },
+              {
+                "label": "deadLine",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "10"
+              },
+              {
+                "label": "revenueBtcPubKey",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "11"
+              },
+              {
+                "label": "revenueBtcAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "12"
+              },
+              {
+                "label": "revenueETHAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "13"
+              },
+              {
+                "label": "lastSubmittedWorkTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "14"
+              }
+            ],
+            "numberOfBytes": "480"
+          },
+          "t_struct(ArbitratorInfoExt)8604_storage": {
             "label": "struct DataTypes.ArbitratorInfoExt",
             "members": [
               {
