@@ -123,7 +123,7 @@
             "label": "dappStatus",
             "offset": 0,
             "slot": "0",
-            "type": "t_mapping(t_address,t_enum(DAppStatus)1110)",
+            "type": "t_mapping(t_address,t_enum(DAppStatus)16150)",
             "contract": "DAppRegistry",
             "src": "contracts/core/DAppRegistry.sol:16"
           },
@@ -139,7 +139,7 @@
             "label": "configManager",
             "offset": 0,
             "slot": "2",
-            "type": "t_contract(IConfigManager)1012",
+            "type": "t_contract(IConfigManager)14734",
             "contract": "DAppRegistry",
             "src": "contracts/core/DAppRegistry.sol:25"
           },
@@ -161,11 +161,11 @@
             "label": "uint256[50]",
             "numberOfBytes": "1600"
           },
-          "t_contract(IConfigManager)1012": {
+          "t_contract(IConfigManager)14734": {
             "label": "contract IConfigManager",
             "numberOfBytes": "20"
           },
-          "t_enum(DAppStatus)1110": {
+          "t_enum(DAppStatus)16150": {
             "label": "enum DataTypes.DAppStatus",
             "members": [
               "None",
@@ -180,7 +180,7 @@
             "label": "mapping(address => address)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_enum(DAppStatus)1110)": {
+          "t_mapping(t_address,t_enum(DAppStatus)16150)": {
             "label": "mapping(address => enum DataTypes.DAppStatus)",
             "numberOfBytes": "32"
           },
