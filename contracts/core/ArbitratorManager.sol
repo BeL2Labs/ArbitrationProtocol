@@ -10,7 +10,7 @@ import "../interfaces/IBNFTInfo.sol";
 import "./ConfigManager.sol";
 import "../libraries/DataTypes.sol";
 import "../libraries/Errors.sol";
-import "hardhat/console.sol";
+import "../libraries/ConfigManagerKeys.sol";
 import "../interfaces/IAssetOracle.sol";
 
 /**
@@ -508,7 +508,7 @@ contract ArbitratorManager is
 
     function setFeeRates(uint256 ethFeeRate, uint256 btcFeeRate) external override {
         require(ethFeeRate >= configManager.getConfig(configManager.TRANSACTION_MIN_FEE_RATE()), "FeeTooLow");
-        require(btcFeeRate >= configManager.getConfig(configManager.TRANSACTION_MIN_BTC_FEE_RATE()), Errors.INVALID_BTC_FEE_RATE);
+        require(btcFeeRate >= configManager.getConfig(ConfigManagerKeys.TRANSACTION_MIN_BTC_FEE_RATE), Errors.INVALID_BTC_FEE_RATE);
 
         DataTypes.ArbitratorInfo storage arbitrator = arbitrators[msg.sender];
         if (arbitrator.arbitrator == address(0)) revert (Errors.ARBITRATOR_NOT_REGISTERED);
