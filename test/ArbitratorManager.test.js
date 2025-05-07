@@ -84,6 +84,9 @@ describe("ArbitratorManager", function () {
     // Deploy BTC Address Parser
     const BTCAddressParser = await ethers.getContractFactory("MockBtcAddress");
     btcAddressParser = await BTCAddressParser.deploy();
+    // Deploy MockBtcBlockHeaders
+    const MockBtcBlockHeaders = await ethers.getContractFactory("MockBtcBlockHeaders");
+    btcBlockHeaders = await MockBtcBlockHeaders.deploy();
 
     // Deploy TransactionManager
     const TransactionManager = await ethers.getContractFactory("TransactionManager");
@@ -93,7 +96,8 @@ describe("ArbitratorManager", function () {
         configManager.address,
         compensationManager.address,
         btcUtils.address,
-        btcAddressParser.address
+        btcAddressParser.address,
+        btcBlockHeaders.address
     ], { initializer: 'initialize' });
 
     // Set TransactionManager as the transaction manager in ArbitratorManager

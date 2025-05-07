@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/ICompensationManager.sol";
@@ -16,7 +17,8 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract CompensationManager is 
     ICompensationManager,
-    OwnableUpgradeable 
+    OwnableUpgradeable,
+    PausableUpgradeable
 {
     using SafeERC20 for IERC20;
 
@@ -70,6 +72,7 @@ contract CompensationManager is
         address _signatureValidationService
     ) public initializer {
         __Ownable_init(msg.sender);
+        __Pausable_init();
 
         if (_zkService == address(0)
             || _configManager == address(0)
@@ -113,7 +116,7 @@ contract CompensationManager is
     function claimIllegalSignatureCompensation(
         address arbitrator,
         bytes32 evidence
-    ) external override returns (bytes32 claimId) {
+    ) external override whenNotPaused returns (bytes32 claimId) {
         // Get arbitrator details
         DataTypes.ArbitratorOperationInfo memory arbitratorOperation = arbitratorManager.getArbitratorOperationInfo(arbitrator);
         if (arbitratorOperation.activeTransactionId == 0) {
@@ -201,7 +204,7 @@ contract CompensationManager is
         );
     }
 
-    function claimTimeoutCompensation(bytes32 id) external override returns (bytes32 claimId) {
+    function claimTimeoutCompensation(bytes32 id) external override whenNotPaused returns (bytes32 claimId) {
         // Get transaction parties
         DataTypes.TransactionParties memory transactionParties = transactionManager.getTransactionPartiesById(id);
         // Generate claim ID
@@ -257,7 +260,7 @@ contract CompensationManager is
 
     function claimFailedArbitrationCompensation(
         bytes32 evidence
-    ) external override returns (bytes32 claimId) {
+    ) external override whenNotPaused returns (bytes32 claimId) {
         // Get ZK verification details
         (bool verified, bytes32 msghash, bytes memory signature, bytes memory pubkey)
             = signatureValidationService.getResult(evidence);
@@ -380,7 +383,7 @@ contract CompensationManager is
         return systemFee;
     }
 
-    function withdrawCompensation(bytes32 claimId) external override payable {
+    function withdrawCompensation(bytes32 claimId) external override payable whenNotPaused {
         CompensationClaim storage claim = claims[claimId];
         if (claim.withdrawn) revert (Errors.COMPENSATION_WITHDRAWN);
         if (claim.ethAmount == 0 && claim.erc20Amount == 0 && claim.nftTokenIds.length == 0) revert (Errors.NO_COMPENSATION_AVAILABLE);
@@ -449,7 +452,22 @@ contract CompensationManager is
         emit ZkServiceUpdated(address(_zkService));
     }
 
-    // Setter for TransactionManager
+    /**
+     * @notice Pauses the contract
+     * @dev Only owner can call this function
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Unpauses the contract
+     * @dev Only owner can call this function
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
     function setTransactionManager(address _transactionManager) external onlyOwner {
         require(address(_transactionManager) != address(0), "Invalid TransactionManager address");
         transactionManager = ITransactionManager(_transactionManager);

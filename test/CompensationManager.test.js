@@ -23,6 +23,9 @@ describe("CompensationManager", function () {
     let transactionId;
     const duration = 30 * 24 * 60 * 60; // 30days
 
+    const lockScript = "0x14f39fd6e51aad88f6f4ce6ab8827279cfffb92266756321020f8cb5261195d88c95a76fd3007e16814a2e39f994c685988e770ce45d9783f7ad2102a12298f9e970f87b2d2059c8ac5bb95f34c1b4a2b5013c5120fabb7120e184e2ac676321020f8cb5261195d88c95a76fd3007e16814a2e39f994c685988e770ce45d9783f7ad210200493eb975eedf5d5d2f7f5458e790e8264576ec137df06c8f3f90c91b0a6f78ac676303010040b2752102a12298f9e970f87b2d2059c8ac5bb95f34c1b4a2b5013c5120fabb7120e184e2ada820f780df5d1126efc55919f28c1d3874c1b428d708f9bd3ce63548a1d49c37758b876703fa0140b27521020f8cb5261195d88c95a76fd3007e16814a2e39f994c685988e770ce45d9783f7ac686868";
+    const p2wshScript = "0x0020e5cc3f5d28a5ecdb759bdab627070c10a8e3d7975e459b7c481ee3487efa5c0b";
+
     const VALID_BTC_TX = "0x02000000000101929119c4ba3c6e4b3f40474bb14d3d8610593fc4cda68288a69e91cfa363a1ad00000000000000000001a01b0000000000001976a914cb539f4329eeb589e83659c8304bcc6c99553a9688ac05483045022100f1296c9b96f1029d6b74782c9a827ee334a773e33d3a3593816543594ffd1b940220453bfa91aec7a445619cea8f3a5219945260d5ef529d6e02f399318eed96e6a901473044022007974847cf4d0397b4ca736e92e8c3ada42dc8f1c2cb2f98b0038e9967be684f0220241464a067fe1bb3ffbecb178a12004993ec0f51ea9dfc09521096f855f3f3d201010100fd0a016321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ac676321036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ad21036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac676303ab0440b275210249d5b1a12045ff773b85033d3396faa32fd579cee25c4f7bb6aef6103228bd72ada820c7edc93e03202c56d1067d602476e3dd982689b0a6be6a44d016404926cd66ce876703b20440b27521036739c7b375844db641e5037bee466e7a79e32e40f2a90fc9e76bad3d91d5c0c5ac68686800000000";
     const VALID_SIGNATURE = "0x30440220287e9e41c54b48c30e46ea442aa80ab793dac56d3816dbb2a5ea465f0c6e26e1022079aed874e9774b23c98ad9a60b38f37918591d50af83f49b92e63b9ce74fdedf";
     const VALID_TX_HASH = "0x74c0acaefebca6bf4221bf8d2bb86b4d69fb2273a95a1aee4683f5db08bd3eca";
@@ -30,7 +33,7 @@ describe("CompensationManager", function () {
     const VALID_UTXOS = [{
         txHash: "0xada163a3cf919ea68882a6cdc43f5910863d4db14b47403f4b6e3cbac4199192",
         index: 0,
-        script: "0x00200a00f7c850b180f51bbb20f59e87f00150fda6974c04059fab771f04b300e97e",
+        script: p2wshScript,
         amount: 7922
     }];
     const VALID_EVIDENCE = "0xa8a0b55bd00df1287445685c7c4a7e0a3df8edd82fee186cfcfda436f2924cea";
@@ -98,13 +101,19 @@ describe("CompensationManager", function () {
         const BTCAddressParser = await ethers.getContractFactory("MockBtcAddress");
         const btcAddressParser = await BTCAddressParser.deploy();
         await btcAddressParser.deployed();
+
+        // Deploy MockBtcBlockHeaders
+        const MockBtcBlockHeaders = await ethers.getContractFactory("MockBtcBlockHeaders");
+        const btcBlockHeaders = await MockBtcBlockHeaders.deploy();
+
         transactionManager = await upgrades.deployProxy(TransactionManager, [
             arbitratorManager.address,
             dappRegistry.address,
             configManager.address,
             compensationManager.address,
             btcUtils.address,
-            btcAddressParser.address
+            btcAddressParser.address,
+            btcBlockHeaders.address
         ], { initializer: 'initialize' });
 
         // Set transactionManager
@@ -162,7 +171,89 @@ describe("CompensationManager", function () {
         const receipt = await registerTx.wait();
         const event = receipt.events.find(e => e.event === "TransactionRegistered");
         transactionId = event.args[0];
-        await transactionManager.connect(dapp).uploadUTXOs(transactionId, VALID_UTXOS);
+
+        await transactionManager.connect(dapp).uploadUTXOs(transactionId, VALID_UTXOS, lockScript);
+    });
+
+    describe("pause and unpause", function () {
+        it("should allow owner to pause and unpause", async function () {
+            // Check initial state
+            expect(await compensationManager.paused()).to.be.false;
+
+            // Pause
+            await compensationManager.connect(owner).pause();
+            expect(await compensationManager.paused()).to.be.true;
+
+            // Unpause
+            await compensationManager.connect(owner).unpause();
+            expect(await compensationManager.paused()).to.be.false;
+        });
+
+        it("should prevent non-owner from pausing", async function () {
+            await expect(
+                compensationManager.connect(user).pause()
+            ).to.be.revertedWithCustomError(compensationManager, "OwnableUnauthorizedAccount");
+        });
+
+        it("should prevent non-owner from unpausing", async function () {
+            // First pause as owner
+            await compensationManager.connect(owner).pause();
+
+            await expect(
+                compensationManager.connect(user).unpause()
+            ).to.be.revertedWithCustomError(compensationManager, "OwnableUnauthorizedAccount");
+        });
+
+        it("should prevent compensation claims when paused", async function () {
+            // Pause the contract
+            await compensationManager.connect(owner).pause();
+
+            // Try to claim illegal signature compensation
+            await expect(
+                compensationManager.connect(user).claimIllegalSignatureCompensation(
+                    arbitrator.address,
+                    VALID_EVIDENCE
+                )
+            ).to.be.revertedWithCustomError(compensationManager, "EnforcedPause");
+
+            // Try to claim timeout compensation
+            await expect(
+                compensationManager.connect(user).claimTimeoutCompensation(transactionId)
+            ).to.be.revertedWithCustomError(compensationManager, "EnforcedPause");
+
+            // Try to claim failed arbitration compensation
+            await expect(
+                compensationManager.connect(user).claimFailedArbitrationCompensation(VALID_EVIDENCE)
+            ).to.be.revertedWithCustomError(compensationManager, "EnforcedPause");
+
+            // Try to withdraw compensation
+            await expect(
+                compensationManager.connect(user).withdrawCompensation(ethers.constants.HashZero)
+            ).to.be.revertedWithCustomError(compensationManager, "EnforcedPause");
+        });
+
+        it("should allow compensation claims after unpausing", async function () {
+            // Pause and then unpause the contract
+            await compensationManager.connect(owner).pause();
+            await compensationManager.connect(owner).unpause();
+
+            // Mock ZkService verification
+            await zkService.setValidVerification(
+                VALID_EVIDENCE,
+                VALID_PUB_KEY,
+                VALID_TX_HASH,
+                VALID_SIGNATURE,
+                VALID_UTXOS
+            );
+
+            // Should be able to claim after unpausing
+            await expect(
+                compensationManager.connect(user).claimIllegalSignatureCompensation(
+                    arbitrator.address,
+                    VALID_EVIDENCE
+                )
+            ).to.not.be.reverted;
+        });
     });
 
     describe("claimIllegalSignatureCompensation", function () {
