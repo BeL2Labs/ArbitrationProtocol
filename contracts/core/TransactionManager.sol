@@ -242,10 +242,7 @@ contract TransactionManager is
             revert(Errors.NOT_AUTHORIZED);
         }
 
-        // Get DApp owner from registry and verify lock script
-        address dappOwner = dappRegistry.getDAppOwner(transaction.dapp);
-
-        if (!btcUtils.isExpectLockScript(lockScript, dappOwner, utxos[0].script)) {
+        if (!btcUtils.isExpectLockScript(lockScript, msg.sender, utxos[0].script)) {
             revert(Errors.INVALID_LOCK_SCRIPT);
         }
 
