@@ -8664,7 +8664,7 @@
             "label": "zkService",
             "offset": 0,
             "slot": "0",
-            "type": "t_contract(IZkService)11006",
+            "type": "t_contract(IZkService)4125",
             "contract": "CompensationManager",
             "src": "contracts/core/CompensationManager.sol:23"
           },
@@ -8672,7 +8672,7 @@
             "label": "transactionManager",
             "offset": 0,
             "slot": "1",
-            "type": "t_contract(ITransactionManager)10948",
+            "type": "t_contract(ITransactionManager)4067",
             "contract": "CompensationManager",
             "src": "contracts/core/CompensationManager.sol:24"
           },
@@ -8680,7 +8680,7 @@
             "label": "configManager",
             "offset": 0,
             "slot": "2",
-            "type": "t_contract(IConfigManager)10484",
+            "type": "t_contract(IConfigManager)3731",
             "contract": "CompensationManager",
             "src": "contracts/core/CompensationManager.sol:25"
           },
@@ -8688,7 +8688,7 @@
             "label": "arbitratorManager",
             "offset": 0,
             "slot": "3",
-            "type": "t_contract(IArbitratorManager)9978",
+            "type": "t_contract(IArbitratorManager)3436",
             "contract": "CompensationManager",
             "src": "contracts/core/CompensationManager.sol:26"
           },
@@ -8696,7 +8696,7 @@
             "label": "claims",
             "offset": 0,
             "slot": "4",
-            "type": "t_mapping(t_bytes32,t_struct(CompensationClaim)4760_storage)",
+            "type": "t_mapping(t_bytes32,t_struct(CompensationClaim)1550_storage)",
             "contract": "CompensationManager",
             "src": "contracts/core/CompensationManager.sol:29"
           },
@@ -8704,7 +8704,7 @@
             "label": "signatureValidationService",
             "offset": 0,
             "slot": "5",
-            "type": "t_contract(ISignatureValidationService)10615",
+            "type": "t_contract(ISignatureValidationService)3772",
             "contract": "CompensationManager",
             "src": "contracts/core/CompensationManager.sol:31"
           },
@@ -8738,27 +8738,27 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(IArbitratorManager)9978": {
+          "t_contract(IArbitratorManager)3436": {
             "label": "contract IArbitratorManager",
             "numberOfBytes": "20"
           },
-          "t_contract(IConfigManager)10484": {
+          "t_contract(IConfigManager)3731": {
             "label": "contract IConfigManager",
             "numberOfBytes": "20"
           },
-          "t_contract(ISignatureValidationService)10615": {
+          "t_contract(ISignatureValidationService)3772": {
             "label": "contract ISignatureValidationService",
             "numberOfBytes": "20"
           },
-          "t_contract(ITransactionManager)10948": {
+          "t_contract(ITransactionManager)4067": {
             "label": "contract ITransactionManager",
             "numberOfBytes": "20"
           },
-          "t_contract(IZkService)11006": {
+          "t_contract(IZkService)4125": {
             "label": "contract IZkService",
             "numberOfBytes": "20"
           },
-          "t_enum(CompensationType)4765": {
+          "t_enum(CompensationType)1555": {
             "label": "enum CompensationManager.CompensationType",
             "members": [
               "IllegalSignature",
@@ -8768,11 +8768,11 @@
             ],
             "numberOfBytes": "1"
           },
-          "t_mapping(t_bytes32,t_struct(CompensationClaim)4760_storage)": {
+          "t_mapping(t_bytes32,t_struct(CompensationClaim)1550_storage)": {
             "label": "mapping(bytes32 => struct CompensationManager.CompensationClaim)",
             "numberOfBytes": "32"
           },
-          "t_struct(CompensationClaim)4760_storage": {
+          "t_struct(CompensationClaim)1550_storage": {
             "label": "struct CompensationManager.CompensationClaim",
             "members": [
               {
@@ -8831,7 +8831,7 @@
               },
               {
                 "label": "claimType",
-                "type": "t_enum(CompensationType)4765",
+                "type": "t_enum(CompensationType)1555",
                 "offset": 1,
                 "slot": "8"
               },
@@ -8853,6 +8853,654 @@
           }
         },
         "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "aa1d390aaca6f4fdda9a21c4b84bb6923cecaac118e6d41555cf072ed17c545d": {
+      "address": "0x630C8cc75a252D315D827c20985f9bBE3a8f1D8B",
+      "txHash": "0x9ca0fc8bab5d1c55ec043d55634ab5687f2f9ec129e8750065f565c3bd56dd26",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "_transactionIdCounter",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:28"
+          },
+          {
+            "label": "arbitratorManager",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(IArbitratorManager)4373",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:31"
+          },
+          {
+            "label": "dappRegistry",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_contract(IDAppRegistry)4758",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:32"
+          },
+          {
+            "label": "configManager",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_contract(IConfigManager)4668",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:33"
+          },
+          {
+            "label": "btcUtils",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_contract(IBTCUtils)4456",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:34"
+          },
+          {
+            "label": "compensationManager",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_address",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:35"
+          },
+          {
+            "label": "btcAddressParser",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_contract(IBtcAddress)4493",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:36"
+          },
+          {
+            "label": "btcBlockHeaders",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(IBtcBlockHeaders)4526",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:37"
+          },
+          {
+            "label": "transactions_data",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_mapping(t_bytes32,t_struct(TransactionData)6030_storage)",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:40"
+          },
+          {
+            "label": "transactions_parties",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_mapping(t_bytes32,t_struct(TransactionParties)6043_storage)",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:41"
+          },
+          {
+            "label": "transactions_btc_raw_data",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_mapping(t_bytes32,t_bytes_storage)",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:42"
+          },
+          {
+            "label": "transactions_btc_signature",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_mapping(t_bytes32,t_bytes_storage)",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:43"
+          },
+          {
+            "label": "transactions_btc_script",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_mapping(t_bytes32,t_bytes_storage)",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:44"
+          },
+          {
+            "label": "transactions_utxos",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_mapping(t_bytes32,t_array(t_struct(UTXO)5969_storage)dyn_storage)",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:45"
+          },
+          {
+            "label": "transactions_sign_hash",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_mapping(t_bytes32,t_bytes32)",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:46"
+          },
+          {
+            "label": "transactionSignData",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_mapping(t_bytes32,t_bytes_storage)",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:48"
+          },
+          {
+            "label": "txHashToId",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_mapping(t_bytes32,t_bytes32)",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:49"
+          },
+          {
+            "label": "transactions_utxo_script",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_mapping(t_bytes32,t_bytes_storage)",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:50"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "18",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "TransactionManager",
+            "src": "contracts/core/TransactionManager.sol:741"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_struct(UTXO)5969_storage)dyn_storage": {
+            "label": "struct DataTypes.UTXO[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_contract(IArbitratorManager)4373": {
+            "label": "contract IArbitratorManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IBTCUtils)4456": {
+            "label": "contract IBTCUtils",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IBtcAddress)4493": {
+            "label": "contract IBtcAddress",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IBtcBlockHeaders)4526": {
+            "label": "contract IBtcBlockHeaders",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IConfigManager)4668": {
+            "label": "contract IConfigManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IDAppRegistry)4758": {
+            "label": "contract IDAppRegistry",
+            "numberOfBytes": "20"
+          },
+          "t_enum(TransactionStatus)5955": {
+            "label": "enum DataTypes.TransactionStatus",
+            "members": [
+              "Active",
+              "Completed",
+              "Arbitrated",
+              "Expired",
+              "Disputed",
+              "Submitted",
+              "ToBeActive"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_bytes32,t_array(t_struct(UTXO)5969_storage)dyn_storage)": {
+            "label": "mapping(bytes32 => struct DataTypes.UTXO[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bytes32)": {
+            "label": "mapping(bytes32 => bytes32)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bytes_storage)": {
+            "label": "mapping(bytes32 => bytes)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(TransactionData)6030_storage)": {
+            "label": "mapping(bytes32 => struct DataTypes.TransactionData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(TransactionParties)6043_storage)": {
+            "label": "mapping(bytes32 => struct DataTypes.TransactionParties)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TransactionData)6030_storage": {
+            "label": "struct DataTypes.TransactionData",
+            "members": [
+              {
+                "label": "startTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "deadline",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "requestArbitrationTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "depositedFee",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "status",
+                "type": "t_enum(TransactionStatus)5955",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "arbitratorBtcFee",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "btcFeeAddress",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "btcFeeTxHash",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "7"
+              }
+            ],
+            "numberOfBytes": "256"
+          },
+          "t_struct(TransactionParties)6043_storage": {
+            "label": "struct DataTypes.TransactionParties",
+            "members": [
+              {
+                "label": "dapp",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "arbitrator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "compensationReceiver",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "timeoutCompensationReceiver",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "refundAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "depositedFeeRefundAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "5"
+              }
+            ],
+            "numberOfBytes": "192"
+          },
+          "t_struct(UTXO)5969_storage": {
+            "label": "struct DataTypes.UTXO",
+            "members": [
+              {
+                "label": "txHash",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "index",
+                "type": "t_uint32",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "script",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "amount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:43"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "a6f7a0a543837736b2a1f1d9616794d661f07794c7af5f8171c0815c3752cfca": {
+      "address": "0x0c8cb1a6f1bAcf8E235fc35002bFABcA3A8fEe16",
+      "txHash": "0x31ab95a0160cb6b2d84ba5abd5334de7ec5bdde653fd2eaf1f6094e190d2d18c",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "zkService",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IZkService)15265",
+            "contract": "CompensationManager",
+            "src": "contracts/core/CompensationManager.sol:25"
+          },
+          {
+            "label": "transactionManager",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(ITransactionManager)15207",
+            "contract": "CompensationManager",
+            "src": "contracts/core/CompensationManager.sol:26"
+          },
+          {
+            "label": "configManager",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_contract(IConfigManager)14734",
+            "contract": "CompensationManager",
+            "src": "contracts/core/CompensationManager.sol:27"
+          },
+          {
+            "label": "arbitratorManager",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_contract(IArbitratorManager)14216",
+            "contract": "CompensationManager",
+            "src": "contracts/core/CompensationManager.sol:28"
+          },
+          {
+            "label": "claims",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_mapping(t_bytes32,t_struct(CompensationClaim)8390_storage)",
+            "contract": "CompensationManager",
+            "src": "contracts/core/CompensationManager.sol:31"
+          },
+          {
+            "label": "signatureValidationService",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_contract(ISignatureValidationService)14865",
+            "contract": "CompensationManager",
+            "src": "contracts/core/CompensationManager.sol:33"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "CompensationManager",
+            "src": "contracts/core/CompensationManager.sol:499"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(IArbitratorManager)14216": {
+            "label": "contract IArbitratorManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IConfigManager)14734": {
+            "label": "contract IConfigManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ISignatureValidationService)14865": {
+            "label": "contract ISignatureValidationService",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITransactionManager)15207": {
+            "label": "contract ITransactionManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IZkService)15265": {
+            "label": "contract IZkService",
+            "numberOfBytes": "20"
+          },
+          "t_enum(CompensationType)8395": {
+            "label": "enum CompensationManager.CompensationType",
+            "members": [
+              "IllegalSignature",
+              "Timeout",
+              "FailedArbitration",
+              "ArbitratorFee"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_bytes32,t_struct(CompensationClaim)8390_storage)": {
+            "label": "mapping(bytes32 => struct CompensationManager.CompensationClaim)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(CompensationClaim)8390_storage": {
+            "label": "struct CompensationManager.CompensationClaim",
+            "members": [
+              {
+                "label": "claimer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "arbitrator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "ethAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "erc20Token",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "erc20Amount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "nftContract",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "nftTokenIds",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "totalAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "withdrawn",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "claimType",
+                "type": "t_enum(CompensationType)8395",
+                "offset": 1,
+                "slot": "8"
+              },
+              {
+                "label": "receivedCompensationAddress",
+                "type": "t_address",
+                "offset": 2,
+                "slot": "8"
+              }
+            ],
+            "numberOfBytes": "288"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Pausable": [
+            {
+              "contract": "PausableUpgradeable",
+              "label": "_paused",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol:21"
+            }
+          ],
           "erc7201:openzeppelin.storage.Ownable": [
             {
               "contract": "OwnableUpgradeable",
