@@ -20,7 +20,7 @@ export const ListView: FC<{
 }> = ({ arbiters, sortConfig, handleSort }) => {
 
   const getSortIcon = (key: typeof sortConfig.key) => {
-    // NOTE: since pagination was implemented sorting cannot be just a local list ordering, it has to 
+    // NOTE: since pagination was implemented sorting cannot be just a local list ordering, it has to
     // be implemented at the fetch level. Re-enable those sort icons after fetch is able to have a sort param.
     return null;
     // if (sortConfig.key !== key) return <ChevronUpDownIcon className="w-4 h-4" />;
@@ -74,7 +74,7 @@ const ArbiterRow: FC<{ arbiter: ArbiterInfo }> = ({ arbiter }) => {
     </TableCell>
     <TableCell><OperatorInfo arbiter={arbiter} /></TableCell>
     <TableCell className="whitespace-nowrap">
-      <div className="text-sm">{Number(arbiter.ethFeeRate) / 100}%</div>
+      <div className="text-sm">{Number(arbiter.ethFeeRate > 0 ? arbiter.ethFeeRate : arbiter.btcFeeRate) / 100}%</div>
     </TableCell>
     <TableCell className="whitespace-nowrap">
       <div className="text-sm">
