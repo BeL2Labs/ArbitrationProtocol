@@ -43,11 +43,11 @@ contract TransactionManager is
     mapping(bytes32 => bytes) internal transactions_btc_signature;
     mapping(bytes32 => bytes) internal transactions_btc_script;
     mapping(bytes32 => DataTypes.UTXO[]) internal transactions_utxos;
-    mapping(bytes32 => bytes) internal transactions_utxo_script;
     mapping(bytes32 => bytes32) internal transactions_sign_hash;
     // key is the transaction signhash
     mapping(bytes32 => bytes) public transactionSignData;
     mapping(bytes32 => bytes32) public txHashToId;
+    mapping(bytes32 => bytes) internal transactions_utxo_script;
 
     modifier onlyCompensationManager() {
         if (msg.sender != compensationManager) revert(Errors.NOT_COMPENSATION_MANAGER);
@@ -738,5 +738,5 @@ contract TransactionManager is
     }
 
     // Add a gap for future storage variables
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 }
