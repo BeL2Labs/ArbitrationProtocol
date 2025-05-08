@@ -137,7 +137,7 @@ contract ArbitratorManager is
         if (feeRate < minFeeRate) revert (Errors.INVALID_FEE_RATE);
 
         // Validate btc fee rate
-        uint256 minBtcFeeRate = configManager.getConfig(configManager.TRANSACTION_MIN_BTC_FEE_RATE());
+        uint256 minBtcFeeRate = configManager.getConfig(ConfigManagerKeys.TRANSACTION_MIN_BTC_FEE_RATE());
         if (btcFeeRate < minBtcFeeRate) revert (Errors.INVALID_BTC_FEE_RATE);
 
         // Validate deadline
