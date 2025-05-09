@@ -583,21 +583,6 @@ export class TransactionManager extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
-  assetOracle(): Address {
-    let result = super.call("assetOracle", "assetOracle():(address)", []);
-
-    return result[0].toAddress();
-  }
-
-  try_assetOracle(): ethereum.CallResult<Address> {
-    let result = super.tryCall("assetOracle", "assetOracle():(address)", []);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toAddress());
-  }
-
   btcAddressParser(): Address {
     let result = super.call(
       "btcAddressParser",
@@ -965,6 +950,29 @@ export class TransactionManager extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toI32());
   }
 
+  getTransactionUTXOScriptById(id: Bytes): Bytes {
+    let result = super.call(
+      "getTransactionUTXOScriptById",
+      "getTransactionUTXOScriptById(bytes32):(bytes)",
+      [ethereum.Value.fromFixedBytes(id)],
+    );
+
+    return result[0].toBytes();
+  }
+
+  try_getTransactionUTXOScriptById(id: Bytes): ethereum.CallResult<Bytes> {
+    let result = super.tryCall(
+      "getTransactionUTXOScriptById",
+      "getTransactionUTXOScriptById(bytes32):(bytes)",
+      [ethereum.Value.fromFixedBytes(id)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytes());
+  }
+
   getTransactionUTXOsById(
     id: Bytes,
   ): Array<TransactionManager__getTransactionUTXOsByIdResultValue0Struct> {
@@ -1271,6 +1279,10 @@ export class InitializeCall__Inputs {
 
   get _btcAddressParser(): Address {
     return this._call.inputValues[5].value.toAddress();
+  }
+
+  get _btcBlockHeaders(): Address {
+    return this._call.inputValues[6].value.toAddress();
   }
 }
 
@@ -1745,6 +1757,10 @@ export class UploadUTXOsCall__Inputs {
 
   get utxos(): Array<UploadUTXOsCallUtxosStruct> {
     return this._call.inputValues[1].value.toTupleArray<UploadUTXOsCallUtxosStruct>();
+  }
+
+  get lockScript(): Bytes {
+    return this._call.inputValues[2].value.toBytes();
   }
 }
 

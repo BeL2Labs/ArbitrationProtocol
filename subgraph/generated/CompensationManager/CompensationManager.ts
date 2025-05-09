@@ -57,20 +57,28 @@ export class CompensationClaimed__Params {
     return this._event.parameters[3].value.toBigInt();
   }
 
-  get nftTokenIds(): Array<BigInt> {
-    return this._event.parameters[4].value.toBigIntArray();
+  get erc20Token(): Address {
+    return this._event.parameters[4].value.toAddress();
   }
 
-  get totalAmount(): BigInt {
+  get erc20Amount(): BigInt {
     return this._event.parameters[5].value.toBigInt();
   }
 
+  get nftTokenIds(): Array<BigInt> {
+    return this._event.parameters[6].value.toBigIntArray();
+  }
+
+  get totalAmount(): BigInt {
+    return this._event.parameters[7].value.toBigInt();
+  }
+
   get receivedCompensationAddress(): Address {
-    return this._event.parameters[6].value.toAddress();
+    return this._event.parameters[8].value.toAddress();
   }
 
   get claimType(): i32 {
-    return this._event.parameters[7].value.toI32();
+    return this._event.parameters[9].value.toI32();
   }
 }
 
@@ -103,16 +111,24 @@ export class CompensationWithdrawn__Params {
     return this._event.parameters[3].value.toBigInt();
   }
 
-  get nftTokenIds(): Array<BigInt> {
-    return this._event.parameters[4].value.toBigIntArray();
+  get erc20Token(): Address {
+    return this._event.parameters[4].value.toAddress();
   }
 
-  get systemFee(): BigInt {
+  get erc20Amount(): BigInt {
     return this._event.parameters[5].value.toBigInt();
   }
 
+  get nftTokenIds(): Array<BigInt> {
+    return this._event.parameters[6].value.toBigIntArray();
+  }
+
+  get systemFee(): BigInt {
+    return this._event.parameters[7].value.toBigInt();
+  }
+
   get excessPaymenttoClaimer(): BigInt {
-    return this._event.parameters[6].value.toBigInt();
+    return this._event.parameters[8].value.toBigInt();
   }
 }
 
@@ -174,6 +190,24 @@ export class OwnershipTransferred__Params {
   }
 }
 
+export class Paused extends ethereum.Event {
+  get params(): Paused__Params {
+    return new Paused__Params(this);
+  }
+}
+
+export class Paused__Params {
+  _event: Paused;
+
+  constructor(event: Paused) {
+    this._event = event;
+  }
+
+  get account(): Address {
+    return this._event.parameters[0].value.toAddress();
+  }
+}
+
 export class SignatureValidationServiceUpdated extends ethereum.Event {
   get params(): SignatureValidationServiceUpdated__Params {
     return new SignatureValidationServiceUpdated__Params(this);
@@ -210,6 +244,24 @@ export class TransactionManagerUpdated__Params {
   }
 }
 
+export class Unpaused extends ethereum.Event {
+  get params(): Unpaused__Params {
+    return new Unpaused__Params(this);
+  }
+}
+
+export class Unpaused__Params {
+  _event: Unpaused;
+
+  constructor(event: Unpaused) {
+    this._event = event;
+  }
+
+  get account(): Address {
+    return this._event.parameters[0].value.toAddress();
+  }
+}
+
 export class ZkServiceUpdated extends ethereum.Event {
   get params(): ZkServiceUpdated__Params {
     return new ZkServiceUpdated__Params(this);
@@ -234,9 +286,11 @@ export class CompensationManager__claimsResult {
   value2: BigInt;
   value3: Address;
   value4: BigInt;
-  value5: boolean;
-  value6: i32;
-  value7: Address;
+  value5: Address;
+  value6: BigInt;
+  value7: boolean;
+  value8: i32;
+  value9: Address;
 
   constructor(
     value0: Address,
@@ -244,9 +298,11 @@ export class CompensationManager__claimsResult {
     value2: BigInt,
     value3: Address,
     value4: BigInt,
-    value5: boolean,
-    value6: i32,
-    value7: Address,
+    value5: Address,
+    value6: BigInt,
+    value7: boolean,
+    value8: i32,
+    value9: Address,
   ) {
     this.value0 = value0;
     this.value1 = value1;
@@ -256,6 +312,8 @@ export class CompensationManager__claimsResult {
     this.value5 = value5;
     this.value6 = value6;
     this.value7 = value7;
+    this.value8 = value8;
+    this.value9 = value9;
   }
 
   toMap(): TypedMap<string, ethereum.Value> {
@@ -265,12 +323,14 @@ export class CompensationManager__claimsResult {
     map.set("value2", ethereum.Value.fromUnsignedBigInt(this.value2));
     map.set("value3", ethereum.Value.fromAddress(this.value3));
     map.set("value4", ethereum.Value.fromUnsignedBigInt(this.value4));
-    map.set("value5", ethereum.Value.fromBoolean(this.value5));
+    map.set("value5", ethereum.Value.fromAddress(this.value5));
+    map.set("value6", ethereum.Value.fromUnsignedBigInt(this.value6));
+    map.set("value7", ethereum.Value.fromBoolean(this.value7));
     map.set(
-      "value6",
-      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(this.value6)),
+      "value8",
+      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(this.value8)),
     );
-    map.set("value7", ethereum.Value.fromAddress(this.value7));
+    map.set("value9", ethereum.Value.fromAddress(this.value9));
     return map;
   }
 
@@ -286,24 +346,32 @@ export class CompensationManager__claimsResult {
     return this.value2;
   }
 
-  getNftContract(): Address {
+  getErc20Token(): Address {
     return this.value3;
   }
 
-  getTotalAmount(): BigInt {
+  getErc20Amount(): BigInt {
     return this.value4;
   }
 
-  getWithdrawn(): boolean {
+  getNftContract(): Address {
     return this.value5;
   }
 
-  getClaimType(): i32 {
+  getTotalAmount(): BigInt {
     return this.value6;
   }
 
-  getReceivedCompensationAddress(): Address {
+  getWithdrawn(): boolean {
     return this.value7;
+  }
+
+  getClaimType(): i32 {
+    return this.value8;
+  }
+
+  getReceivedCompensationAddress(): Address {
+    return this.value9;
   }
 }
 
@@ -444,7 +512,7 @@ export class CompensationManager extends ethereum.SmartContract {
   claims(param0: Bytes): CompensationManager__claimsResult {
     let result = super.call(
       "claims",
-      "claims(bytes32):(address,address,uint256,address,uint256,bool,uint8,address)",
+      "claims(bytes32):(address,address,uint256,address,uint256,address,uint256,bool,uint8,address)",
       [ethereum.Value.fromFixedBytes(param0)],
     );
 
@@ -454,9 +522,11 @@ export class CompensationManager extends ethereum.SmartContract {
       result[2].toBigInt(),
       result[3].toAddress(),
       result[4].toBigInt(),
-      result[5].toBoolean(),
-      result[6].toI32(),
-      result[7].toAddress(),
+      result[5].toAddress(),
+      result[6].toBigInt(),
+      result[7].toBoolean(),
+      result[8].toI32(),
+      result[9].toAddress(),
     );
   }
 
@@ -465,7 +535,7 @@ export class CompensationManager extends ethereum.SmartContract {
   ): ethereum.CallResult<CompensationManager__claimsResult> {
     let result = super.tryCall(
       "claims",
-      "claims(bytes32):(address,address,uint256,address,uint256,bool,uint8,address)",
+      "claims(bytes32):(address,address,uint256,address,uint256,address,uint256,bool,uint8,address)",
       [ethereum.Value.fromFixedBytes(param0)],
     );
     if (result.reverted) {
@@ -479,9 +549,11 @@ export class CompensationManager extends ethereum.SmartContract {
         value[2].toBigInt(),
         value[3].toAddress(),
         value[4].toBigInt(),
-        value[5].toBoolean(),
-        value[6].toI32(),
-        value[7].toAddress(),
+        value[5].toAddress(),
+        value[6].toBigInt(),
+        value[7].toBoolean(),
+        value[8].toI32(),
+        value[9].toAddress(),
       ),
     );
   }
@@ -564,6 +636,21 @@ export class CompensationManager extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  paused(): boolean {
+    let result = super.call("paused", "paused():(bool)", []);
+
+    return result[0].toBoolean();
+  }
+
+  try_paused(): ethereum.CallResult<boolean> {
+    let result = super.tryCall("paused", "paused():(bool)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
   signatureValidationService(): Address {
@@ -836,6 +923,32 @@ export class InitializeCall__Outputs {
   }
 }
 
+export class PauseCall extends ethereum.Call {
+  get inputs(): PauseCall__Inputs {
+    return new PauseCall__Inputs(this);
+  }
+
+  get outputs(): PauseCall__Outputs {
+    return new PauseCall__Outputs(this);
+  }
+}
+
+export class PauseCall__Inputs {
+  _call: PauseCall;
+
+  constructor(call: PauseCall) {
+    this._call = call;
+  }
+}
+
+export class PauseCall__Outputs {
+  _call: PauseCall;
+
+  constructor(call: PauseCall) {
+    this._call = call;
+  }
+}
+
 export class RenounceOwnershipCall extends ethereum.Call {
   get inputs(): RenounceOwnershipCall__Inputs {
     return new RenounceOwnershipCall__Inputs(this);
@@ -1038,6 +1151,32 @@ export class TransferOwnershipCall__Outputs {
   _call: TransferOwnershipCall;
 
   constructor(call: TransferOwnershipCall) {
+    this._call = call;
+  }
+}
+
+export class UnpauseCall extends ethereum.Call {
+  get inputs(): UnpauseCall__Inputs {
+    return new UnpauseCall__Inputs(this);
+  }
+
+  get outputs(): UnpauseCall__Outputs {
+    return new UnpauseCall__Outputs(this);
+  }
+}
+
+export class UnpauseCall__Inputs {
+  _call: UnpauseCall;
+
+  constructor(call: UnpauseCall) {
+    this._call = call;
+  }
+}
+
+export class UnpauseCall__Outputs {
+  _call: UnpauseCall;
+
+  constructor(call: UnpauseCall) {
     this._call = call;
   }
 }

@@ -198,11 +198,11 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "assetOracle",
+          "name": "assetManager",
           "type": "address"
         }
       ],
-      "name": "AssetOracleUpdated",
+      "name": "AssetManagerUpdated",
       "type": "event"
     },
     {
@@ -235,44 +235,6 @@
         }
       ],
       "name": "ConfigManagerUpdated",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "transactionManager",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "compensationManager",
-          "type": "address"
-        }
-      ],
-      "name": "InitializedManager",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "oldNFTContract",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "newNFTContract",
-          "type": "address"
-        }
-      ],
-      "name": "NFTContractUpdated",
       "type": "event"
     },
     {
@@ -378,16 +340,34 @@
           "type": "address"
         },
         {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "ethAmount",
+          "type": "uint256"
+        },
+        {
           "indexed": true,
           "internalType": "address",
-          "name": "assetAddress",
+          "name": "erc20Address",
           "type": "address"
         },
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "amount",
+          "name": "erc20Amount",
           "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "nftAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256[]",
+          "name": "nftTokenIds",
+          "type": "uint256[]"
         }
       ],
       "name": "StakeWithdrawn",
@@ -433,7 +413,53 @@
           "type": "address"
         }
       ],
-      "name": "getArbitratorInfo",
+      "name": "getArbitratorAssets",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "ethAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "erc20Token",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "erc20Amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "nftContract",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "nftTokenIds",
+              "type": "uint256[]"
+            }
+          ],
+          "internalType": "struct DataTypes.ArbitratorAssets",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "arbitrator",
+          "type": "address"
+        }
+      ],
+      "name": "getArbitratorBasicInfo",
       "outputs": [
         {
           "components": [
@@ -449,34 +475,35 @@
             },
             {
               "internalType": "uint256",
-              "name": "currentFeeRate",
+              "name": "registerTime",
               "type": "uint256"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "activeTransactionId",
-              "type": "bytes32"
             },
             {
               "internalType": "uint256",
-              "name": "ethAmount",
+              "name": "deadline",
               "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "erc20Token",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "nftContract",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "nftTokenIds",
-              "type": "uint256[]"
-            },
+            }
+          ],
+          "internalType": "struct DataTypes.ArbitratorBasicInfo",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "arbitrator",
+          "type": "address"
+        }
+      ],
+      "name": "getArbitratorOperationInfo",
+      "outputs": [
+        {
+          "components": [
             {
               "internalType": "address",
               "name": "operator",
@@ -493,8 +520,44 @@
               "type": "string"
             },
             {
+              "internalType": "bytes32",
+              "name": "activeTransactionId",
+              "type": "bytes32"
+            },
+            {
               "internalType": "uint256",
-              "name": "deadLine",
+              "name": "lastSubmittedWorkTime",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct DataTypes.ArbitratorOperationInfo",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "arbitrator",
+          "type": "address"
+        }
+      ],
+      "name": "getArbitratorRevenueInfo",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "currentFeeRate",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "currentBTCFeeRate",
               "type": "uint256"
             },
             {
@@ -511,40 +574,9 @@
               "internalType": "address",
               "name": "revenueETHAddress",
               "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "lastSubmittedWorkTime",
-              "type": "uint256"
             }
           ],
-          "internalType": "struct DataTypes.ArbitratorInfo",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "arbitrator",
-          "type": "address"
-        }
-      ],
-      "name": "getArbitratorInfoExt",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "currentBTCFeeRate",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct DataTypes.ArbitratorInfoExt",
+          "internalType": "struct DataTypes.ArbitratorRevenueInfo",
           "name": "",
           "type": "tuple"
         }
@@ -617,43 +649,6 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "arbitrator",
-          "type": "address"
-        }
-      ],
-      "name": "getTotalNFTStakeValue",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_transactionManager",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_compensationManager",
-          "type": "address"
-        }
-      ],
-      "name": "initTransactionAndCompensationManager",
-      "outputs": [],
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -759,6 +754,49 @@
     {
       "inputs": [],
       "name": "pause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "defaultBtcAddress",
+          "type": "string"
+        },
+        {
+          "internalType": "bytes",
+          "name": "defaultBtcPubKey",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "feeRate",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "btcFeeRate",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "deadline",
+          "type": "uint256"
+        }
+      ],
+      "name": "registerArbitratorByStakeERC20",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -887,11 +925,11 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_assetOracle",
+          "name": "_assetManager",
           "type": "address"
         }
       ],
-      "name": "setAssetOracle",
+      "name": "setAssetManager",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -923,19 +961,6 @@
         }
       ],
       "name": "setFeeRates",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_nftContract",
-          "type": "address"
-        }
-      ],
-      "name": "setNFTContract",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -995,6 +1020,24 @@
         }
       ],
       "name": "setTransactionManager",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "stakeERC20",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

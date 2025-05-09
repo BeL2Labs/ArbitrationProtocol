@@ -45,6 +45,18 @@
         },
         {
           "indexed": false,
+          "internalType": "address",
+          "name": "erc20Token",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "erc20Amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
           "internalType": "uint256[]",
           "name": "nftTokenIds",
           "type": "uint256[]"
@@ -96,6 +108,18 @@
           "indexed": false,
           "internalType": "uint256",
           "name": "ethAmount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "erc20Token",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "erc20Amount",
           "type": "uint256"
         },
         {

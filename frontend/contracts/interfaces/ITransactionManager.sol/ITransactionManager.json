@@ -705,6 +705,25 @@
           "type": "bytes32"
         }
       ],
+      "name": "getTransactionUTXOScriptById",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
       "name": "getTransactionUTXOsById",
       "outputs": [
         {
@@ -1001,6 +1020,11 @@
           "internalType": "struct DataTypes.UTXO[]",
           "name": "utxos",
           "type": "tuple[]"
+        },
+        {
+          "internalType": "bytes",
+          "name": "lockScript",
+          "type": "bytes"
         }
       ],
       "name": "uploadUTXOs",

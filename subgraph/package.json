@@ -5,10 +5,11 @@
   "scripts": {
     "contracts:build": "yarn --cwd .. compile && ./scripts/extract_abis.sh",
     "codegen": "graph codegen",
-    "build": "graph build",
-    "create-local": "graph create --node http://localhost:8020/ arbitrators",
-    "remove-local": "graph remove --node http://localhost:8020/ arbitrators",
-    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 arbitrators",
+    "build:staging": "graph build --network esc-staging",
+    "build:prod": "graph build --network esc-prod",
+    "create-local": "graph create --node http://localhost:8020/ nbw-arbitrators",
+    "remove-local": "graph remove --node http://localhost:8020/ nbw-arbitrators",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 nbw-arbitrators",
     "test": "graph test",
     "graph-version": "graph --version"
   },

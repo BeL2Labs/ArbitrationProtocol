@@ -220,20 +220,20 @@ export class ArbitratorWorking__Params {
   }
 }
 
-export class AssetOracleUpdated extends ethereum.Event {
-  get params(): AssetOracleUpdated__Params {
-    return new AssetOracleUpdated__Params(this);
+export class AssetManagerUpdated extends ethereum.Event {
+  get params(): AssetManagerUpdated__Params {
+    return new AssetManagerUpdated__Params(this);
   }
 }
 
-export class AssetOracleUpdated__Params {
-  _event: AssetOracleUpdated;
+export class AssetManagerUpdated__Params {
+  _event: AssetManagerUpdated;
 
-  constructor(event: AssetOracleUpdated) {
+  constructor(event: AssetManagerUpdated) {
     this._event = event;
   }
 
-  get assetOracle(): Address {
+  get assetManager(): Address {
     return this._event.parameters[0].value.toAddress();
   }
 }
@@ -293,50 +293,6 @@ export class Initialized__Params {
 
   get version(): BigInt {
     return this._event.parameters[0].value.toBigInt();
-  }
-}
-
-export class InitializedManager extends ethereum.Event {
-  get params(): InitializedManager__Params {
-    return new InitializedManager__Params(this);
-  }
-}
-
-export class InitializedManager__Params {
-  _event: InitializedManager;
-
-  constructor(event: InitializedManager) {
-    this._event = event;
-  }
-
-  get transactionManager(): Address {
-    return this._event.parameters[0].value.toAddress();
-  }
-
-  get compensationManager(): Address {
-    return this._event.parameters[1].value.toAddress();
-  }
-}
-
-export class NFTContractUpdated extends ethereum.Event {
-  get params(): NFTContractUpdated__Params {
-    return new NFTContractUpdated__Params(this);
-  }
-}
-
-export class NFTContractUpdated__Params {
-  _event: NFTContractUpdated;
-
-  constructor(event: NFTContractUpdated) {
-    this._event = event;
-  }
-
-  get oldNFTContract(): Address {
-    return this._event.parameters[0].value.toAddress();
-  }
-
-  get newNFTContract(): Address {
-    return this._event.parameters[1].value.toAddress();
   }
 }
 
@@ -469,12 +425,24 @@ export class StakeWithdrawn__Params {
     return this._event.parameters[0].value.toAddress();
   }
 
-  get assetAddress(): Address {
-    return this._event.parameters[1].value.toAddress();
+  get ethAmount(): BigInt {
+    return this._event.parameters[1].value.toBigInt();
   }
 
-  get amount(): BigInt {
-    return this._event.parameters[2].value.toBigInt();
+  get erc20Address(): Address {
+    return this._event.parameters[2].value.toAddress();
+  }
+
+  get erc20Amount(): BigInt {
+    return this._event.parameters[3].value.toBigInt();
+  }
+
+  get nftAddress(): Address {
+    return this._event.parameters[4].value.toAddress();
+  }
+
+  get nftTokenIds(): Array<BigInt> {
+    return this._event.parameters[5].value.toBigIntArray();
   }
 }
 
@@ -500,7 +468,29 @@ export class TransactionManagerUpdated__Params {
   }
 }
 
-export class ArbitratorManager__getArbitratorInfoResultValue0Struct extends ethereum.Tuple {
+export class ArbitratorManager__getArbitratorAssetsResultValue0Struct extends ethereum.Tuple {
+  get ethAmount(): BigInt {
+    return this[0].toBigInt();
+  }
+
+  get erc20Token(): Address {
+    return this[1].toAddress();
+  }
+
+  get erc20Amount(): BigInt {
+    return this[2].toBigInt();
+  }
+
+  get nftContract(): Address {
+    return this[3].toAddress();
+  }
+
+  get nftTokenIds(): Array<BigInt> {
+    return this[4].toBigIntArray();
+  }
+}
+
+export class ArbitratorManager__getArbitratorBasicInfoResultValue0Struct extends ethereum.Tuple {
   get arbitrator(): Address {
     return this[0].toAddress();
   }
@@ -509,66 +499,56 @@ export class ArbitratorManager__getArbitratorInfoResultValue0Struct extends ethe
     return this[1].toBoolean();
   }
 
-  get currentFeeRate(): BigInt {
+  get registerTime(): BigInt {
     return this[2].toBigInt();
+  }
+
+  get deadline(): BigInt {
+    return this[3].toBigInt();
+  }
+}
+
+export class ArbitratorManager__getArbitratorOperationInfoResultValue0Struct extends ethereum.Tuple {
+  get operator(): Address {
+    return this[0].toAddress();
+  }
+
+  get operatorBtcPubKey(): Bytes {
+    return this[1].toBytes();
+  }
+
+  get operatorBtcAddress(): string {
+    return this[2].toString();
   }
 
   get activeTransactionId(): Bytes {
     return this[3].toBytes();
   }
 
-  get ethAmount(): BigInt {
-    return this[4].toBigInt();
-  }
-
-  get erc20Token(): Address {
-    return this[5].toAddress();
-  }
-
-  get nftContract(): Address {
-    return this[6].toAddress();
-  }
-
-  get nftTokenIds(): Array<BigInt> {
-    return this[7].toBigIntArray();
-  }
-
-  get operator(): Address {
-    return this[8].toAddress();
-  }
-
-  get operatorBtcPubKey(): Bytes {
-    return this[9].toBytes();
-  }
-
-  get operatorBtcAddress(): string {
-    return this[10].toString();
-  }
-
-  get deadLine(): BigInt {
-    return this[11].toBigInt();
-  }
-
-  get revenueBtcPubKey(): Bytes {
-    return this[12].toBytes();
-  }
-
-  get revenueBtcAddress(): string {
-    return this[13].toString();
-  }
-
-  get revenueETHAddress(): Address {
-    return this[14].toAddress();
-  }
-
   get lastSubmittedWorkTime(): BigInt {
-    return this[15].toBigInt();
+    return this[4].toBigInt();
   }
 }
 
-export class ArbitratorManager__getArbitratorInfoExtResultValue0Struct extends ethereum.Tuple {
-  get currentBTCFeeRate(): BigInt {
+export class ArbitratorManager__getArbitratorRevenueInfoResultValue0Struct extends ethereum.Tuple {
+  get currentFeeRate(): BigInt {
     return this[0].toBigInt();
+  }
+
+  get currentBTCFeeRate(): BigInt {
+    return this[1].toBigInt();
+  }
+
+  get revenueBtcPubKey(): Bytes {
+    return this[2].toBytes();
+  }
+
+  get revenueBtcAddress(): string {
+    return this[3].toString();
+  }
+
+  get revenueETHAddress(): Address {
+    return this[4].toAddress();
   }
 }
 
@@ -577,14 +557,14 @@ export class ArbitratorManager extends ethereum.SmartContract {
     return new ArbitratorManager("ArbitratorManager", address);
   }
 
-  assetOracle(): Address {
-    let result = super.call("assetOracle", "assetOracle():(address)", []);
+  assetManager(): Address {
+    let result = super.call("assetManager", "assetManager():(address)", []);
 
     return result[0].toAddress();
   }
 
-  try_assetOracle(): ethereum.CallResult<Address> {
-    let result = super.tryCall("assetOracle", "assetOracle():(address)", []);
+  try_assetManager(): ethereum.CallResult<Address> {
+    let result = super.tryCall("assetManager", "assetManager():(address)", []);
     if (result.reverted) {
       return new ethereum.CallResult();
     }
@@ -634,59 +614,59 @@ export class ArbitratorManager extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
-  getArbitratorInfo(
-    arbitratorAddress: Address,
-  ): ArbitratorManager__getArbitratorInfoResultValue0Struct {
+  getArbitratorAssets(
+    arbitrator: Address,
+  ): ArbitratorManager__getArbitratorAssetsResultValue0Struct {
     let result = super.call(
-      "getArbitratorInfo",
-      "getArbitratorInfo(address):((address,bool,uint256,bytes32,uint256,address,address,uint256[],address,bytes,string,uint256,bytes,string,address,uint256))",
-      [ethereum.Value.fromAddress(arbitratorAddress)],
+      "getArbitratorAssets",
+      "getArbitratorAssets(address):((uint256,address,uint256,address,uint256[]))",
+      [ethereum.Value.fromAddress(arbitrator)],
     );
 
-    return changetype<ArbitratorManager__getArbitratorInfoResultValue0Struct>(
+    return changetype<ArbitratorManager__getArbitratorAssetsResultValue0Struct>(
       result[0].toTuple(),
     );
   }
 
-  try_getArbitratorInfo(
-    arbitratorAddress: Address,
-  ): ethereum.CallResult<ArbitratorManager__getArbitratorInfoResultValue0Struct> {
+  try_getArbitratorAssets(
+    arbitrator: Address,
+  ): ethereum.CallResult<ArbitratorManager__getArbitratorAssetsResultValue0Struct> {
     let result = super.tryCall(
-      "getArbitratorInfo",
-      "getArbitratorInfo(address):((address,bool,uint256,bytes32,uint256,address,address,uint256[],address,bytes,string,uint256,bytes,string,address,uint256))",
-      [ethereum.Value.fromAddress(arbitratorAddress)],
+      "getArbitratorAssets",
+      "getArbitratorAssets(address):((uint256,address,uint256,address,uint256[]))",
+      [ethereum.Value.fromAddress(arbitrator)],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      changetype<ArbitratorManager__getArbitratorInfoResultValue0Struct>(
+      changetype<ArbitratorManager__getArbitratorAssetsResultValue0Struct>(
         value[0].toTuple(),
       ),
     );
   }
 
-  getArbitratorInfoExt(
+  getArbitratorBasicInfo(
     arbitrator: Address,
-  ): ArbitratorManager__getArbitratorInfoExtResultValue0Struct {
+  ): ArbitratorManager__getArbitratorBasicInfoResultValue0Struct {
     let result = super.call(
-      "getArbitratorInfoExt",
-      "getArbitratorInfoExt(address):((uint256))",
+      "getArbitratorBasicInfo",
+      "getArbitratorBasicInfo(address):((address,bool,uint256,uint256))",
       [ethereum.Value.fromAddress(arbitrator)],
     );
 
-    return changetype<ArbitratorManager__getArbitratorInfoExtResultValue0Struct>(
+    return changetype<ArbitratorManager__getArbitratorBasicInfoResultValue0Struct>(
       result[0].toTuple(),
     );
   }
 
-  try_getArbitratorInfoExt(
+  try_getArbitratorBasicInfo(
     arbitrator: Address,
-  ): ethereum.CallResult<ArbitratorManager__getArbitratorInfoExtResultValue0Struct> {
+  ): ethereum.CallResult<ArbitratorManager__getArbitratorBasicInfoResultValue0Struct> {
     let result = super.tryCall(
-      "getArbitratorInfoExt",
-      "getArbitratorInfoExt(address):((uint256))",
+      "getArbitratorBasicInfo",
+      "getArbitratorBasicInfo(address):((address,bool,uint256,uint256))",
       [ethereum.Value.fromAddress(arbitrator)],
     );
     if (result.reverted) {
@@ -694,7 +674,73 @@ export class ArbitratorManager extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      changetype<ArbitratorManager__getArbitratorInfoExtResultValue0Struct>(
+      changetype<ArbitratorManager__getArbitratorBasicInfoResultValue0Struct>(
+        value[0].toTuple(),
+      ),
+    );
+  }
+
+  getArbitratorOperationInfo(
+    arbitrator: Address,
+  ): ArbitratorManager__getArbitratorOperationInfoResultValue0Struct {
+    let result = super.call(
+      "getArbitratorOperationInfo",
+      "getArbitratorOperationInfo(address):((address,bytes,string,bytes32,uint256))",
+      [ethereum.Value.fromAddress(arbitrator)],
+    );
+
+    return changetype<ArbitratorManager__getArbitratorOperationInfoResultValue0Struct>(
+      result[0].toTuple(),
+    );
+  }
+
+  try_getArbitratorOperationInfo(
+    arbitrator: Address,
+  ): ethereum.CallResult<ArbitratorManager__getArbitratorOperationInfoResultValue0Struct> {
+    let result = super.tryCall(
+      "getArbitratorOperationInfo",
+      "getArbitratorOperationInfo(address):((address,bytes,string,bytes32,uint256))",
+      [ethereum.Value.fromAddress(arbitrator)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(
+      changetype<ArbitratorManager__getArbitratorOperationInfoResultValue0Struct>(
+        value[0].toTuple(),
+      ),
+    );
+  }
+
+  getArbitratorRevenueInfo(
+    arbitrator: Address,
+  ): ArbitratorManager__getArbitratorRevenueInfoResultValue0Struct {
+    let result = super.call(
+      "getArbitratorRevenueInfo",
+      "getArbitratorRevenueInfo(address):((uint256,uint256,bytes,string,address))",
+      [ethereum.Value.fromAddress(arbitrator)],
+    );
+
+    return changetype<ArbitratorManager__getArbitratorRevenueInfoResultValue0Struct>(
+      result[0].toTuple(),
+    );
+  }
+
+  try_getArbitratorRevenueInfo(
+    arbitrator: Address,
+  ): ethereum.CallResult<ArbitratorManager__getArbitratorRevenueInfoResultValue0Struct> {
+    let result = super.tryCall(
+      "getArbitratorRevenueInfo",
+      "getArbitratorRevenueInfo(address):((uint256,uint256,bytes,string,address))",
+      [ethereum.Value.fromAddress(arbitrator)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(
+      changetype<ArbitratorManager__getArbitratorRevenueInfoResultValue0Struct>(
         value[0].toTuple(),
       ),
     );
@@ -772,29 +818,6 @@ export class ArbitratorManager extends ethereum.SmartContract {
       ethereum.Value.fromUnsignedBigInt(duration),
       ethereum.Value.fromAddress(arbitrator),
     ]);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getTotalNFTStakeValue(arbitrator: Address): BigInt {
-    let result = super.call(
-      "getTotalNFTStakeValue",
-      "getTotalNFTStakeValue(address):(uint256)",
-      [ethereum.Value.fromAddress(arbitrator)],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getTotalNFTStakeValue(arbitrator: Address): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getTotalNFTStakeValue",
-      "getTotalNFTStakeValue(address):(uint256)",
-      [ethereum.Value.fromAddress(arbitrator)],
-    );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
@@ -924,36 +947,6 @@ export class ArbitratorManager extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
-  nftContract(): Address {
-    let result = super.call("nftContract", "nftContract():(address)", []);
-
-    return result[0].toAddress();
-  }
-
-  try_nftContract(): ethereum.CallResult<Address> {
-    let result = super.tryCall("nftContract", "nftContract():(address)", []);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toAddress());
-  }
-
-  nftInfo(): Address {
-    let result = super.call("nftInfo", "nftInfo():(address)", []);
-
-    return result[0].toAddress();
-  }
-
-  try_nftInfo(): ethereum.CallResult<Address> {
-    let result = super.tryCall("nftInfo", "nftInfo():(address)", []);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toAddress());
-  }
-
   owner(): Address {
     let result = super.call("owner", "owner():(address)", []);
 
@@ -985,21 +978,6 @@ export class ArbitratorManager extends ethereum.SmartContract {
       "transactionManager():(address)",
       [],
     );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toAddress());
-  }
-
-  zeroAddress(): Address {
-    let result = super.call("zeroAddress", "zeroAddress():(address)", []);
-
-    return result[0].toAddress();
-  }
-
-  try_zeroAddress(): ethereum.CallResult<Address> {
-    let result = super.tryCall("zeroAddress", "zeroAddress():(address)", []);
     if (result.reverted) {
       return new ethereum.CallResult();
     }
@@ -1064,40 +1042,6 @@ export class FrozenArbitratorCall__Outputs {
   }
 }
 
-export class InitTransactionAndCompensationManagerCall extends ethereum.Call {
-  get inputs(): InitTransactionAndCompensationManagerCall__Inputs {
-    return new InitTransactionAndCompensationManagerCall__Inputs(this);
-  }
-
-  get outputs(): InitTransactionAndCompensationManagerCall__Outputs {
-    return new InitTransactionAndCompensationManagerCall__Outputs(this);
-  }
-}
-
-export class InitTransactionAndCompensationManagerCall__Inputs {
-  _call: InitTransactionAndCompensationManagerCall;
-
-  constructor(call: InitTransactionAndCompensationManagerCall) {
-    this._call = call;
-  }
-
-  get _transactionManager(): Address {
-    return this._call.inputValues[0].value.toAddress();
-  }
-
-  get _compensationManager(): Address {
-    return this._call.inputValues[1].value.toAddress();
-  }
-}
-
-export class InitTransactionAndCompensationManagerCall__Outputs {
-  _call: InitTransactionAndCompensationManagerCall;
-
-  constructor(call: InitTransactionAndCompensationManagerCall) {
-    this._call = call;
-  }
-}
-
 export class InitializeCall extends ethereum.Call {
   get inputs(): InitializeCall__Inputs {
     return new InitializeCall__Inputs(this);
@@ -1117,18 +1061,6 @@ export class InitializeCall__Inputs {
 
   get _configManager(): Address {
     return this._call.inputValues[0].value.toAddress();
-  }
-
-  get _nftContract(): Address {
-    return this._call.inputValues[1].value.toAddress();
-  }
-
-  get _nftInfo(): Address {
-    return this._call.inputValues[2].value.toAddress();
-  }
-
-  get _assetOracle(): Address {
-    return this._call.inputValues[3].value.toAddress();
   }
 }
 
@@ -1162,6 +1094,60 @@ export class PauseCall__Outputs {
   _call: PauseCall;
 
   constructor(call: PauseCall) {
+    this._call = call;
+  }
+}
+
+export class RegisterArbitratorByStakeERC20Call extends ethereum.Call {
+  get inputs(): RegisterArbitratorByStakeERC20Call__Inputs {
+    return new RegisterArbitratorByStakeERC20Call__Inputs(this);
+  }
+
+  get outputs(): RegisterArbitratorByStakeERC20Call__Outputs {
+    return new RegisterArbitratorByStakeERC20Call__Outputs(this);
+  }
+}
+
+export class RegisterArbitratorByStakeERC20Call__Inputs {
+  _call: RegisterArbitratorByStakeERC20Call;
+
+  constructor(call: RegisterArbitratorByStakeERC20Call) {
+    this._call = call;
+  }
+
+  get token(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get amount(): BigInt {
+    return this._call.inputValues[1].value.toBigInt();
+  }
+
+  get defaultBtcAddress(): string {
+    return this._call.inputValues[2].value.toString();
+  }
+
+  get defaultBtcPubKey(): Bytes {
+    return this._call.inputValues[3].value.toBytes();
+  }
+
+  get feeRate(): BigInt {
+    return this._call.inputValues[4].value.toBigInt();
+  }
+
+  get btcFeeRate(): BigInt {
+    return this._call.inputValues[5].value.toBigInt();
+  }
+
+  get deadline(): BigInt {
+    return this._call.inputValues[6].value.toBigInt();
+  }
+}
+
+export class RegisterArbitratorByStakeERC20Call__Outputs {
+  _call: RegisterArbitratorByStakeERC20Call;
+
+  constructor(call: RegisterArbitratorByStakeERC20Call) {
     this._call = call;
   }
 }
@@ -1386,32 +1372,32 @@ export class SetArbitratorWorkingCall__Outputs {
   }
 }
 
-export class SetAssetOracleCall extends ethereum.Call {
-  get inputs(): SetAssetOracleCall__Inputs {
-    return new SetAssetOracleCall__Inputs(this);
+export class SetAssetManagerCall extends ethereum.Call {
+  get inputs(): SetAssetManagerCall__Inputs {
+    return new SetAssetManagerCall__Inputs(this);
   }
 
-  get outputs(): SetAssetOracleCall__Outputs {
-    return new SetAssetOracleCall__Outputs(this);
+  get outputs(): SetAssetManagerCall__Outputs {
+    return new SetAssetManagerCall__Outputs(this);
   }
 }
 
-export class SetAssetOracleCall__Inputs {
-  _call: SetAssetOracleCall;
+export class SetAssetManagerCall__Inputs {
+  _call: SetAssetManagerCall;
 
-  constructor(call: SetAssetOracleCall) {
+  constructor(call: SetAssetManagerCall) {
     this._call = call;
   }
 
-  get _assetOracle(): Address {
+  get _assetManager(): Address {
     return this._call.inputValues[0].value.toAddress();
   }
 }
 
-export class SetAssetOracleCall__Outputs {
-  _call: SetAssetOracleCall;
+export class SetAssetManagerCall__Outputs {
+  _call: SetAssetManagerCall;
 
-  constructor(call: SetAssetOracleCall) {
+  constructor(call: SetAssetManagerCall) {
     this._call = call;
   }
 }
@@ -1506,36 +1492,6 @@ export class SetFeeRatesCall__Outputs {
   _call: SetFeeRatesCall;
 
   constructor(call: SetFeeRatesCall) {
-    this._call = call;
-  }
-}
-
-export class SetNFTContractCall extends ethereum.Call {
-  get inputs(): SetNFTContractCall__Inputs {
-    return new SetNFTContractCall__Inputs(this);
-  }
-
-  get outputs(): SetNFTContractCall__Outputs {
-    return new SetNFTContractCall__Outputs(this);
-  }
-}
-
-export class SetNFTContractCall__Inputs {
-  _call: SetNFTContractCall;
-
-  constructor(call: SetNFTContractCall) {
-    this._call = call;
-  }
-
-  get _nftContract(): Address {
-    return this._call.inputValues[0].value.toAddress();
-  }
-}
-
-export class SetNFTContractCall__Outputs {
-  _call: SetNFTContractCall;
-
-  constructor(call: SetNFTContractCall) {
     this._call = call;
   }
 }
@@ -1642,6 +1598,40 @@ export class SetTransactionManagerCall__Outputs {
   _call: SetTransactionManagerCall;
 
   constructor(call: SetTransactionManagerCall) {
+    this._call = call;
+  }
+}
+
+export class StakeERC20Call extends ethereum.Call {
+  get inputs(): StakeERC20Call__Inputs {
+    return new StakeERC20Call__Inputs(this);
+  }
+
+  get outputs(): StakeERC20Call__Outputs {
+    return new StakeERC20Call__Outputs(this);
+  }
+}
+
+export class StakeERC20Call__Inputs {
+  _call: StakeERC20Call;
+
+  constructor(call: StakeERC20Call) {
+    this._call = call;
+  }
+
+  get token(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get amount(): BigInt {
+    return this._call.inputValues[1].value.toBigInt();
+  }
+}
+
+export class StakeERC20Call__Outputs {
+  _call: StakeERC20Call;
+
+  constructor(call: StakeERC20Call) {
     this._call = call;
   }
 }

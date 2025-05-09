@@ -145,6 +145,35 @@
       "inputs": [
         {
           "internalType": "bytes",
+          "name": "lockScript",
+          "type": "bytes"
+        },
+        {
+          "internalType": "address",
+          "name": "expectedOwner",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "utxoScript",
+          "type": "bytes"
+        }
+      ],
+      "name": "isExpectLockScript",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "isExpected",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
           "name": "rawTx",
           "type": "bytes"
         }
