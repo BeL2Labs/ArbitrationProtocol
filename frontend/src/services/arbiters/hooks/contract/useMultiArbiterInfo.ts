@@ -26,29 +26,31 @@ export const useMultiArbiterInfo = () => {
         { functionName: "getArbitratorAssets", multiArgs: [arbiterId] },
       ]);
 
-      const dualContractArbiters = await singleContractMulticall<
+      const resultsPerArbiter = multiCallParams.length / arbiterIds.length;
+
+      const multiContractArbiters = await singleContractMulticall<
         | ContractArbiterBasicInfo
         | ContractArbiterOperationInfo
         | ContractArbiterRevenueInfo
         | ContractArbiterAssets
       >(abi, activeChain!.contracts.arbitratorManager, multiCallParams);
 
-      if (!dualContractArbiters) {
+      if (!multiContractArbiters) {
         return undefined;
       }
 
       // Multicall results for the same arbiter (X methods) are every X elements. We sort this out.
-      const contractArbiterBasicInfo = dualContractArbiters.filter(
-        (_, i) => i % multiCallParams.length === 0
+      const contractArbiterBasicInfo = multiContractArbiters.filter(
+        (_, i) => i % resultsPerArbiter === 0
       ) as ContractArbiterBasicInfo[];
-      const contractArbiterOperationInfo = dualContractArbiters.filter(
-        (_, i) => i % multiCallParams.length === 1
+      const contractArbiterOperationInfo = multiContractArbiters.filter(
+        (_, i) => i % resultsPerArbiter === 1
       ) as ContractArbiterOperationInfo[];
-      const contractArbiterRevenueInfo = dualContractArbiters.filter(
-        (_, i) => i % multiCallParams.length === 2
+      const contractArbiterRevenueInfo = multiContractArbiters.filter(
+        (_, i) => i % resultsPerArbiter === 2
       ) as ContractArbiterRevenueInfo[];
-      const contractArbiterAssets = dualContractArbiters.filter(
-        (_, i) => i % multiCallParams.length === 3
+      const contractArbiterAssets = multiContractArbiters.filter(
+        (_, i) => i % resultsPerArbiter === 3
       ) as ContractArbiterAssets[];
 
       return contractArbiterBasicInfo.map((_, i) =>

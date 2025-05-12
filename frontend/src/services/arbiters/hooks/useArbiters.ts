@@ -14,7 +14,11 @@ const state$ = new BehaviorSubject<{
   arbiters?: ArbiterInfo[];
 }>({ isPending: false, wasFetched: false });
 
-export const useArbiters = (currentPage: number, resultsPerPage: number, search?: string) => {
+export const useArbiters = (
+  currentPage: number,
+  resultsPerPage: number,
+  search?: string
+) => {
   const activeChain = useActiveEVMChainConfig();
   const state = useBehaviorSubject(state$);
   const { fetchMultiArbiterIsActive } = useMultiArbiterIsActive();
@@ -25,14 +29,21 @@ export const useArbiters = (currentPage: number, resultsPerPage: number, search?
   const fetchArbiters = useCallback(async () => {
     state$.next({ isPending: true, wasFetched: false });
     if (activeChain) {
-      const { arbiters: graphArbiters, total: _total } = await fetchSubgraphArbiters(activeChain, (currentPage - 1) * resultsPerPage, resultsPerPage, { search });
+      const { arbiters: graphArbiters, total: _total } =
+        await fetchSubgraphArbiters(
+          activeChain,
+          (currentPage - 1) * resultsPerPage,
+          resultsPerPage,
+          { search }
+        );
 
       if (graphArbiters) {
         setTotal(_total);
 
         // Only use the subgraph for the arbiters, but real details are fetched from contract through multicall
-        const arbiterIds = graphArbiters.map(a => a.id);
+        const arbiterIds = graphArbiters.map((a) => a.id);
         const arbiters = await fetchMultiArbiterInfo(arbiterIds);
+
         if (arbiters) {
           const isActives = await fetchMultiArbiterIsActive(arbiterIds);
           const stakes = await fetchMultiArbiterStakeValue(arbiterIds);
@@ -42,8 +53,6 @@ export const useArbiters = (currentPage: number, resultsPerPage: number, search?
               arbiter.isActive = isActives[i];
               arbiter.totalValue = stakes[i];
             });
-
-            console.log("Reworked arbiters", arbiters);
           }
         }
         state$.next({ isPending: false, wasFetched: true, arbiters });
@@ -52,13 +61,20 @@ export const useArbiters = (currentPage: number, resultsPerPage: number, search?
 
       state$.next({ isPending: false, wasFetched: true, arbiters: undefined });
     }
-  }, [activeChain, currentPage, resultsPerPage, search, fetchMultiArbiterInfo, fetchMultiArbiterIsActive, fetchMultiArbiterStakeValue]);
+  }, [
+    activeChain,
+    currentPage,
+    resultsPerPage,
+    search,
+    fetchMultiArbiterInfo,
+    fetchMultiArbiterIsActive,
+    fetchMultiArbiterStakeValue,
+  ]);
 
   // Initial lazy fetch (first access)
   useEffect(() => {
-    if (!state.wasFetched && !state.isPending)
-      void fetchArbiters();
+    if (!state.wasFetched && !state.isPending) void fetchArbiters();
   }, [fetchArbiters, state]);
 
-  return { fetchArbiters, total, ...state }
-}
+  return { fetchArbiters, total, ...state };
+};
