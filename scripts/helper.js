@@ -52,7 +52,7 @@ async function getBitcoinCredentials(privateKey) {
       // Create legacy address (P2PKH)
       const { address } = bitcoin.payments.p2pkh({ 
         pubkey: pubKey,
-        network: bitcoin.networks.mainnet 
+        network: bitcoin.networks.bitcoin
       });
       
       // Convert public key to hex string with 0x prefix
