@@ -43,7 +43,7 @@ export const Navbar: FC = () => {
                   title="Beta version"
                   tooltip="This is a beta version. Most functions are limited and usable coin amounts are capped."
                 >
-                  BETA
+                  BETA / NBW
                 </ChildTooltip>
               </div>
             </div>
