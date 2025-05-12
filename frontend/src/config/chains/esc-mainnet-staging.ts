@@ -9,7 +9,7 @@ const hasCustomLocalSubgraphEndpoint =
   import.meta.env.VITE_APP_LOCAL_SUBGRAPH_ENDPOINT!.length > 0;
 const subgraphEndpoint = hasCustomLocalSubgraphEndpoint
   ? import.meta.env.VITE_APP_LOCAL_SUBGRAPH_ENDPOINT!
-  : "https://graph.bel2.org/subgraphs/name/arbitrators-staging";
+  : "https://graph.bel2.org/subgraphs/name/nbw-arbitrators-staging";
 
 // Start from prod config, and update a few things
 escMainnetStaging.subgraph = {
