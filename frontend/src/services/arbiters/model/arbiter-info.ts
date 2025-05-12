@@ -70,7 +70,7 @@ export class ArbiterInfo
    * an additional contract call when fetching arbiters directly from the contract.
    */
   public setNFTValue(value: BigNumber) {
-    this.nftValue = value;
+    this.nftValue = value || new BigNumber(0);
   }
 
   public static fromContractArbiterInfo(
