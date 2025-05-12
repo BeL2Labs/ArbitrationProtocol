@@ -1,7 +1,7 @@
 export type ContractArbiterBasicInfo = {
   arbitrator: string; // Arbitrator's Ethereum address
   paused: boolean; // Whether the arbitrator is paused
-  deadLine: bigint; // Validity period deadline
+  deadline: bigint; // Validity period deadline
   registerTime: bigint; // Registration timestamp
 
   // ??? status: number;

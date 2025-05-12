@@ -44,8 +44,6 @@ export const useArbiterInfo = (arbiterAddress: string) => {
 
     if (!dualContractArbiter) return undefined;
 
-    const nftValue = await fetchArbiterNFTStakeValue(arbiterAddress);
-
     const arbiter = ArbiterInfo.fromContractArbiterInfo(
       dualContractArbiter[0] as ContractArbiterBasicInfo,
       dualContractArbiter[1] as ContractArbiterOperationInfo,
@@ -54,6 +52,8 @@ export const useArbiterInfo = (arbiterAddress: string) => {
     );
 
     if (arbiter) {
+      const nftValue = await fetchArbiterNFTStakeValue(arbiter);
+
       arbiter.setNFTValue(nftValue);
       arbiter.isActive = await fetchArbiterIsActive(arbiterAddress);
       const stakes = await fetchMultiArbiterStakeValue([arbiter.id]);

@@ -49,6 +49,7 @@ export class ArbiterInfo
    * From contract calls only
    */
   public totalValue: BigNumber; // Total stake, human readable amount, ethAmount + nftvalue.
+  public nftTokenIds: string[];
 
   public isPaused(): boolean {
     return this.paused;
@@ -85,9 +86,10 @@ export class ArbiterInfo
     arbiter.id = contractBasicInfo.arbitrator;
     arbiter.address = contractBasicInfo.arbitrator;
     arbiter.ethAmount = tokenToReadableValue(contractAssets.ethAmount, 18);
+    arbiter.nftTokenIds = contractAssets.nftTokenIds;
     arbiter.createdAt = null;
     arbiter.paused = contractBasicInfo.paused;
-    arbiter.deadline = Number(contractBasicInfo.deadLine);
+    arbiter.deadline = Number(contractBasicInfo.deadline);
     arbiter.ethFeeRate = Number(contractRevenueInfo.currentFeeRate);
     arbiter.btcFeeRate = Number(contractRevenueInfo.currentBTCFeeRate);
     arbiter.activeTransactionId = !isEVMNullAddress(
