@@ -1,9 +1,9 @@
-import { StatusLabelColor } from '@/components/base/StatusLabel';
-import { ChainConfig } from '@/services/chains/chain-config';
+import { StatusLabelColor } from "@/components/base/StatusLabel";
+import { ChainConfig } from "@/services/chains/chain-config";
 import { dtoToClass } from "../class-transformer/class-transformer-utils";
-import { Transaction as TransactionDTO } from '../subgraph/dto/transaction';
-import { SubgraphGQLResponse } from '../subgraph/gql-response';
-import { Transaction } from './model/transaction';
+import { Transaction as TransactionDTO } from "../subgraph/dto/transaction";
+import { SubgraphGQLResponse } from "../subgraph/gql-response";
+import { Transaction } from "./model/transaction";
 
 type FetchTransactionsResponse = SubgraphGQLResponse<{
   transactions: TransactionDTO[];
@@ -12,12 +12,17 @@ type FetchTransactionsResponse = SubgraphGQLResponse<{
 export type FetchTransactionsQueryParams = {
   arbiter?: string;
   search?: string;
-}
+};
 
 /**
  * Fetch all transactions from the subsgraph.
  */
-export const fetchTransactions = async (chain: ChainConfig, start: number, limit: number, queryParams?: FetchTransactionsQueryParams): Promise<{ transactions: Transaction[], total: number }> => {
+export const fetchTransactions = async (
+  chain: ChainConfig,
+  start: number,
+  limit: number,
+  queryParams?: FetchTransactionsQueryParams
+): Promise<{ transactions: Transaction[]; total: number }> => {
   let whereQuery = "and: [";
 
   if (queryParams.search) {
@@ -52,15 +57,15 @@ export const fetchTransactions = async (chain: ChainConfig, start: number, limit
           ${whereClause}
         ) { 
           id txId dapp arbiter startTime deadline requestArbitrationTime
-          arbitratorFeeNative arbitratorFeeBTC
+          arbitratorFeeNative arbitratorFeeBTC btcFeeAddress
           status depositedFee signature compensationReceiver timeoutCompensationReceiver
         }
       }`;
 
       const response = await fetch(chain.subgraph.endpoint, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({ query: query }),
-        headers: new Headers({ 'Content-Type': 'application/json' })
+        headers: new Headers({ "Content-Type": "application/json" }),
       });
 
       const gqlResponse: FetchTransactionsResponse = await response.json();
@@ -85,28 +90,32 @@ export const fetchTransactions = async (chain: ChainConfig, start: number, limit
     const transactions = pageTransactions.slice(start, start + limit);
 
     return {
-      transactions: transactions.map(a => dtoToClass(a, Transaction)),
-      total
+      transactions: transactions.map((a) => dtoToClass(a, Transaction)),
+      total,
     };
   } catch (error) {
     console.error("Error fetching transactions:", error);
     return undefined;
   }
-}
+};
 
 /**
  * Refines some of the raw transaction statutes into more readable status.
  */
-export const transactionStatusLabelTitle = (transaction: Transaction): string => {
+export const transactionStatusLabelTitle = (
+  transaction: Transaction
+): string => {
   switch (transaction.dynamicStatus) {
     case "Arbitrated":
       return "Arbitration req.";
     default:
       return transaction.dynamicStatus;
   }
-}
+};
 
-export const transactionStatusLabelColor = (transaction: Transaction): StatusLabelColor => {
+export const transactionStatusLabelColor = (
+  transaction: Transaction
+): StatusLabelColor => {
   switch (transaction.dynamicStatus) {
     case "Completed":
       return "green";
@@ -120,4 +129,4 @@ export const transactionStatusLabelColor = (transaction: Transaction): StatusLab
     default:
       return "none";
   }
-}
+};
