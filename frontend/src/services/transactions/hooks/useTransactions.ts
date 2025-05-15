@@ -49,6 +49,8 @@ export const useTransactions = (
         // Update dynamic fees - because this is only known by the subgraph. So we update results from chain,
         // with subgraph data.
         contractTransactions.forEach((tx, i) => {
+          tx.createdBy = subgraphTransactions[i].createdBy;
+          tx.btcFeeAddress = subgraphTransactions[i].btcFeeAddress;
           tx.arbitratorFeeNative = subgraphTransactions[i].arbitratorFeeNative;
           tx.arbitratorFeeBTC = subgraphTransactions[i].arbitratorFeeBTC;
           tx.refundedFee = subgraphTransactions[i].refundedFee;

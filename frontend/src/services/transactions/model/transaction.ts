@@ -1,32 +1,61 @@
-import { isNullBitcoinTxId } from "@/services/btc/btc";
-import { Transaction as TransactionDTO } from "@/services/subgraph/dto/transaction";
-import { tokenToReadableValue } from "@/services/tokens/tokens";
-import BigNumber from "bignumber.js";
-import { Expose, Transform } from "class-transformer";
-import moment, { Moment } from "moment";
-import { zeroAddress } from "viem";
-import { ContractTransactionData, ContractTransactionParties } from "../dto/contract-transaction";
+import { isNullBitcoinTxId } from '@/services/btc/btc';
+import { Transaction as TransactionDTO } from '@/services/subgraph/dto/transaction';
+import { tokenToReadableValue } from '@/services/tokens/tokens';
+import BigNumber from 'bignumber.js';
+import { Expose, Transform } from 'class-transformer';
+import moment, { Moment } from 'moment';
+import { zeroAddress } from 'viem';
+import { ContractTransactionData, ContractTransactionParties } from '../dto/contract-transaction';
 
-export type TransactionStatus = "Unknown" | "Active" | "Completed" | "Arbitrated" | "Expired" | "Disputed" | "Submitted";
+export type TransactionStatus =
+  | 'Unknown'
+  | 'Active'
+  | 'Completed'
+  | 'Arbitrated'
+  | 'Expired'
+  | 'Disputed'
+  | 'Submitted';
 
-export class Transaction implements Omit<TransactionDTO, "startTime" | "deadline" | "depositedFee" | "requestArbitrationTime"> {
+export class Transaction
+  implements Omit<TransactionDTO, 'startTime' | 'deadline' | 'depositedFee' | 'requestArbitrationTime'>
+{
   @Expose() public id: string;
   @Expose() public dapp: string;
   @Expose() public arbiter: string;
   @Expose() public status: TransactionStatus;
-  @Expose() @Transform(({ value }) => value && moment.unix(value)) public startTime: Moment;
-  @Expose() @Transform(({ value }) => value && moment.unix(value)) public deadline: Moment;
-  @Expose() @Transform(({ value }) => value && tokenToReadableValue(value, 18)) public depositedFee: BigNumber;
-  @Expose() @Transform(({ value }) => value && tokenToReadableValue(value, 18)) public arbitratorFeeNative: BigNumber;
-  @Expose() @Transform(({ value }) => value && tokenToReadableValue(value, 8)) public arbitratorFeeBTC: BigNumber;
-  @Expose() public btcFeeAddress: string;
-  @Expose() @Transform(({ value }) => value && tokenToReadableValue(value, 18)) public refundedFee: BigNumber;
-  @Expose() @Transform(({ value }) => value && tokenToReadableValue(value, 18)) public systemFee: BigNumber;
+  @Expose()
+  @Transform(({ value }) => value && moment.unix(value))
+  public startTime: Moment;
+  @Expose()
+  @Transform(({ value }) => value && moment.unix(value))
+  public deadline: Moment;
+  @Expose()
+  @Transform(({ value }) => value && tokenToReadableValue(value, 18))
+  public depositedFee: BigNumber;
+  @Expose()
+  @Transform(({ value }) => value && tokenToReadableValue(value, 18))
+  public refundedFee: BigNumber;
+  @Expose()
+  @Transform(({ value }) => value && tokenToReadableValue(value, 18))
+  public systemFee: BigNumber;
   @Expose() public compensationReceiver: string;
   @Expose() public timeoutCompensationReceiver: string;
-  @Expose() @Transform(({ value }) => value && moment.unix(value)) public requestArbitrationTime: Moment;
+  @Expose()
+  @Transform(({ value }) => value && moment.unix(value))
+  public requestArbitrationTime: Moment;
 
-  public btcTxHash?: string; // Only when fetched from contract
+  // Only when fetched from contract
+  public btcTxHash?: string;
+
+  // Only from subgraph
+  @Expose() public createdBy: string;
+  @Expose()
+  @Transform(({ value }) => value && tokenToReadableValue(value, 18))
+  public arbitratorFeeNative: BigNumber;
+  @Expose()
+  @Transform(({ value }) => value && tokenToReadableValue(value, 8))
+  public arbitratorFeeBTC: BigNumber;
+  @Expose() public btcFeeAddress: string;
 
   /**
    * So it's a bit tricky here. There is a transaction.status in the contract which is static,
@@ -39,9 +68,13 @@ export class Transaction implements Omit<TransactionDTO, "startTime" | "deadline
    */
   public dynamicStatus: TransactionStatus;
 
-  public static fromContractTransaction(contractTransactionData: ContractTransactionData, contractTransactionParties: ContractTransactionParties, contractTransactionBtcTxHash: string, txId: string): Transaction {
-    if (contractTransactionParties?.dapp === zeroAddress)
-      return undefined;
+  public static fromContractTransaction(
+    contractTransactionData: ContractTransactionData,
+    contractTransactionParties: ContractTransactionParties,
+    contractTransactionBtcTxHash: string,
+    txId: string
+  ): Transaction {
+    if (contractTransactionParties?.dapp === zeroAddress) return undefined;
 
     const transaction = new Transaction();
 
@@ -50,7 +83,8 @@ export class Transaction implements Omit<TransactionDTO, "startTime" | "deadline
     transaction.startTime = moment.unix(parseInt(contractTransactionData.startTime));
     transaction.deadline = moment.unix(parseInt(contractTransactionData.deadline));
     transaction.requestArbitrationTime = moment.unix(parseInt(contractTransactionData.requestArbitrationTime));
-    transaction.depositedFee = contractTransactionData.depositedFee && tokenToReadableValue(contractTransactionData.depositedFee, 18);
+    transaction.depositedFee =
+      contractTransactionData.depositedFee && tokenToReadableValue(contractTransactionData.depositedFee, 18);
     transaction.status = this.fromContractStatus(contractTransactionData.status);
 
     // Transaction partis
@@ -59,20 +93,29 @@ export class Transaction implements Omit<TransactionDTO, "startTime" | "deadline
     transaction.timeoutCompensationReceiver = contractTransactionParties.timeoutCompensationReceiver;
     transaction.arbiter = contractTransactionParties.arbitrator;
 
-    transaction.btcTxHash = isNullBitcoinTxId(contractTransactionBtcTxHash?.slice(2)) ? undefined : contractTransactionBtcTxHash?.slice(2);
+    transaction.btcTxHash = isNullBitcoinTxId(contractTransactionBtcTxHash?.slice(2))
+      ? undefined
+      : contractTransactionBtcTxHash?.slice(2);
 
     return transaction;
   }
 
   public static fromContractStatus(contractStatus: number): TransactionStatus {
     switch (contractStatus) {
-      case 0: return "Active";
-      case 1: return "Completed";
-      case 2: return "Arbitrated";
-      case 3: return "Expired";
-      case 4: return "Disputed";
-      case 5: return "Submitted";
-      default: return "Unknown";
+      case 0:
+        return 'Active';
+      case 1:
+        return 'Completed';
+      case 2:
+        return 'Arbitrated';
+      case 3:
+        return 'Expired';
+      case 4:
+        return 'Disputed';
+      case 5:
+        return 'Submitted';
+      default:
+        return 'Unknown';
     }
   }
 }

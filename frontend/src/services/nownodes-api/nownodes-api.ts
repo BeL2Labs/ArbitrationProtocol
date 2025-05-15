@@ -4,9 +4,9 @@
  */
 
 import axios from "axios";
-import { AddressInfo, BTCBlock, BTCTransaction, BestBlockHashInfo, UTXO } from "./model/types";
+import { AddressInfo, BTCBlock, BTCTransaction, BestBlockHashInfo, RPCNodeResult, UTXO } from "./model/types";
 
-// const mainnetNodeApi = 'https://nownodes-btc.bel2.org'; // 'https://btc.nownodes.io';
+const mainnetNodeApi = 'https://nownodes-btc.bel2.org'; // 'https://btc.nownodes.io';
 // const testnetNodeApi = 'https://btc-testnet.nownodes.io';
 const mainnetExplorerApi = 'https://nownodes-btcbook.bel2.org'; // 'https://btcbook.nownodes.io';
 const testnetExplorerApi = 'https:///nownodes-btcbook-testnet.bel2.org'
@@ -16,15 +16,15 @@ const apiGet = async <T>(url: string): Promise<T> => {
   return response?.data;
 }
 
-/* const nodeApiPost = async <T>(data: string): Promise<T> => {
-  const response = await axios<RPCNodeResult<T>>({
+const apiPost = async <T>(url: string, data: any): Promise<T> => {
+  const response = await axios<T>({
     method: "POST",
     headers: { 'Content-Type': 'application/json' },
-    url: mainnetNodeApi,
+    url,
     data
   });
-  return response?.data?.result;
-} */
+  return response?.data;
+}
 
 /**
  * Gets info about a given address
@@ -122,4 +122,23 @@ export const getUTXOs = async (address: string): Promise<UTXO[]> => {
     console.error('NowNodes: failed to get address UTXOs:', err);
     return null;
   }
+}
+
+export const publishBitcoinTransaction = async (signedTx: string) => {
+  const publishResult = await apiPost<RPCNodeResult<string>>(`${mainnetNodeApi}`,
+    {
+      "jsonrpc": "1.0",
+      "method": "sendrawtransaction",
+      "params": [
+        signedTx
+      ]
+    }
+  );
+
+  if (publishResult?.error)
+    throw new Error(publishResult.error?.message);
+
+  console.log('Publish result:', publishResult);
+
+  return publishResult?.result;
 }

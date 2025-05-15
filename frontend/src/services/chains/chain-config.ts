@@ -1,5 +1,5 @@
-import { NetworkMode } from "@/services/network/network";
-import { TokenOrNative } from "@/services/tokens/token-or-native";
+import { NetworkMode } from '@/services/network/network';
+import { TokenOrNative } from '@/services/tokens/token-or-native';
 
 export type ChainConfig = {
   name: string; // Displayable chain name
@@ -9,9 +9,10 @@ export type ChainConfig = {
   networkMode: NetworkMode; // This chain config only works for the given network mode
   subgraph: {
     endpoint: string;
-  }
+  };
   nativeCurrency: TokenOrNative;
   contracts: {
+    assetManager: string;
     arbitratorManager: string;
     compensationManager: string;
     configManager: string;
@@ -22,8 +23,8 @@ export type ChainConfig = {
     zkpService: string;
     signatureValidation: string;
     multicall3: string;
-  },
+  };
   // List of supported tokens for deposits
   tokens: TokenOrNative[];
   isDefault?: boolean; // Use this chain as default is no connected wallet
-}
+};
