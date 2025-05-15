@@ -1,9 +1,9 @@
-import { StatusLabelColor } from "@/components/base/StatusLabel";
-import { ChainConfig } from "@/services/chains/chain-config";
-import { dtoToClass } from "../class-transformer/class-transformer-utils";
-import { Transaction as TransactionDTO } from "../subgraph/dto/transaction";
-import { SubgraphGQLResponse } from "../subgraph/gql-response";
-import { Transaction } from "./model/transaction";
+import { StatusLabelColor } from '@/components/base/StatusLabel';
+import { ChainConfig } from '@/services/chains/chain-config';
+import { dtoToClass } from '../class-transformer/class-transformer-utils';
+import { Transaction as TransactionDTO } from '../subgraph/dto/transaction';
+import { SubgraphGQLResponse } from '../subgraph/gql-response';
+import { Transaction } from './model/transaction';
 
 type FetchTransactionsResponse = SubgraphGQLResponse<{
   transactions: TransactionDTO[];
@@ -23,7 +23,7 @@ export const fetchTransactions = async (
   limit: number,
   queryParams?: FetchTransactionsQueryParams
 ): Promise<{ transactions: Transaction[]; total: number }> => {
-  let whereQuery = "and: [";
+  let whereQuery = 'and: [';
 
   if (queryParams.search) {
     whereQuery += ` { or: [ \
@@ -33,12 +33,11 @@ export const fetchTransactions = async (
     ]}`;
   }
 
-  if (queryParams.arbiter)
-    whereQuery += ` {arbiter: "${queryParams.arbiter.toLowerCase()}"} `;
+  if (queryParams.arbiter) whereQuery += ` {arbiter: "${queryParams.arbiter.toLowerCase()}"} `;
 
-  whereQuery += "]";
+  whereQuery += ']';
 
-  let whereClause: string = !whereQuery ? "" : `where: { ${whereQuery} }`;
+  let whereClause: string = !whereQuery ? '' : `where: { ${whereQuery} }`;
 
   try {
     const resultsPerPage = 1000;
@@ -56,23 +55,22 @@ export const fetchTransactions = async (
           orderDirection: desc
           ${whereClause}
         ) { 
-          id txId dapp arbiter startTime deadline requestArbitrationTime
+          id txId createdBy dapp arbiter startTime deadline requestArbitrationTime
           arbitratorFeeNative arbitratorFeeBTC btcFeeAddress
           status depositedFee signature compensationReceiver timeoutCompensationReceiver
         }
       }`;
 
       const response = await fetch(chain.subgraph.endpoint, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ query: query }),
-        headers: new Headers({ "Content-Type": "application/json" }),
+        headers: new Headers({ 'Content-Type': 'application/json' })
       });
 
       const gqlResponse: FetchTransactionsResponse = await response.json();
 
       if (gqlResponse.errors?.length > 0) {
-        for (const error of gqlResponse.errors)
-          console.error("Subgraph error:", new Error(error?.message));
+        for (const error of gqlResponse.errors) console.error('Subgraph error:', new Error(error?.message));
       }
 
       const data = gqlResponse?.data;
@@ -90,11 +88,11 @@ export const fetchTransactions = async (
     const transactions = pageTransactions.slice(start, start + limit);
 
     return {
-      transactions: transactions.map((a) => dtoToClass(a, Transaction)),
-      total,
+      transactions: transactions.map(a => dtoToClass(a, Transaction)),
+      total
     };
   } catch (error) {
-    console.error("Error fetching transactions:", error);
+    console.error('Error fetching transactions:', error);
     return undefined;
   }
 };
@@ -102,31 +100,27 @@ export const fetchTransactions = async (
 /**
  * Refines some of the raw transaction statutes into more readable status.
  */
-export const transactionStatusLabelTitle = (
-  transaction: Transaction
-): string => {
+export const transactionStatusLabelTitle = (transaction: Transaction): string => {
   switch (transaction.dynamicStatus) {
-    case "Arbitrated":
-      return "Arbitration req.";
+    case 'Arbitrated':
+      return 'Arbitration req.';
     default:
       return transaction.dynamicStatus;
   }
 };
 
-export const transactionStatusLabelColor = (
-  transaction: Transaction
-): StatusLabelColor => {
+export const transactionStatusLabelColor = (transaction: Transaction): StatusLabelColor => {
   switch (transaction.dynamicStatus) {
-    case "Completed":
-      return "green";
-    case "Submitted":
-    case "Arbitrated":
-    case "Active":
-      return "yellow";
-    case "Disputed":
-    case "Expired":
-      return "red";
+    case 'Completed':
+      return 'green';
+    case 'Submitted':
+    case 'Arbitrated':
+    case 'Active':
+      return 'yellow';
+    case 'Disputed':
+    case 'Expired':
+      return 'red';
     default:
-      return "none";
+      return 'none';
   }
 };

@@ -70,13 +70,15 @@ export const TransactionRow: FC<{
       return value ? <div className='flex flex-row items-center'>{formatAddress(value)} <CopyField value={value} /></div> : "-";
 
     if (key === 'depositedFee')
-      return value ? <TokenWithValue amount={value} token={activeChain?.nativeCurrency} decimals={5} /> : "-";
+      return value ? <TokenWithValue amount={value} token={activeChain?.nativeCurrency} decimals={6} /> : "-";
 
     if (key === 'reward')
-      return rewardToken ? <TokenWithValue amount={rewardValue} token={rewardToken} decimals={5} /> : "-";
+      return rewardToken ? <TokenWithValue amount={rewardValue} token={rewardToken} decimals={6} /> : "-";
 
-    if (key === 'btcFee')
-      return value ? <TokenWithValue amount={0.12345} token={getTokenBySymbol(activeChain, "BTC")} decimals={5} /> : "N/A";
+    if (key === 'btcFee') {
+      const feeValue = btcFeesInfo?.withdrawableAmountBTC?.toNumber();
+      return feeValue !== undefined ? <TokenWithValue amount={feeValue} token={getTokenBySymbol(activeChain, "BTC")} decimals={6} /> : "N/A";
+    }
 
     return value;
   };

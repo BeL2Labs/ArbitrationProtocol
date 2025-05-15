@@ -6,11 +6,11 @@ import { SearchInput } from '@/components/base/SearchInput';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { tooltips } from '@/config/tooltips';
-import { useWalletContext } from '@/contexts/WalletContext/WalletContext';
 import { RequestArbiterFeeCompensationDialog } from '@/pages/TransactionList/dialogs/RequestArbiterFeeCompensationDialog';
 import { RequestIllegalSignatureCompensationDialog } from '@/pages/TransactionList/dialogs/RequestIllegalSignatureCompensationDialog';
 import { SubmitSignatureDialog } from '@/pages/TransactionList/dialogs/SubmitSignatureDialog';
 import { TransactionDetailsDialog } from '@/pages/TransactionList/dialogs/TransactionDetailsDialog';
+import { useOwnedArbiter } from '@/services/arbiters/hooks/useOwnedArbiter';
 import { CompensationType } from '@/services/compensations/model/compensation-claim';
 import { useBTCFees } from '@/services/transactions/hooks/useBTCFees';
 import { useTransactions } from '@/services/transactions/hooks/useTransactions';
@@ -30,13 +30,13 @@ export const transactionFieldLabels: Partial<Record<ArbiterTransactionColumn, st
   dapp: 'DApp',
   deadline: 'Deadline',
   reward: 'Reward',
-  btcFee: 'BTC fees balance',
+  btcFee: 'Unclaimed',
   status: 'Status',
 };
 
 export default function ArbiterTransactions() {
-  const { evmAccount } = useWalletContext();
-  const { transactions: rawTransactions, refreshTransactions } = useTransactions(1, 500, evmAccount);
+  const { ownedArbiter } = useOwnedArbiter();
+  const { transactions: rawTransactions, refreshTransactions } = useTransactions(1, 500, "0x49dcB325D1D4dd7556C14ce8CBcBcEaa5Ae7638D"/* evmAccount */);
   const [searchTerm, setSearchTerm] = useState('');
   const [pickedTransaction, setPickedTransaction] = useState<Transaction | null>(null); // Transaction we want to show details of
   const [selectedTransactions, setSelectedTransactions] = useState<Transaction[]>([]); // Transactions that got selected for BTC fee withdrawal
@@ -68,16 +68,20 @@ export default function ArbiterTransactions() {
 
   const loading = useMemo(() => isNullOrUndefined(transactions), [transactions]);
 
-  const handleRowSelectionChanged = useCallback((selected: boolean) => {
+  const handleRowSelectionChanged = useCallback((transaction: Transaction, selected: boolean) => {
     if (selected) {
       // select
-      setSelectedTransactions(selectedTransactions.concat([pickedTransaction]));
+      setSelectedTransactions(selectedTransactions.concat([transaction]));
     }
     else {
       // Unselect
-      setSelectedTransactions(selectedTransactions.filter(tx => tx.id !== pickedTransaction.id));
+      setSelectedTransactions(selectedTransactions.filter(tx => tx.id !== transaction.id));
     }
-  }, [pickedTransaction, selectedTransactions]);
+  }, [selectedTransactions]);
+
+  const handleWithdrawBTCFeesSubmitted = useCallback(() => {
+    setSelectedTransactions([]);
+  }, []);
 
   // Refresh list when page loads
   useEffect(() => {
@@ -121,7 +125,7 @@ export default function ArbiterTransactions() {
                 window.history.replaceState({}, '', `${window.location.pathname}/${tx.id}`);
                 setOpenDialog("details");
               }}
-              onRowSelection={handleRowSelectionChanged}
+              onRowSelection={selected => handleRowSelectionChanged(tx, selected)}
             />)}
           </TableBody>
         </Table>
@@ -156,10 +160,13 @@ export default function ArbiterTransactions() {
       <RequestIllegalSignatureCompensationDialog isOpen={openDialog === "IllegalSignature"} transaction={pickedTransaction} onHandleClose={() => setOpenDialog(undefined)} />
       <RequestArbiterFeeCompensationDialog isOpen={openDialog === "ArbiterFee"} transaction={pickedTransaction} onHandleClose={() => setOpenDialog(undefined)} />
       <WithdrawBTCFeesDialog
+        arbiter={ownedArbiter}
         isOpen={openDialog === "withdraw-btc-fees"}
+        btcFeesInfo={btcFeesInfo}
         withdrawableTransactions={selectedTransactions}
         onHandleClose={() => setOpenDialog(undefined)}
-        onContractUpdated={refreshTransactions} />
+        onTransactionSubmitted={handleWithdrawBTCFeesSubmitted}
+      />
     </div>
   );
 }
