@@ -27,39 +27,42 @@ export const ArbiterSettings: FC = () => {
     void fetchOwnedArbiter();
   }, [fetchOwnedArbiter, resumeArbiter]);
 
-  return <>
-    <PageTitleRow>
-      <PageTitle>Arbiter settings</PageTitle>
-      <div className='flex gap-4 pb-4'>
-        <Button variant="outline" size="icon" onClick={fetchOwnedArbiter}>
-          <RefreshCwIcon />
-        </Button>
-        {
-          !isFetchingArbiter && !ownedArbiter &&
-          <EnsureWalletNetwork continuesTo='Register Arbiter'>
-            <Button onClick={() => navigate("/register-arbiter")}>Register arbiter</Button>
-          </EnsureWalletNetwork>
-        }
-        {
-          !isFetchingArbiter && ownedArbiter && !ownedArbiter.isPaused() &&
-          <EnsureWalletNetwork continuesTo='Pause'>
-            <Button onClick={handlePauseArbiter} disabled={isPausing || !ownedArbiter.getIsActive()}>Pause</Button>
-          </EnsureWalletNetwork>
-        }
-        {
-          !isFetchingArbiter && ownedArbiter && ownedArbiter.isPaused() &&
-          <EnsureWalletNetwork continuesTo='Resume'>
-            <Button onClick={handleResumeArbiter} disabled={isResuming}>Resume</Button>
-          </EnsureWalletNetwork>
-        }
-      </div>
-    </PageTitleRow>
-    {isFetchingArbiter && <Loading />}
-    {
-      !isFetchingArbiter && <>
-        {ownedArbiter && <ArbiterPreview arbiter={ownedArbiter} />}
-        {!ownedArbiter && <div>No arbiter owned yet</div>}
-      </>
-    }
-  </>
-}
+  return (
+    <>
+      <PageTitleRow>
+        <PageTitle>Arbiter settings</PageTitle>
+        <div className='flex gap-4'>
+          <Button variant='outline' size='icon' onClick={fetchOwnedArbiter}>
+            <RefreshCwIcon />
+          </Button>
+          {!isFetchingArbiter && !ownedArbiter && (
+            <EnsureWalletNetwork continuesTo='Register Arbiter'>
+              <Button onClick={() => navigate('/register-arbiter')}>Register arbiter</Button>
+            </EnsureWalletNetwork>
+          )}
+          {!isFetchingArbiter && ownedArbiter && !ownedArbiter.isPaused() && (
+            <EnsureWalletNetwork continuesTo='Pause'>
+              <Button onClick={handlePauseArbiter} disabled={isPausing || !ownedArbiter.getIsActive()}>
+                Pause
+              </Button>
+            </EnsureWalletNetwork>
+          )}
+          {!isFetchingArbiter && ownedArbiter && ownedArbiter.isPaused() && (
+            <EnsureWalletNetwork continuesTo='Resume'>
+              <Button onClick={handleResumeArbiter} disabled={isResuming}>
+                Resume
+              </Button>
+            </EnsureWalletNetwork>
+          )}
+        </div>
+      </PageTitleRow>
+      {isFetchingArbiter && <Loading />}
+      {!isFetchingArbiter && (
+        <>
+          {ownedArbiter && <ArbiterPreview arbiter={ownedArbiter} />}
+          {!ownedArbiter && <div>No arbiter owned yet</div>}
+        </>
+      )}
+    </>
+  );
+};

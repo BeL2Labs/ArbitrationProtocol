@@ -33,7 +33,9 @@ export const fetchTransactions = async (
     ]}`;
   }
 
-  if (queryParams.arbiter) whereQuery += ` {arbiter: "${queryParams.arbiter.toLowerCase()}"} `;
+  if (queryParams.arbiter) {
+    whereQuery += ` {arbiter: "${queryParams.arbiter.toLowerCase()}"} `;
+  }
 
   whereQuery += ']';
 
