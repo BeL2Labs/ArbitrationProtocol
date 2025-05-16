@@ -36,7 +36,7 @@ export const transactionFieldLabels: Partial<Record<ArbiterTransactionColumn, st
 
 export default function ArbiterTransactions() {
   const { ownedArbiter } = useOwnedArbiter();
-  const { transactions: rawTransactions, refreshTransactions } = useTransactions(1, 500, "0x49dcB325D1D4dd7556C14ce8CBcBcEaa5Ae7638D"/* evmAccount */);
+  const { transactions: rawTransactions, refreshTransactions } = useTransactions(1, 500, ownedArbiter.address);
   const [searchTerm, setSearchTerm] = useState('');
   const [pickedTransaction, setPickedTransaction] = useState<Transaction | null>(null); // Transaction we want to show details of
   const [selectedTransactions, setSelectedTransactions] = useState<Transaction[]>([]); // Transactions that got selected for BTC fee withdrawal
