@@ -1,9 +1,9 @@
-import { useActiveEVMChainConfig } from "@/services/chains/hooks/useActiveEVMChainConfig";
-import { useCallback, useEffect, useState } from "react";
-import { Transaction } from "../model/transaction";
-import { fetchTransactions as fetchSubgraphTransactions } from "../transactions.service";
-import { useMultiTransactionStatus } from "./contract/useMultiTransactionStatus";
-import { useMultiTransactions } from "./contract/useMultiTransactions";
+import { useActiveEVMChainConfig } from '@/services/chains/hooks/useActiveEVMChainConfig';
+import { useCallback, useEffect, useState } from 'react';
+import { Transaction } from '../model/transaction';
+import { fetchTransactions as fetchSubgraphTransactions } from '../transactions.service';
+import { useMultiTransactionStatus } from './contract/useMultiTransactionStatus';
+import { useMultiTransactions } from './contract/useMultiTransactions';
 
 /**
  * @param arbiter if passed, only transactions from this arbiters are fetched
@@ -11,7 +11,7 @@ import { useMultiTransactions } from "./contract/useMultiTransactions";
 export const useTransactions = (
   currentPage: number,
   resultsPerPage: number,
-  arbiter?: string,
+  arbiter?: string | null, // If undefined, fetch all transactions. if null, fetch nothing (eg: no own arbiter)
   search?: string
 ) => {
   const activeChain = useActiveEVMChainConfig();
@@ -21,29 +21,27 @@ export const useTransactions = (
   const [total, setTotal] = useState(undefined);
 
   const refreshTransactions = useCallback(async () => {
+    if (arbiter === null) {
+      setTransactions([]);
+      return;
+    }
+
     setTransactions(undefined);
     if (activeChain) {
       const { transactions: subgraphTransactions, total: _total } =
-        (await fetchSubgraphTransactions(
-          activeChain,
-          (currentPage - 1) * resultsPerPage,
-          resultsPerPage,
-          { arbiter, search }
-        )) || {};
+        (await fetchSubgraphTransactions(activeChain, (currentPage - 1) * resultsPerPage, resultsPerPage, {
+          arbiter,
+          search
+        })) || {};
       setTotal(_total);
 
-      const contractTransactions = await fetchTransactions(
-        subgraphTransactions?.map((t) => t.id)
-      );
+      const contractTransactions = await fetchTransactions(subgraphTransactions?.map(t => t.id));
 
       if (contractTransactions) {
-        const statuses = await fetchTransactionStatuses(
-          contractTransactions?.map((tx) => tx.id)
-        );
+        const statuses = await fetchTransactionStatuses(contractTransactions?.map(tx => tx.id));
         // Update dynamic status of each transaction with latest dynamic contract value (not stored)
         for (const tx of contractTransactions) {
-          tx.dynamicStatus =
-            statuses?.find((s) => s.id === tx.id)?.status || "Unknown";
+          tx.dynamicStatus = statuses?.find(s => s.id === tx.id)?.status || 'Unknown';
         }
 
         // Update dynamic fees - because this is only known by the subgraph. So we update results from chain,
@@ -59,19 +57,11 @@ export const useTransactions = (
         });
       }
 
-      console.log("Using transactions:", contractTransactions);
+      console.log('Using transactions:', contractTransactions);
 
       setTransactions(contractTransactions);
     }
-  }, [
-    activeChain,
-    currentPage,
-    resultsPerPage,
-    arbiter,
-    search,
-    fetchTransactions,
-    fetchTransactionStatuses,
-  ]);
+  }, [activeChain, currentPage, resultsPerPage, arbiter, search, fetchTransactions, fetchTransactionStatuses]);
 
   useEffect(() => {
     void refreshTransactions();

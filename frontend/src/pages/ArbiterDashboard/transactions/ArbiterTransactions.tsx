@@ -22,7 +22,7 @@ import { WithdrawBTCFeesDialog } from './dialogs/WithdrawBTCFees';
 import { TransactionFilter, TransactionFilterType } from './TransactionFilter';
 import { TransactionRow } from './TransactionRow';
 
-export type ArbiterTransactionColumn = keyof Transaction | "selection" | "reward" | "btcFee";
+export type ArbiterTransactionColumn = keyof Transaction | 'selection' | 'reward' | 'btcFee';
 
 export const transactionFieldLabels: Partial<Record<ArbiterTransactionColumn, string>> = {
   selection: '',
@@ -31,18 +31,20 @@ export const transactionFieldLabels: Partial<Record<ArbiterTransactionColumn, st
   deadline: 'Deadline',
   reward: 'Reward',
   btcFee: 'Unclaimed',
-  status: 'Status',
+  status: 'Status'
 };
 
 export default function ArbiterTransactions() {
   const { ownedArbiter } = useOwnedArbiter();
-  const { transactions: rawTransactions, refreshTransactions } = useTransactions(1, 500, ownedArbiter.address);
+  const { transactions: rawTransactions, refreshTransactions } = useTransactions(1, 500, ownedArbiter?.address ?? null);
   const [searchTerm, setSearchTerm] = useState('');
   const [pickedTransaction, setPickedTransaction] = useState<Transaction | null>(null); // Transaction we want to show details of
   const [selectedTransactions, setSelectedTransactions] = useState<Transaction[]>([]); // Transactions that got selected for BTC fee withdrawal
-  const [openDialog, setOpenDialog] = useState<undefined | CompensationType | "sign-arbitration" | "details" | "withdraw-btc-fees">(undefined);
+  const [openDialog, setOpenDialog] = useState<
+    undefined | CompensationType | 'sign-arbitration' | 'details' | 'withdraw-btc-fees'
+  >(undefined);
   const btcFeesInfo = useBTCFees(rawTransactions);
-  const [transactionFilter, setTransactionFilter] = useState<TransactionFilterType>("all");
+  const [transactionFilter, setTransactionFilter] = useState<TransactionFilterType>('all');
 
   const transactions = useMemo(() => {
     // Filter with search field
@@ -58,8 +60,10 @@ export default function ArbiterTransactions() {
     // Filter with transaction filter
     const txTypeFiltered = searchFiltered?.filter(tx => {
       switch (transactionFilter) {
-        case "all": return true;
-        case "with-btc-fee-balance": return btcFeesInfo?.[tx.id]?.withdrawableAmountBTC?.gt(0);
+        case 'all':
+          return true;
+        case 'with-btc-fee-balance':
+          return btcFeesInfo?.[tx.id]?.withdrawableAmountBTC?.gt(0);
       }
     });
 
@@ -68,16 +72,18 @@ export default function ArbiterTransactions() {
 
   const loading = useMemo(() => isNullOrUndefined(transactions), [transactions]);
 
-  const handleRowSelectionChanged = useCallback((transaction: Transaction, selected: boolean) => {
-    if (selected) {
-      // select
-      setSelectedTransactions(selectedTransactions.concat([transaction]));
-    }
-    else {
-      // Unselect
-      setSelectedTransactions(selectedTransactions.filter(tx => tx.id !== transaction.id));
-    }
-  }, [selectedTransactions]);
+  const handleRowSelectionChanged = useCallback(
+    (transaction: Transaction, selected: boolean) => {
+      if (selected) {
+        // select
+        setSelectedTransactions(selectedTransactions.concat([transaction]));
+      } else {
+        // Unselect
+        setSelectedTransactions(selectedTransactions.filter(tx => tx.id !== transaction.id));
+      }
+    },
+    [selectedTransactions]
+  );
 
   const handleWithdrawBTCFeesSubmitted = useCallback(() => {
     setSelectedTransactions([]);
@@ -89,79 +95,100 @@ export default function ArbiterTransactions() {
   }, [refreshTransactions]);
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-col'>
       <PageTitleRow>
-        <PageTitle className="flex flex-grow sm:flex-grow-0">Transactions <IconTooltip title='Transactions' tooltip={tooltips.transactionIntro} iconClassName='ml-2' iconSize={20} /></PageTitle>
-        <div className="flex gap-2">
+        <PageTitle className='flex flex-grow sm:flex-grow-0'>
+          Transactions{' '}
+          <IconTooltip title='Transactions' tooltip={tooltips.transactionIntro} iconClassName='ml-2' iconSize={20} />
+        </PageTitle>
+        <div className='flex gap-2'>
           <TransactionFilter value={transactionFilter} onChange={setTransactionFilter} />
-          <Button variant="outline" size="icon" onClick={refreshTransactions}>
+          <Button variant='outline' size='icon' onClick={refreshTransactions}>
             <RefreshCwIcon />
           </Button>
-          <SearchInput placeholder="Search transactions..."
+          <SearchInput
+            placeholder='Search transactions...'
             value={searchTerm}
-            onChange={(newValue) => setSearchTerm(newValue)} />
+            onChange={newValue => setSearchTerm(newValue)}
+          />
         </div>
       </PageTitleRow>
 
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {Object.values(transactionFieldLabels).map(field => (
-                <TableHead key={field}>
-                  {field}
-                </TableHead>
+      <div className='overflow-x-auto'>
+        {!ownedArbiter && <div>No arbiter owned yet</div>}
+        {ownedArbiter && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {Object.values(transactionFieldLabels).map(field => (
+                  <TableHead key={field}>{field}</TableHead>
+                ))}
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {transactions?.map((tx, index) => (
+                <TransactionRow
+                  transaction={tx}
+                  key={index}
+                  btcFeesInfo={btcFeesInfo?.[tx.id]}
+                  onShowTransactionDetails={() => {
+                    setPickedTransaction(tx);
+                    window.history.replaceState({}, '', `${window.location.pathname}/${tx.id}`);
+                    setOpenDialog('details');
+                  }}
+                  onRowSelection={selected => handleRowSelectionChanged(tx, selected)}
+                />
               ))}
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions?.map((tx, index) => <TransactionRow
-              transaction={tx}
-              key={index}
-              btcFeesInfo={btcFeesInfo?.[tx.id]}
-              onShowTransactionDetails={() => {
-                setPickedTransaction(tx);
-                window.history.replaceState({}, '', `${window.location.pathname}/${tx.id}`);
-                setOpenDialog("details");
-              }}
-              onRowSelection={selected => handleRowSelectionChanged(tx, selected)}
-            />)}
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       {
         /* Button to start withdrawing btc fees, when some withdrawable transactions have been selected in the list */
-        selectedTransactions?.length > 0 &&
-        <div className='flex justify-end'>
-          <Button onClick={() => setOpenDialog("withdraw-btc-fees")}>Withdraw BTC fees</Button>
-        </div>
+        selectedTransactions?.length > 0 && (
+          <div className='flex justify-end'>
+            <Button onClick={() => setOpenDialog('withdraw-btc-fees')}>Withdraw BTC fees</Button>
+          </div>
+        )
       }
 
       {loading && <Loading />}
 
       <TransactionDetailsDialog
         transaction={pickedTransaction}
-        isOpen={openDialog === "details"}
+        isOpen={openDialog === 'details'}
         onHandleClose={() => {
           window.history.replaceState({}, '', `/transactions`);
           setOpenDialog(undefined);
         }}
         onSubmitArbitration={() => {
-          setOpenDialog("sign-arbitration");
+          setOpenDialog('sign-arbitration');
         }}
-        onRequestCompensation={(compensationType) => {
+        onRequestCompensation={compensationType => {
           setOpenDialog(compensationType);
         }}
       />
 
-      <SubmitSignatureDialog transaction={pickedTransaction} isOpen={openDialog === "sign-arbitration"} onHandleClose={() => setOpenDialog(undefined)} />
-      <RequestIllegalSignatureCompensationDialog isOpen={openDialog === "IllegalSignature"} transaction={pickedTransaction} onHandleClose={() => setOpenDialog(undefined)} />
-      <RequestArbiterFeeCompensationDialog isOpen={openDialog === "ArbiterFee"} transaction={pickedTransaction} onHandleClose={() => setOpenDialog(undefined)} />
+      <SubmitSignatureDialog
+        transaction={pickedTransaction}
+        isOpen={openDialog === 'sign-arbitration'}
+        onHandleClose={() => setOpenDialog(undefined)}
+      />
+      <RequestIllegalSignatureCompensationDialog
+        isOpen={openDialog === 'IllegalSignature'}
+        transaction={pickedTransaction}
+        onHandleClose={() => setOpenDialog(undefined)}
+      />
+      <RequestArbiterFeeCompensationDialog
+        isOpen={openDialog === 'ArbiterFee'}
+        transaction={pickedTransaction}
+        onHandleClose={() => setOpenDialog(undefined)}
+      />
       <WithdrawBTCFeesDialog
         arbiter={ownedArbiter}
-        isOpen={openDialog === "withdraw-btc-fees"}
+        isOpen={openDialog === 'withdraw-btc-fees'}
         btcFeesInfo={btcFeesInfo}
         withdrawableTransactions={selectedTransactions}
         onHandleClose={() => setOpenDialog(undefined)}
@@ -170,4 +197,3 @@ export default function ArbiterTransactions() {
     </div>
   );
 }
-

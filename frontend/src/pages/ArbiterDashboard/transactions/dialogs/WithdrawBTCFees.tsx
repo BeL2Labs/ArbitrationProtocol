@@ -54,7 +54,7 @@ export const WithdrawBTCFeesDialog: FC<{
   const [allInputsSigned, setAllInputsSigned] = useState<boolean>(false);
   const currentPublicKey = useBitcoinPublicKey(); // Bitcoin public key of currently active wallet
   const isSameBitcoinPublicKey = useMemo(
-    () => arbiter.revenueBtcPubKey === currentPublicKey,
+    () => arbiter?.revenueBtcPubKey === currentPublicKey,
     [arbiter, currentPublicKey]
   );
   const [publishingTx, setPublishingTx] = useState<boolean>(false);
@@ -106,14 +106,16 @@ export const WithdrawBTCFeesDialog: FC<{
   useEffect(() => {
     if (!isOpen) {
       // When reopening the dialog, reset all previous state
-      setTransactionsInProgress(withdrawableTransactions?.map(wt => ({
-        transaction: wt,
-        script: generateBtcFeeScript(arbiter.revenueBtcPubKey, wt),
-        utxo: btcFeesInfo[wt.id].utxo
-      })));
+      setTransactionsInProgress(
+        withdrawableTransactions?.map(wt => ({
+          transaction: wt,
+          script: generateBtcFeeScript(arbiter.revenueBtcPubKey, wt),
+          utxo: btcFeesInfo[wt.id].utxo
+        }))
+      );
       setAllInputsSigned(false);
     }
-  }, [arbiter.revenueBtcPubKey, btcFeesInfo, isOpen, withdrawableTransactions]);
+  }, [arbiter?.revenueBtcPubKey, btcFeesInfo, isOpen, withdrawableTransactions]);
 
   useEffect(() => {
     // When the initial array of transactions to work on changes, we rebuild of transactions in progress list
@@ -206,7 +208,7 @@ const WithdrawableTransactionRow: FC<{
 
       // Build the real transaction, using the right output value
       const rawBtcTx = generateRawTransactionForBTCFeeWithdrawal(inputs, false);
-      const index = inputs.inputs.findIndex( (i => i.utxo.txid === transactionInProgress.utxo.txid))
+      const index = inputs.inputs.findIndex(i => i.utxo.txid === transactionInProgress.utxo.txid);
       const feeSatsValue = btcToSats(transaction.arbitratorFeeBTC).toNumber();
       const hashForWitness = rawBtcTx
         .hashForWitnessV0(index, transactionInProgress.script, feeSatsValue, BTCTransaction.SIGHASH_ALL)

@@ -30,7 +30,7 @@ export const transactionFieldLabels: Partial<Record<keyof Transaction, string>> 
   dapp: 'DApp',
   arbiter: 'Arbiter',
   deadline: 'Deadline',
-  status: 'Status',
+  status: 'Status'
 };
 
 const ResultsPerPage = 9;
@@ -38,14 +38,15 @@ const ResultsPerPage = 9;
 export default function TransactionList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchSubject, validatedSearch, typedSearch] = useDebounceInput();
-  const { transactions, refreshTransactions, total: totalTransactionCount } = useTransactions(
-    currentPage,
-    ResultsPerPage,
-    null,
-    validatedSearch
-  );
+  const {
+    transactions,
+    refreshTransactions,
+    total: totalTransactionCount
+  } = useTransactions(currentPage, ResultsPerPage, undefined, validatedSearch);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const [openDialog, setOpenDialog] = useState<undefined | CompensationType | "sign-arbitration" | "details">(undefined);
+  const [openDialog, setOpenDialog] = useState<undefined | CompensationType | 'sign-arbitration' | 'details'>(
+    undefined
+  );
   const { transactionId: urlTransactionId } = useParams();
   const { fetchTransaction } = useTransaction(urlTransactionId);
 
@@ -61,8 +62,7 @@ export default function TransactionList() {
     if (urlTransactionId) {
       void fetchTransaction().then(tx => {
         setSelectedTransaction(tx);
-        if (tx)
-          setOpenDialog("details");
+        if (tx) setOpenDialog('details');
       });
     }
   }, [urlTransactionId, fetchTransaction]);
@@ -70,39 +70,44 @@ export default function TransactionList() {
   return (
     <PageContainer>
       <PageTitleRow>
-        <PageTitle className="flex flex-grow sm:flex-grow-0">Transactions <IconTooltip title='Transactions' tooltip={tooltips.transactionIntro} iconClassName='ml-2' iconSize={20} /></PageTitle>
-        <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={refreshTransactions}>
+        <PageTitle className='flex flex-grow sm:flex-grow-0'>
+          Transactions{' '}
+          <IconTooltip title='Transactions' tooltip={tooltips.transactionIntro} iconClassName='ml-2' iconSize={20} />
+        </PageTitle>
+        <div className='flex gap-2'>
+          <Button variant='outline' size='icon' onClick={refreshTransactions}>
             <RefreshCwIcon />
           </Button>
-          <SearchInput placeholder="Search transactions..."
+          <SearchInput
+            placeholder='Search transactions...'
             value={typedSearch}
-            onChange={(newValue) => searchSubject.next(newValue)} />
+            onChange={newValue => searchSubject.next(newValue)}
+          />
         </div>
       </PageTitleRow>
 
-      <div className="overflow-x-auto">
+      <div className='overflow-x-auto'>
         <Table>
           <TableHeader>
             <TableRow>
               {Object.values(transactionFieldLabels).map(field => (
-                <TableHead key={field}>
-                  {field}
-                </TableHead>
+                <TableHead key={field}>{field}</TableHead>
               ))}
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactions?.map((tx, index) => <TransactionRow
-              transaction={tx}
-              key={index}
-              onShowTransactionDetails={() => {
-                setSelectedTransaction(tx);
-                window.history.replaceState({}, '', `${window.location.pathname}/${tx.id}`);
-                setOpenDialog("details");
-              }}
-            />)}
+            {transactions?.map((tx, index) => (
+              <TransactionRow
+                transaction={tx}
+                key={index}
+                onShowTransactionDetails={() => {
+                  setSelectedTransaction(tx);
+                  window.history.replaceState({}, '', `${window.location.pathname}/${tx.id}`);
+                  setOpenDialog('details');
+                }}
+              />
+            ))}
           </TableBody>
         </Table>
       </div>
@@ -111,29 +116,52 @@ export default function TransactionList() {
 
       {!loading && totalTransactionCount === 0 && <div className='text-center'>Nothing yet</div>}
 
-      <Paginator currentPage={currentPage} totalPages={Math.ceil((totalTransactionCount || 0) / ResultsPerPage)} onPageChange={setCurrentPage} />
+      <Paginator
+        currentPage={currentPage}
+        totalPages={Math.ceil((totalTransactionCount || 0) / ResultsPerPage)}
+        onPageChange={setCurrentPage}
+      />
 
       <TransactionDetailsDialog
         transaction={selectedTransaction}
-        isOpen={openDialog === "details"}
+        isOpen={openDialog === 'details'}
         onHandleClose={() => {
           window.history.replaceState({}, '', `/transactions`);
           setOpenDialog(undefined);
         }}
         onSubmitArbitration={() => {
-          setOpenDialog("sign-arbitration");
+          setOpenDialog('sign-arbitration');
         }}
-        onRequestCompensation={(compensationType) => {
+        onRequestCompensation={compensationType => {
           setOpenDialog(compensationType);
         }}
       />
 
-      <SubmitSignatureDialog transaction={selectedTransaction} isOpen={openDialog === "sign-arbitration"} onHandleClose={() => setOpenDialog(undefined)} />
-      <RequestFailedArbitrationCompensationDialog isOpen={openDialog === "FailedArbitration"} transaction={selectedTransaction} onHandleClose={() => setOpenDialog(undefined)} />
-      <RequestIllegalSignatureCompensationDialog isOpen={openDialog === "IllegalSignature"} transaction={selectedTransaction} onHandleClose={() => setOpenDialog(undefined)} />
-      <RequestTimeoutCompensationDialog isOpen={openDialog === "Timeout"} transaction={selectedTransaction} onHandleClose={() => setOpenDialog(undefined)} />
-      <RequestArbiterFeeCompensationDialog isOpen={openDialog === "ArbiterFee"} transaction={selectedTransaction} onHandleClose={() => setOpenDialog(undefined)} />
+      <SubmitSignatureDialog
+        transaction={selectedTransaction}
+        isOpen={openDialog === 'sign-arbitration'}
+        onHandleClose={() => setOpenDialog(undefined)}
+      />
+      <RequestFailedArbitrationCompensationDialog
+        isOpen={openDialog === 'FailedArbitration'}
+        transaction={selectedTransaction}
+        onHandleClose={() => setOpenDialog(undefined)}
+      />
+      <RequestIllegalSignatureCompensationDialog
+        isOpen={openDialog === 'IllegalSignature'}
+        transaction={selectedTransaction}
+        onHandleClose={() => setOpenDialog(undefined)}
+      />
+      <RequestTimeoutCompensationDialog
+        isOpen={openDialog === 'Timeout'}
+        transaction={selectedTransaction}
+        onHandleClose={() => setOpenDialog(undefined)}
+      />
+      <RequestArbiterFeeCompensationDialog
+        isOpen={openDialog === 'ArbiterFee'}
+        transaction={selectedTransaction}
+        onHandleClose={() => setOpenDialog(undefined)}
+      />
     </PageContainer>
   );
 }
-
