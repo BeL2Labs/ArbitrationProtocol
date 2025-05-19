@@ -20,24 +20,24 @@ export const RequestArbiterFeeCompensationDialog: FC<{
     }
   };
 
-  return <Dialog open={isOpen} onOpenChange={onHandleClose}  >
-    <DialogContent aria-description="Request compensation">
-      <DialogHeader>
-        <DialogTitle>Request compensation (Arbiter fee)</DialogTitle>
-      </DialogHeader>
+  return (
+    <Dialog open={isOpen} onOpenChange={onHandleClose}>
+      <DialogContent aria-description='Close transaction'>
+        <DialogHeader>
+          <DialogTitle>Close transaction</DialogTitle>
+        </DialogHeader>
 
-      <div>
-        This transaction has not been handled on time by the arbiter. You can close it.
-      </div>
+        <div>This transaction has not been handled on time. You can close it.</div>
 
-      <div className="flex justify-end space-x-4">
-        <Button variant="ghost" disabled={isSubmittingCompensationRequest} onClick={onHandleClose}>
-          Cancel
-        </Button>
-        <Button onClick={handleRequestCompensation} disabled={isSubmittingCompensationRequest}>
-          Submit
-        </Button>
-      </div>
-    </DialogContent>
-  </Dialog>
-}
+        <div className='flex justify-end space-x-4'>
+          <Button variant='ghost' disabled={isSubmittingCompensationRequest} onClick={onHandleClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleRequestCompensation} disabled={isSubmittingCompensationRequest}>
+            Submit
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
