@@ -17,13 +17,16 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
   }, [transaction, fetchArbiterFrozen]);
 
   const canSubmitArbitration = useMemo(() => {
-    return transaction && (
+    return (
+      transaction &&
       // Note: important to use stored status here, not dynamic status.
-      transaction.status === "Arbitrated" &&
+      transaction.status === 'Arbitrated' &&
       isSameEVMAddress(transaction.arbiter, evmAccount) &&
       moment().isBefore(transaction.deadline) &&
       !!configSettings &&
-      moment().isBefore(transaction.requestArbitrationTime.clone().add(Number(configSettings.arbitrationTimeout), "seconds"))
+      moment().isBefore(
+        transaction.requestArbitrationTime.clone().add(Number(configSettings.arbitrationTimeout), 'seconds')
+      )
     );
   }, [transaction, evmAccount, configSettings]);
 
@@ -32,14 +35,17 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
    * then the timeoutCompensationReceiver can request a timeout compensation
    */
   const canRequestTimeoutCompensation = useMemo(() => {
-    return transaction && (
+    return (
+      transaction &&
       // Note: important to use stored status here, not dynamic status.
-      transaction.status === "Arbitrated" &&
+      transaction.status === 'Arbitrated' &&
       isSameEVMAddress(transaction.timeoutCompensationReceiver, evmAccount) &&
       // Follow the logic of transactionManager.isSubmitArbitrationOutTime()
       moment().isAfter(transaction.deadline) &&
       !!configSettings &&
-      moment().isAfter(transaction.requestArbitrationTime.clone().add(Number(configSettings.arbitrationTimeout), "seconds"))
+      moment().isAfter(
+        transaction.requestArbitrationTime.clone().add(Number(configSettings.arbitrationTimeout), 'seconds')
+      )
     );
   }, [transaction, evmAccount, configSettings]);
 
@@ -48,9 +54,10 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
    * User can submit a failed arbitration compensation request.
    */
   const canRequestFailedArbitrationCompensation = useMemo(() => {
-    return transaction && (
+    return (
+      transaction &&
       // Note: important to use stored status here, not dynamic status.
-      transaction.status === "Arbitrated" &&
+      transaction.status === 'Arbitrated' &&
       isSameEVMAddress(transaction.timeoutCompensationReceiver, evmAccount)
     );
   }, [transaction, evmAccount]);
@@ -60,9 +67,11 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
    * users to submit the bitcoin transaction. The other user can then submit the malicious transaction.
    */
   const canRequestIllegalSignatureCompensation = useMemo(() => {
-    return transaction && (
+    return (
+      transaction &&
       // Note: important to use stored status here, not dynamic status.
-      transaction.status !== "Arbitrated" && transaction.status !== "Completed" &&
+      transaction.status !== 'Arbitrated' &&
+      transaction.status !== 'Completed' &&
       isSameEVMAddress(transaction.compensationReceiver, evmAccount)
     );
   }, [transaction, evmAccount]);
@@ -77,19 +86,29 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
    * - Status is submitted and arbiter is not frozen
    */
   const canClaimArbiterFee = useMemo(() => {
-    if (!transaction)
-      return false;
+    if (!transaction) return false;
 
     // Note: important to use stored status here, not dynamic status.
 
-    const condition1 = isSameEVMAddress(transaction.arbiter, evmAccount) && transaction.status === "Active" && moment().isAfter(transaction.deadline);
+    const condition1 =
+      isSameEVMAddress(transaction.arbiter, evmAccount) &&
+      transaction.status === 'Active' &&
+      moment().isAfter(transaction.deadline);
 
-    const condition2 = isSameEVMAddress(transaction.arbiter, evmAccount) && transaction.status === "Submitted" && isArbiterFrozen === false;
+    const condition2 =
+      isSameEVMAddress(transaction.arbiter, evmAccount) &&
+      transaction.status === 'Submitted' &&
+      isArbiterFrozen === false;
 
     return condition1 || condition2;
   }, [transaction, evmAccount, isArbiterFrozen]);
 
-  const hasAvailableAction = canSubmitArbitration || canRequestTimeoutCompensation || canRequestFailedArbitrationCompensation || canRequestIllegalSignatureCompensation || canClaimArbiterFee;
+  const hasAvailableAction =
+    canSubmitArbitration ||
+    canRequestTimeoutCompensation ||
+    canRequestFailedArbitrationCompensation ||
+    canRequestIllegalSignatureCompensation ||
+    canClaimArbiterFee;
 
   return {
     canSubmitArbitration,
@@ -99,5 +118,5 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
     canClaimArbiterFee,
 
     hasAvailableAction
-  }
-}
+  };
+};

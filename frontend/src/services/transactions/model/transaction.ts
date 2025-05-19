@@ -14,7 +14,8 @@ export type TransactionStatus =
   | 'Arbitrated'
   | 'Expired'
   | 'Disputed'
-  | 'Submitted';
+  | 'Submitted'
+  | 'ToBeActive';
 
 export class Transaction
   implements Omit<TransactionDTO, 'startTime' | 'deadline' | 'depositedFee' | 'requestArbitrationTime'>
@@ -114,6 +115,8 @@ export class Transaction
         return 'Disputed';
       case 5:
         return 'Submitted';
+      case 6:
+        return 'ToBeActive';
       default:
         return 'Unknown';
     }
