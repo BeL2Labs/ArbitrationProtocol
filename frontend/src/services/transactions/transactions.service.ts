@@ -106,6 +106,8 @@ export const transactionStatusLabelTitle = (transaction: Transaction): string =>
   switch (transaction.dynamicStatus) {
     case 'Arbitrated':
       return 'Arbitration req.';
+    case 'ToBeActive':
+      return 'Pending BTC';
     default:
       return transaction.dynamicStatus;
   }
@@ -118,6 +120,7 @@ export const transactionStatusLabelColor = (transaction: Transaction): StatusLab
     case 'Submitted':
     case 'Arbitrated':
     case 'Active':
+    case 'ToBeActive':
       return 'yellow';
     case 'Disputed':
     case 'Expired':
