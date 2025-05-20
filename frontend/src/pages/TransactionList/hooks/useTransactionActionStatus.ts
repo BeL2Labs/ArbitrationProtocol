@@ -79,7 +79,7 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
   /**
    * Condition 1:
    * - Only the arbiter.
-   * - If the transaction status is active, and the deadline has passed.
+   * - If the transaction status is active (or tobeactive), and the deadline has passed.
    *
    * Condition 2:
    * - Only the arbiter.
@@ -92,7 +92,7 @@ export const useTransactionActionStatus = (transaction: Transaction) => {
 
     const condition1 =
       isSameEVMAddress(transaction.arbiter, evmAccount) &&
-      transaction.status === 'Active' &&
+      (transaction.status === 'Active' || transaction.status === 'ToBeActive') &&
       moment().isAfter(transaction.deadline);
 
     const condition2 =
