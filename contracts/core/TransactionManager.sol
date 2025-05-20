@@ -689,7 +689,9 @@ contract TransactionManager is
         if ((transaction.status == DataTypes.TransactionStatus.Active
                 && block.timestamp > transaction.deadline)
             || (transaction.status == DataTypes.TransactionStatus.Submitted
-                && !arbitratorManager.isFrozenStatus(transactionParties.arbitrator))) {
+                && !arbitratorManager.isFrozenStatus(transactionParties.arbitrator))
+            || (transaction.status == DataTypes.TransactionStatus.ToBeActive
+                && block.timestamp > transaction.deadline)) {
             return _completeTransaction(id, transactionParties);
         } else {
             revert(Errors.INVALID_TRANSACTION_STATUS);
